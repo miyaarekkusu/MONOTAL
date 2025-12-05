@@ -1,0 +1,45 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}">
+    {% block style %}
+    {% endblock %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <!-- ヘッダー（ロゴのみ） -->
+    <header class="main-header">
+        <div class="header-container">
+            <!-- ロゴエリア -->
+            <div class="logo-section">
+                <a href="{% url 'index' %}" class="logo">
+                    <i class="fas fa-store"></i>
+                    <span>MyStore</span>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        {% block main %}
+        {% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>

@@ -1,0 +1,311 @@
+/* シンプルヘッダー（ロゴのみ） */
+.simple-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    background: #fff;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.simple-header .logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #333;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.simple-header .logo i {
+    margin-right: 8px;
+    color: #007bff;
+}
+
+.register-container {
+    max-width: 500px;
+    margin: 60px auto;
+    padding: 40px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.register-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.register-subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 30px;
+}
+
+.register-options {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.register-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 24px;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.register-option:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+}
+
+.register-option i {
+    margin-right: 12px;
+    font-size: 20px;
+}
+
+.google-btn {
+    background: #fff;
+    border-color: #ddd;
+}
+
+.google-btn:hover {
+    background: #f1f3f4;
+    border-color: #4285f4;
+}
+
+.google-btn i {
+    color: #4285f4;
+}
+
+.email-btn {
+    background: #007bff;
+    border-color: #007bff;
+    color: #fff;
+}
+
+.email-btn:hover {
+    background: #0056b3;
+    border-color: #0056b3;
+    color: #fff;
+}
+
+.email-btn i {
+    color: #fff;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #e0e0e0;
+}
+
+.divider span {
+    padding: 0 16px;
+    color: #999;
+    font-size: 14px;
+}
+
+.login-link {
+    text-align: center;
+    margin-top: 30px;
+    color: #666;
+    font-size: 14px;
+}
+
+.login-link a {
+    color: #007bff;
+    text-decoration: none;
+}
+
+.login-link a:hover {
+    text-decoration: underline;
+}
+
+/* フォーム共通 */
+.register-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group label .required {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+.form-group input {
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group input:disabled {
+    background: #f8f9fa;
+    color: #666;
+}
+
+.form-group input::placeholder {
+    color: #999;
+}
+
+.error-list {
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 20px;
+}
+
+.error-list ul {
+    margin: 0;
+    padding-left: 20px;
+    color: #c53030;
+}
+
+.error-list li {
+    margin-bottom: 4px;
+}
+
+.submit-btn {
+    padding: 14px 24px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
+}
+
+.back-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-link a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link a:hover {
+    text-decoration: underline;
+}
+
+.password-hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 4px;
+}
+
+/* Google情報表示 */
+.google-info {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.google-info i {
+    color: #4285f4;
+    font-size: 24px;
+}
+
+.google-info-text {
+    flex: 1;
+}
+
+.google-info-text .email {
+    font-weight: 500;
+    color: #333;
+}
+
+.google-info-text .name {
+    font-size: 12px;
+    color: #666;
+}
+
+/* JS用エラー・成功メッセージ */
+.input-error {
+    border-color: #dc3545 !important;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.general-error {
+    background: #fff5f5;
+    border: 1px solid #fed7d7;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    color: #c53030;
+    font-size: 14px;
+}
+
+.success-message {
+    background: #f0fff4;
+    border: 1px solid #9ae6b4;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    color: #276749;
+    font-size: 14px;
+}
+
+.submit-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}

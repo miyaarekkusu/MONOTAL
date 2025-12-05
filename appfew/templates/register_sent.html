@@ -1,0 +1,23 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="register-container">
+    <h1 class="register-title">認証メールを送信しました</h1>
+
+    <div class="sent-message">
+        <i class="fas fa-envelope" style="font-size: 48px; color: #4CAF50; margin-bottom: 20px; display: block; text-align: center;"></i>
+        <p>ご登録いただいたメールアドレスに認証メールを送信しました。</p>
+        <p>メール内のリンクをクリックして、登録を完了してください。</p>
+        <p class="note">※ メールが届かない場合は、迷惑メールフォルダをご確認ください。</p>
+    </div>
+
+    <p class="back-link">
+        <a href="{% url 'index' %}"><i class="fas fa-home"></i> トップページへ</a>
+    </p>
+</div>
+{% endblock %}

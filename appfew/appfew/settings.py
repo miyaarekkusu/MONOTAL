@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'social_django',
     'monotal',
 ]
 
@@ -104,10 +105,10 @@ AUTH_PASSWORD_VALIDATORS = [
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
-LANGUAGE_CODE = 'ja'  # “ú–{Œê‚É•ÏX
-TIME_ZONE = 'Asia/Tokyo'  # “ú–{ŠÔ‚É•ÏX
-USE_I18N = True  # ‘Û‰»‹@”\‚ğ—LŒø‰»i‚»‚Ì‚Ü‚Üj
-USE_TZ = True  # ƒ^ƒCƒ€ƒ][ƒ“‚ğ—LŒø‰»i‚»‚Ì‚Ü‚Üj
+LANGUAGE_CODE = 'ja'  # ï¿½ï¿½ï¿½{ï¿½ï¿½É•ÏX
+TIME_ZONE = 'Asia/Tokyo'  # ï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½Ô‚É•ÏX
+USE_I18N = True  # ï¿½ï¿½ï¿½Û‰ï¿½ï¿½@ï¿½\ï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½ï¿½Ì‚Ü‚Üj
+USE_TZ = True  # ï¿½^ï¿½Cï¿½ï¿½ï¿½]ï¿½[ï¿½ï¿½ï¿½ï¿½Lï¿½ï¿½ï¿½ï¿½ï¿½iï¿½ï¿½ï¿½Ì‚Ü‚Üj
 
 
 # Static files (CSS, JavaScript, Images)
@@ -115,10 +116,56 @@ USE_TZ = True  # ƒ^ƒCƒ€ƒ][ƒ“‚ğ—LŒø‰»i‚»‚Ì‚Ü‚Üj
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [
-    BASE_DIR / 'static',
+    BASE_DIR / 'statics',
 ]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ã‚«ã‚¹ã‚¿ãƒ ãƒ¦ãƒ¼ã‚¶ãƒ¼ãƒ¢ãƒ‡ãƒ«
+AUTH_USER_MODEL = 'monotal.User'
+
+# Google OAuthè¨­å®š
+AUTHENTICATION_BACKENDS = [
+    'social_core.backends.google.GoogleOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = '1089550467044-qi2d2f4dsnu17soct0ng8et6ta18da5o.apps.googleusercontent.com'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = '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'
+SOCIAL_AUTH_GOOGLE_OAUTH2_SCOPE = [
+    'openid',
+    'https://www.googleapis.com/auth/userinfo.email',
+    'https://www.googleapis.com/auth/userinfo.profile',
+]
+SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
+    'prompt': 'select_account',
+}
+
+SOCIAL_AUTH_URL_NAMESPACE = 'social'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/monotal/register/complete/'
+SOCIAL_AUTH_PIPELINE = (
+    'social_core.pipeline.social_auth.social_details',
+    'social_core.pipeline.social_auth.social_uid',
+    'social_core.pipeline.social_auth.auth_allowed',
+    'social_core.pipeline.social_auth.social_user',
+    'social_core.pipeline.user.get_username',
+    'monotal.pipeline.create_user_with_status',
+    'social_core.pipeline.social_auth.associate_user',
+    'social_core.pipeline.social_auth.load_extra_data',
+    'social_core.pipeline.user.user_details',
+)
+
+LOGIN_URL = '/monotal/login/'
+LOGIN_REDIRECT_URL = '/monotal/'
+
+# ãƒ¡ãƒ¼ãƒ«è¨­å®šï¼ˆiCloud SMTPï¼‰
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.mail.me.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'nishidakohtata@icloud.com'
+EMAIL_HOST_PASSWORD = 'vpby-lopp-ectx-tofg'
+DEFAULT_FROM_EMAIL = 'nishidakohtata@icloud.com'

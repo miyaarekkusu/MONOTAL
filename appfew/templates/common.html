@@ -1,12 +1,103 @@
-﻿
+{% load static %}
 <!DOCTYPE html>
-
-<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="ja">
 <head>
-    <meta charset="utf-8" />
-    <title>hello_django</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site</title>
+    <link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}">
+    {% block style %}
+    {% endblock %}
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
-    こんにちは
+    <!-- メインヘッダー -->
+    <header class="main-header">
+        <div class="header-container">
+            <!-- ロゴエリア -->
+            <div class="logo-section">
+                <a href="{% url 'index' %}" class="logo">
+                    <i class="fas fa-store"></i>
+                    <span>MyStore</span>
+                </a>
+            </div>
+            <!-- 検索エリア -->
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <!-- ユーザーアクションエリア -->
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="{% url 'login' %}" class="action-link">ログイン</a>
+                <a href="{% url 'register' %}" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="{% url 'profile' %}" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="{% url 'create_sell' %}" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+    <!-- ナビゲーションメニュー -->
+    <nav class="main-nav">
+        <div class="nav-container">
+            <ul class="nav-menu">
+                <li class="nav-item active">
+                    <a href="/">おすすめ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/mylist">マイリスト</a>
+                </li>
+                <li class="nav-item special">
+                    <a href="/shops">メルカリShops</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/games">ゲーム・おもちゃ・グッズ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/books">本・雑誌・漫画</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/mens">メンズ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/ladies">レディース</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/baby">ベビー・キッズ</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    <!-- メインコンテンツエリア -->
+
+    <main>
+        {% block main %}
+        {% endblock %}
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScriptブロック -->
+    {% block scripts %}
+    {% endblock %}
 </body>
 </html>

@@ -1,0 +1,52 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="register-container">
+    <h1 class="register-title">会員登録</h1>
+
+    <form id="registerForm" class="register-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="email">メールアドレス<span class="required">*</span></label>
+            <input type="email" id="email" name="email" placeholder="example@mail.com">
+        </div>
+
+        <div class="form-group">
+            <label for="user_name">ユーザー名<span class="required">*</span></label>
+            <input type="text" id="user_name" name="user_name" placeholder="ユーザー名を入力">
+        </div>
+
+        <div class="form-group">
+            <label for="phone_number">電話番号<span class="required">*</span></label>
+            <input type="tel" id="phone_number" name="phone_number" placeholder="09012345678">
+        </div>
+
+        <div class="form-group">
+            <label for="password">パスワード<span class="required">*</span></label>
+            <input type="password" id="password" name="password" placeholder="パスワードを入力">
+            <p class="password-hint">8文字以上で設定してください</p>
+        </div>
+
+        <div class="form-group">
+            <label for="password_confirm">パスワード（確認）<span class="required">*</span></label>
+            <input type="password" id="password_confirm" name="password_confirm" placeholder="パスワードを再入力">
+        </div>
+
+        <button type="submit" class="submit-btn">登録する</button>
+    </form>
+
+    <p class="back-link">
+        <a href="{% url 'register' %}"><i class="fas fa-arrow-left"></i> 登録方法の選択に戻る</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/register.js' %}"></script>
+{% endblock %}

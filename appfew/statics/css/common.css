@@ -1,0 +1,362 @@
+﻿* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Hiragino Sans', 'ヒラギノ角ゴシック', sans-serif;
+    background-color: #f5f5f5;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* メインヘッダー */
+.main-header {
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+    padding: 12px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.header-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 20px;
+}
+
+/* ロゴセクション */
+.logo-section {
+    flex-shrink: 0;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #ff4757;
+    font-weight: bold;
+    font-size: 20px;
+}
+
+    .logo i {
+        margin-right: 8px;
+        font-size: 24px;
+    }
+
+/* 検索セクション */
+.search-section {
+    flex: 1;
+    max-width: 500px;
+}
+
+.search-form {
+    position: relative;
+    display: flex;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 50px 12px 16px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+}
+
+    .search-input:focus {
+        border-color: #ff4757;
+    }
+
+.search-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: #666;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+    .search-btn:hover {
+        color: #ff4757;
+    }
+
+/* ユーザーアクション */
+.user-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-shrink: 0;
+}
+
+.action-link {
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+    .action-link:hover {
+        color: #ff4757;
+    }
+
+/* コミュニティボタン専用スタイル */
+.community-btn {
+    background-color: #f8f9fa;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s;
+}
+
+    .community-btn:hover {
+        background-color: #ff4757;
+        color: white !important;
+        border-color: #ff4757;
+    }
+
+.action-icon {
+    color: #666;
+    font-size: 18px;
+    text-decoration: none;
+    padding: 8px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+    .action-icon:hover {
+        color: #ff4757;
+        background-color: #f8f8f8;
+    }
+
+.sell-btn-header {
+    background-color: #ff4757;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+    .sell-btn-header:hover {
+        background-color: #ff3742;
+    }
+
+/* ナビゲーション */
+.main-nav {
+    background-color: #fff;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.nav-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-item {
+    flex: 1;
+    text-align: center;
+    min-width: 0;
+}
+
+    .nav-item a {
+        display: block;
+        padding: 12px 8px;
+        color: #666;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 500;
+        border-bottom: 2px solid transparent;
+        transition: all 0.2s;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .nav-item:hover a,
+    .nav-item.active a {
+        color: #ff4757;
+        border-bottom-color: #ff4757;
+    }
+
+    .nav-item.special a {
+        background: linear-gradient(45deg, #ff4757, #ff6b7a);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 600;
+    }
+
+/* メインコンテンツ */
+.main-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    flex: 1;
+}
+
+.content-placeholder {
+    background: white;
+    padding: 40px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+    .content-placeholder h1 {
+        color: #333;
+        margin-bottom: 16px;
+    }
+
+    .content-placeholder p {
+        color: #666;
+    }
+
+/* フッター */
+.main-footer {
+    background-color: #ccc;
+    color: #ddd;
+    margin-top: auto;
+}
+
+.footer-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 16px;
+}
+
+.footer-content {
+    padding: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer-credit {
+    text-align: center;
+    font-size: 13px;
+    color: #000000;
+}
+
+    .footer-credit p {
+        margin-bottom: 5px;
+    }
+
+        .footer-credit p:last-child {
+            margin-bottom: 0;
+        }
+
+.monotone-credit {
+    font-style: italic;
+}
+
+    .monotone-credit strong {
+        color: #ff4757;
+        font-weight: 600;
+    }
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .header-container {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .search-section {
+        order: 3;
+        flex-basis: 100%;
+        margin-top: 8px;
+    }
+
+    .user-actions {
+        gap: 8px;
+    }
+
+    .action-link {
+        font-size: 12px;
+    }
+
+    /* タブレットサイズではコミュニティボタンを残す */
+    .community-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+
+    .nav-menu {
+        flex-wrap: wrap;
+    }
+
+    .nav-item {
+        flex: 0 0 50%;
+        margin-bottom: 4px;
+    }
+
+        .nav-item a {
+            padding: 8px 4px;
+            font-size: 12px;
+        }
+
+    /* フッターレスポンシブ */
+    .footer-content {
+        padding: 15px 0;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo span {
+        display: none;
+    }
+
+    /* モバイルではログイン・会員登録を非表示、コミュニティは残す */
+    .action-link:not(.community-btn) {
+        display: none;
+    }
+
+    .community-btn {
+        padding: 6px 8px;
+        font-size: 11px;
+    }
+
+    .sell-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+    }
+
+    .nav-item {
+        flex: 0 0 33.333%;
+    }
+
+        .nav-item a {
+            font-size: 11px;
+            padding: 6px 2px;
+        }
+
+    /* フッターモバイル */
+    .footer-content {
+        padding: 15px 0;
+    }
+
+    .footer-credit {
+        font-size: 12px;
+    }
+}

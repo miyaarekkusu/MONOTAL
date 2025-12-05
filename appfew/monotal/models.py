@@ -51,6 +51,7 @@ Django Models - レンタルプラットフォーム（Rental Platform）
    - Notification, NotificationRead, NotificationTargetUser
 """
 
+import uuid
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.utils import timezone
@@ -85,26 +86,27 @@ class UserManager(BaseUserManager):
     ユーザー作成のロジックを管理
     """
     
-    def create_user(self, email, user_name, display_name, password=None, **extra_fields):
+    def create_user(self, email, user_name, display_name, phone_number, password=None, **extra_fields):
         """通常ユーザーを作成"""
-        if not email:
-            raise ValueError('メールアドレスは必須です')
-        email = self.normalize_email(email)
+        if not phone_number:
+            raise ValueError('電話番号は必須です')
+        email = self.normalize_email(email) if email else ''
         user = self.model(
             email=email,
             user_name=user_name,
             display_name=display_name,
+            phone_number=phone_number,
             **extra_fields
         )
         user.set_password(password)
         user.save(using=self._db)
         return user
-    
-    def create_superuser(self, email, user_name, display_name, password=None, **extra_fields):
+
+    def create_superuser(self, email, user_name, display_name, phone_number, password=None, **extra_fields):
         """スーパーユーザー（管理者）を作成"""
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        return self.create_user(email, user_name, display_name, password, **extra_fields)
+        return self.create_user(email, user_name, display_name, phone_number, password, **extra_fields)
 
 
 class User(AbstractBaseUser, PermissionsMixin):
@@ -119,7 +121,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     user_id = models.AutoField(primary_key=True)
     user_name = models.CharField(max_length=100)
     display_name = models.CharField(max_length=100)
-    email = models.EmailField(max_length=255, unique=True)
+    email = models.EmailField(max_length=255)
+    phone_number = models.CharField(max_length=20, default='')
     password_hash = models.CharField(max_length=255)
     login_attempt_count = models.IntegerField(default=0)
     last_login_datetime = models.DateTimeField(null=True, blank=True)
@@ -151,6 +154,35 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     def __str__(self):
         return f"{self.display_name} ({self.email})"
+
+
+class EmailVerificationToken(models.Model):
+    """
+    メール認証トークンテーブル
+    ユーザー登録時の認証用トークンを管理
+    """
+    token_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='verification_tokens',
+        db_column='user_id'
+    )
+    token = models.UUIDField(default=uuid.uuid4, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+
+    class Meta:
+        db_table = 'T_EmailVerificationToken'
+        verbose_name = 'メール認証トークン'
+        verbose_name_plural = 'メール認証トークン'
+
+    def is_valid(self):
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def __str__(self):
+        return f"{self.user.email} - {self.token}"
 
 
 class UserAddress(models.Model):

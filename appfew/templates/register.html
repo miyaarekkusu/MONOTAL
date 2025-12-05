@@ -1,0 +1,34 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="register-container">
+    <h1 class="register-title">会員登録</h1>
+
+    <div class="register-options">
+        <!-- Google登録 -->
+        <a href="{% url 'social:begin' 'google-oauth2' %}" class="register-option google-btn">
+            <i class="fab fa-google"></i>
+            Googleで登録
+        </a>
+
+        <div class="divider">
+            <span>または</span>
+        </div>
+
+        <!-- メールアドレスで登録 -->
+        <a href="{% url 'register_form' %}" class="register-option email-btn">
+            <i class="fas fa-envelope"></i>
+            メールアドレスで登録
+        </a>
+    </div>
+
+    <p class="login-link">
+        すでにアカウントをお持ちの方は <a href="{% url 'login' %}">ログイン</a>
+    </p>
+</div>
+{% endblock %}

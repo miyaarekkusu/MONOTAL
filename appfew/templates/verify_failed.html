@@ -1,0 +1,21 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="register-container">
+    <h1 class="register-title">認証に失敗しました</h1>
+
+    <div class="error-message-box">
+        <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f44336; margin-bottom: 20px;"></i>
+        <p>{{ message }}</p>
+    </div>
+
+    <p class="back-link">
+        <a href="{% url 'register' %}"><i class="fas fa-user-plus"></i> 新規登録へ</a>
+    </p>
+</div>
+{% endblock %}
