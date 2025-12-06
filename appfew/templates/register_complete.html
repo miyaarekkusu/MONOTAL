@@ -42,7 +42,8 @@
 
         <div class="form-group">
             <label for="user_name">ユーザー名<span class="required">*</span></label>
-            <input type="text" id="user_name" name="user_name" value="{{ user_name|default:google_name|default:'' }}" placeholder="ユーザー名を入力" required>
+            <input type="text" id="user_name" name="user_name" value="{{ user_name|default:'' }}" placeholder="半角英数字と_のみ、4〜15文字" required maxlength="15" minlength="4">
+            <p class="input-hint">半角英数字とアンダースコア(_)のみ、4〜15文字</p>
         </div>
 
         <div class="form-group">

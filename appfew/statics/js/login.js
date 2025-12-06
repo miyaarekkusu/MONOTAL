@@ -1,18 +1,15 @@
 document.addEventListener('DOMContentLoaded', function () {
-    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
 
-    if (registerForm) {
-        registerForm.addEventListener('submit', async function (e) {
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
 
             clearErrors();
 
             const formData = {
-                email: document.getElementById('email').value,
-                user_name: document.getElementById('user_name').value,
-                phone_number: document.getElementById('phone_number').value,
-                password: document.getElementById('password').value,
-                password_confirm: document.getElementById('password_confirm').value
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value
             };
 
             const errors = validateForm(formData);
@@ -29,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
             setLoadingState(true);
 
             try {
-                const response = await fetch('/monotal/register/form/', {
+                const response = await fetch('/monotal/login/', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -42,26 +39,28 @@ document.addEventListener('DOMContentLoaded', function () {
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    registerForm.reset();
                     window.location.href = data.redirect_url || '/monotal/';
-
                 } else {
                     if (data.errors) {
-                        Object.keys(data.errors).forEach(field => {
-                            const input = document.getElementById(field);
-                            if (input) {
-                                showError(input, data.errors[field]);
-                            }
-                        });
+                        if (data.errors.general) {
+                            showGeneralError(data.errors.general);
+                        } else {
+                            Object.keys(data.errors).forEach(field => {
+                                const input = document.getElementById(field);
+                                if (input) {
+                                    showError(input, data.errors[field]);
+                                }
+                            });
+                        }
                     } else if (data.message) {
                         showGeneralError(data.message);
                     } else {
-                        showGeneralError('登録中にエラーが発生しました');
+                        showGeneralError('ログイン中にエラーが発生しました');
                     }
                 }
 
             } catch (error) {
-                console.error('Registration error:', error);
+                console.error('Login error:', error);
                 showGeneralError('ネットワークエラーが発生しました。時間をおいて再度お試しください。');
             } finally {
                 setLoadingState(false);
@@ -73,44 +72,15 @@ document.addEventListener('DOMContentLoaded', function () {
 function validateForm(formData) {
     const errors = {};
 
-    if (!formData.email) {
-        errors.email = 'メールアドレスは必須です';
-    } else if (!isValidEmail(formData.email)) {
-        errors.email = '有効なメールアドレスを入力してください';
-    }
-
-    if (!formData.user_name) {
-        errors.user_name = 'ユーザー名は必須です';
-    } else if (!/^[a-zA-Z0-9_]+$/.test(formData.user_name)) {
-        errors.user_name = 'ユーザー名は半角英数字とアンダースコア(_)のみで入力してください';
-    } else if (formData.user_name.length < 4 || formData.user_name.length > 15) {
-        errors.user_name = 'ユーザー名は4〜15文字で入力してください';
-    }
-
-    if (!formData.phone_number) {
-        errors.phone_number = '電話番号は必須です';
-    } else if (!/^[0-9]+$/.test(formData.phone_number)) {
-        errors.phone_number = '電話番号は数字のみで入力してください';
+    if (!formData.username) {
+        errors.username = '電話番号またはメールアドレスを入力してください';
     }
 
     if (!formData.password) {
-        errors.password = 'パスワードは必須です';
-    } else if (formData.password.length < 8) {
-        errors.password = 'パスワードは8文字以上で入力してください';
-    }
-
-    if (!formData.password_confirm) {
-        errors.password_confirm = 'パスワード（確認）は必須です';
-    } else if (formData.password !== formData.password_confirm) {
-        errors.password_confirm = 'パスワードが一致しません';
+        errors.password = 'パスワードを入力してください';
     }
 
     return errors;
-}
-
-function isValidEmail(email) {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
 }
 
 function getCsrfToken() {
@@ -152,31 +122,20 @@ function clearErrors() {
     document.querySelectorAll('.general-error').forEach(el => {
         el.remove();
     });
-    document.querySelectorAll('.success-message').forEach(el => {
-        el.remove();
-    });
 }
 
 function showGeneralError(message) {
-    const form = document.getElementById('registerForm');
+    const form = document.getElementById('loginForm');
     const errorDiv = document.createElement('div');
     errorDiv.className = 'general-error';
     errorDiv.textContent = message;
     form.insertBefore(errorDiv, form.firstChild);
 }
 
-function showSuccess(message) {
-    const form = document.getElementById('registerForm');
-    const successDiv = document.createElement('div');
-    successDiv.className = 'success-message';
-    successDiv.textContent = message;
-    form.insertBefore(successDiv, form.firstChild);
-}
-
 function setLoadingState(isLoading) {
     const submitBtn = document.querySelector('.submit-btn');
     if (submitBtn) {
         submitBtn.disabled = isLoading;
-        submitBtn.textContent = isLoading ? '登録中...' : '登録する';
+        submitBtn.textContent = isLoading ? 'ログイン中...' : 'ログイン';
     }
 }

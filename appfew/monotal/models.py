@@ -66,7 +66,10 @@ from django.utils import timezone
 class UserStatus(models.Model):
     """
     ユーザーステータスマスター
-    例: アクティブ、非アクティブ、停止中
+    1: 未認証ユーザー（メール認証済み、本人確認未完了）
+    2: 承認済みユーザー（本人確認完了）
+    3: 制限付きユーザー（違反等で制限中）
+    4: 削除済みユーザー（退会済み）
     """
     user_status_id = models.AutoField(primary_key=True)
     status_name = models.CharField(max_length=50, unique=True)
@@ -146,7 +149,12 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['user_name', 'display_name']
-    
+
+    @property
+    def id(self):
+        """social-auth-djangoとの互換性のため"""
+        return self.user_id
+
     class Meta:
         db_table = 'T_User'
         verbose_name = 'ユーザー'
@@ -159,16 +167,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 class EmailVerificationToken(models.Model):
     """
     メール認証トークンテーブル
-    ユーザー登録時の認証用トークンを管理
+    認証完了までユーザー登録情報を一時保存
+    認証後にユーザーを作成する
     """
     token_id = models.AutoField(primary_key=True)
-    user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='verification_tokens',
-        db_column='user_id'
-    )
     token = models.UUIDField(default=uuid.uuid4, unique=True)
+
+    # 登録情報（認証後にユーザー作成に使用）
+    email = models.EmailField(max_length=255)
+    user_name = models.CharField(max_length=100)
+    phone_number = models.CharField(max_length=20)
+    password_hash = models.CharField(max_length=255, blank=True, default='')  # Google認証の場合は空
+    is_google_auth = models.BooleanField(default=False)  # Google認証フラグ
+
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_used = models.BooleanField(default=False)
@@ -182,7 +193,7 @@ class EmailVerificationToken(models.Model):
         return not self.is_used and timezone.now() < self.expires_at
 
     def __str__(self):
-        return f"{self.user.email} - {self.token}"
+        return f"{self.email} - {self.token}"
 
 
 class UserAddress(models.Model):

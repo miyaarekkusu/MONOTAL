@@ -1,10 +1,47 @@
-<!DOCTYPE html>
-<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>ログイン</title>
-</head>
-<body>
-    ログイン
-</body>
-</html>
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/login.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="login-container">
+    <h1 class="login-title">ログイン</h1>
+
+    <form id="loginForm" class="login-form">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="username">電話番号</label>
+            <input type="tel" id="username" name="username" placeholder="09012345678" value="{{ username|default:'' }}">
+        </div>
+
+        <div class="form-group">
+            <label for="password">パスワード</label>
+            <input type="password" id="password" name="password" placeholder="パスワードを入力">
+        </div>
+
+        <button type="submit" class="submit-btn">ログイン</button>
+    </form>
+
+    <div class="divider">
+        <span>または</span>
+    </div>
+
+    <div class="social-login">
+        <a href="{% url 'social:begin' 'google-oauth2' %}" class="google-btn">
+            <i class="fab fa-google"></i>
+            Googleでログイン
+        </a>
+    </div>
+
+    <p class="register-link">
+        アカウントをお持ちでないですか？ <a href="{% url 'register' %}">会員登録</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/login.js' %}"></script>
+{% endblock %}

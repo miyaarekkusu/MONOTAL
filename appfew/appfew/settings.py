@@ -129,6 +129,7 @@ AUTH_USER_MODEL = 'monotal.User'
 
 # Google OAuth設定
 AUTHENTICATION_BACKENDS = [
+    'monotal.backends.PhonePasswordBackend',  # 電話番号でのログイン
     'social_core.backends.google.GoogleOAuth2',
     'django.contrib.auth.backends.ModelBackend',
 ]
@@ -145,12 +146,12 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
 }
 
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
-SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/monotal/register/complete/'
+SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/monotal/'  # ログイン成功時はトップへ
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
     'social_core.pipeline.social_auth.social_uid',
     'social_core.pipeline.social_auth.auth_allowed',
-    'social_core.pipeline.social_auth.social_user',
+    'monotal.pipeline.social_user_custom',  # AuthAlreadyAssociated回避
     'social_core.pipeline.user.get_username',
     'monotal.pipeline.create_user_with_status',
     'social_core.pipeline.social_auth.associate_user',

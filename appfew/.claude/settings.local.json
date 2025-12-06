@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(python manage.py migrate:*)",
+      "Bash(mkdir:*)",
+      "Bash(del \"C:\\Users\\kohta\\source\\repos\\miyaarekkusu\\HEWSakuhin\\appfew\\monotal\\migrations\\0001_initial.py\")",
+      "Bash(rm:*)",
+      "Bash(python manage.py shell:*)",
+      "Bash(pip install:*)",
+      "Bash(git restore:*)",
+      "Bash(del monotalpipeline.py)",
+      "Bash(del templatesregister.html)",
+      "Bash(del templatesregister_form.html)",
+      "Bash(del templatesregister_complete.html)",
+      "Bash(del:*)",
+      "Bash(del staticsjsregister.js)",
+      "Bash(curl:*)",
+      "Bash(cd:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nユーザー登録機能とメール認証システムを実装\n\n- Google OAuth認証の統合\n- 電話番号フィールドの追加\n- メール認証トークンシステム（仮登録→本登録フロー）\n- iCloud SMTP経由でのメール送信設定\n- 登録フォームのフロントエンドバリデーション追加\n- base_simple.htmlテンプレートの追加\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git commit:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -33,8 +33,12 @@
             <!-- ユーザーアクションエリア -->
             <div class="user-actions">
                 <a href="/community" class="action-link community-btn">コミュニティ</a>
+                {% if user.is_authenticated %}
+                <a href="{% url 'logout' %}" class="action-link">ログアウト</a>
+                {% else %}
                 <a href="{% url 'login' %}" class="action-link">ログイン</a>
                 <a href="{% url 'register' %}" class="action-link">会員登録</a>
+                {% endif %}
                 <a href="/notifications" class="action-icon">
                     <i class="fas fa-bell"></i>
                 </a>
