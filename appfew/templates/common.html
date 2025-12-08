@@ -42,12 +42,14 @@
                 <a href="/notifications" class="action-icon">
                     <i class="fas fa-bell"></i>
                 </a>
+                {% if user.is_authenticated %}
                 <a href="{% url 'profile' username=user.user_name %}" class="action-icon">
                     <i class="fas fa-user"></i>
                 </a>
                 <a href="/bookmarks" class="action-icon">
                     <i class="fas fa-heart"></i>
                 </a>
+                {% endif %}
                 <a href="{% url 'create_sell' %}" class="sell-btn-header">出品</a>
             </div>
         </div>
