@@ -141,7 +141,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     delete_datetime = models.DateTimeField(null=True, blank=True)
     
     user_image = models.ImageField(upload_to='user_images/', null=True, blank=True)
-    
+    bio = models.CharField(max_length=160, blank=True, default='')  # 自己紹介文（Twitter仕様: 160文字）
+
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     
@@ -226,6 +227,37 @@ class UserAddress(models.Model):
     
     def __str__(self):
         return f"{self.user.display_name} - {self.postal_code}"
+
+
+class UserHobby(models.Model):
+    """
+    ユーザー趣味テーブル
+    ユーザーの興味のあるカテゴリを管理
+    """
+    user_hobby_id = models.AutoField(primary_key=True)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='hobbies',
+        db_column='user_id'
+    )
+    product_category = models.ForeignKey(
+        'ProductCategory',
+        on_delete=models.CASCADE,
+        db_column='product_category_id'
+    )
+
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_UserHobby'
+        verbose_name = 'ユーザー趣味'
+        verbose_name_plural = 'ユーザー趣味'
+        unique_together = [['user', 'product_category']]
+
+    def __str__(self):
+        return f"{self.user.user_name} - {self.product_category.category_name}"
 
 
 # ────────────────────────────────────────────────────────────────────────────────

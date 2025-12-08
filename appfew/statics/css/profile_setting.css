@@ -1,0 +1,255 @@
+.profile-setting-container {
+    max-width: 500px;
+    margin: 60px auto;
+    padding: 40px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.page-title {
+    text-align: center;
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 30px;
+    color: #333;
+}
+
+.profile-form {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.form-group label .required {
+    color: #dc3545;
+    margin-left: 4px;
+}
+
+.form-group input,
+.form-group textarea {
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+    font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.input-hint {
+    font-size: 12px;
+    color: #666;
+    margin: 0;
+}
+
+.char-count {
+    font-size: 12px;
+    color: #999;
+    text-align: right;
+    margin: 0;
+}
+
+.char-count.warning {
+    color: #f59e0b;
+}
+
+.char-count.error {
+    color: #dc3545;
+}
+
+/* 画像アップロード */
+.image-group {
+    align-items: flex-start;
+}
+
+.image-preview-container {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.image-preview {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    border: 3px solid #e0e0e0;
+}
+
+.image-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.image-preview i {
+    font-size: 40px;
+    color: #ccc;
+}
+
+.image-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.image-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.image-upload-btn:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+/* 読み取り専用フィールド */
+.readonly-group {
+    background: #f8f9fa;
+    padding: 16px;
+    border-radius: 8px;
+}
+
+.readonly-value {
+    font-size: 16px;
+    color: #333;
+    margin: 0;
+    font-weight: 500;
+}
+
+/* 送信ボタン */
+.submit-btn {
+    padding: 14px 24px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 10px;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
+}
+
+.submit-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+}
+
+.btn-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* エラーメッセージ */
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin: 0;
+    min-height: 16px;
+}
+
+.input-error {
+    border-color: #dc3545 !important;
+}
+
+/* 戻るリンク */
+.back-link {
+    text-align: center;
+    margin-top: 24px;
+}
+
+.back-link a {
+    color: #007bff;
+    text-decoration: none;
+    font-size: 14px;
+}
+
+.back-link a:hover {
+    text-decoration: underline;
+}
+
+/* 成功メッセージ */
+.success-toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #10b981;
+    color: #fff;
+    padding: 16px 24px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* レスポンシブ */
+@media (max-width: 600px) {
+    .profile-setting-container {
+        margin: 20px;
+        padding: 24px;
+    }
+
+    .image-preview-container {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .image-preview {
+        width: 120px;
+        height: 120px;
+    }
+}

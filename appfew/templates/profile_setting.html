@@ -1,0 +1,66 @@
+{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/profile_setting.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="profile-setting-container">
+    <h1 class="page-title">プロフィール編集</h1>
+
+    <form id="profileForm" class="profile-form" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="form-group image-group">
+            <label>プロフィール画像</label>
+            <div class="image-preview-container">
+                <div class="image-preview" id="imagePreview">
+                    {% if profile_user.user_image %}
+                        <img src="{{ profile_user.user_image.url }}" alt="プロフィール画像" id="previewImg">
+                    {% else %}
+                        <i class="fas fa-user" id="defaultIcon"></i>
+                    {% endif %}
+                </div>
+                <div class="image-actions">
+                    <label for="user_image" class="image-upload-btn">
+                        <i class="fas fa-camera"></i> 画像を選択
+                    </label>
+                    <input type="file" id="user_image" name="user_image" accept="image/*" hidden>
+                    <p class="input-hint">5MB以下のJPG、PNG、GIF</p>
+                </div>
+            </div>
+            <p class="error-message" id="user_image-error"></p>
+        </div>
+
+        <div class="form-group">
+            <label for="display_name">表示名<span class="required">*</span></label>
+            <input type="text" id="display_name" name="display_name"
+                   value="{{ profile_user.display_name }}"
+                   placeholder="表示名を入力" maxlength="100">
+            <p class="char-count"><span id="display_name-count">{{ profile_user.display_name|length }}</span>/100</p>
+            <p class="error-message" id="display_name-error"></p>
+        </div>
+
+        <div class="form-group">
+            <label for="bio">自己紹介</label>
+            <textarea id="bio" name="bio" placeholder="自己紹介を入力" maxlength="160" rows="4">{{ profile_user.bio }}</textarea>
+            <p class="char-count"><span id="bio-count">{{ profile_user.bio|length }}</span>/160</p>
+            <p class="error-message" id="bio-error"></p>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">
+            <span class="btn-text">保存する</span>
+            <span class="btn-loading" style="display: none;"><i class="fas fa-spinner fa-spin"></i> 保存中...</span>
+        </button>
+    </form>
+
+    <p class="back-link">
+        <a href="{% url 'profile' username=profile_user.user_name %}"><i class="fas fa-arrow-left"></i> プロフィールに戻る</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/profile_setting.js' %}"></script>
+{% endblock %}

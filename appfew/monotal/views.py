@@ -330,8 +330,8 @@ class EmailVerifyView(View):
             # ログイン
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
-            messages.success(request, '会員登録が完了しました。')
-            return redirect('index')
+            messages.success(request, '会員登録が完了しました。プロフィールを設定してください。')
+            return redirect('profile_setting', username=user.user_name)
 
         except EmailVerificationToken.DoesNotExist:
             return render(request, 'verify_failed.html', {
@@ -340,8 +340,95 @@ class EmailVerifyView(View):
 
 
 class ProfileView(View):
-    def get(self, request, *args, **kwargs):
-        return render(request, 'profile.html')
+    """ユーザープロフィール閲覧ページ（公開）"""
+    def get(self, request, username, *args, **kwargs):
+        try:
+            user = User.objects.get(user_name=username, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            messages.error(request, 'ユーザーが見つかりません。')
+            return redirect('index')
+
+        return render(request, 'profile.html', {'profile_user': user})
+
+
+class ProfileSettingView(View):
+    """プロフィール設定ページ（本人のみ）"""
+    def get(self, request, username, *args, **kwargs):
+        try:
+            user = User.objects.get(user_name=username, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            messages.error(request, 'ユーザーが見つかりません。')
+            return redirect('index')
+
+        # 本人以外はプロフィール閲覧ページへリダイレクト
+        if request.user != user:
+            return redirect('profile', username=username)
+
+        return render(request, 'profile_setting.html', {'profile_user': user})
+
+    def post(self, request, username, *args, **kwargs):
+        try:
+            user = User.objects.get(user_name=username, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            return JsonResponse({'success': False, 'message': 'ユーザーが見つかりません。'}, status=404)
+
+        # 本人以外は更新不可
+        if request.user != user:
+            return JsonResponse({'success': False, 'message': '権限がありません。'}, status=403)
+
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # フォームデータ取得（multipart/form-data対応）
+        display_name = request.POST.get('display_name', '').strip()
+        bio = request.POST.get('bio', '').strip()
+        user_image = request.FILES.get('user_image')
+
+        errors = {}
+
+        # バリデーション
+        if not display_name:
+            errors['display_name'] = '表示名は必須です'
+        elif len(display_name) > 100:
+            errors['display_name'] = '表示名は100文字以内で入力してください'
+
+        if len(bio) > 160:
+            errors['bio'] = '自己紹介は160文字以内で入力してください'
+
+        if user_image:
+            # 画像バリデーション（5MB以下、画像形式のみ）
+            if user_image.size > 5 * 1024 * 1024:
+                errors['user_image'] = '画像は5MB以下にしてください'
+            if not user_image.content_type.startswith('image/'):
+                errors['user_image'] = '画像ファイルを選択してください'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return render(request, 'profile_setting.html', {
+                'profile_user': user,
+                'errors': errors
+            })
+
+        # 更新
+        user.display_name = display_name
+        user.bio = bio
+        if user_image:
+            user.user_image = user_image
+        user.save()
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': 'プロフィールを更新しました',
+                'data': {
+                    'display_name': user.display_name,
+                    'bio': user.bio,
+                    'user_image': user.user_image.url if user.user_image else None
+                }
+            })
+
+        messages.success(request, 'プロフィールを更新しました')
+        return redirect('profile_setting', username=username)
 
 
 class CreateSellView(View):
@@ -358,4 +445,5 @@ register_complete = RegisterCompleteView.as_view()
 register_sent = RegisterSentView.as_view()
 email_verify = EmailVerifyView.as_view()
 profile = ProfileView.as_view()
+profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()

@@ -2,9 +2,10 @@
 <html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8" />
-    <title>プロフィール</title>
+    <title>{{ profile_user.display_name }} - プロフィール</title>
 </head>
 <body>
-    プロフィール
+    <h1>{{ profile_user.display_name }}</h1>
+    <p>@{{ profile_user.user_name }}</p>
 </body>
 </html>
