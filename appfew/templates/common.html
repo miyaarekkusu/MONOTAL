@@ -42,7 +42,7 @@
                 <a href="/notifications" class="action-icon">
                     <i class="fas fa-bell"></i>
                 </a>
-                <a href="{% url 'profile' %}" class="action-icon">
+                <a href="{% url 'profile' username=user.user_name %}" class="action-icon">
                     <i class="fas fa-user"></i>
                 </a>
                 <a href="/bookmarks" class="action-icon">
