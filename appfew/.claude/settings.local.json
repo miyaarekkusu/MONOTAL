@@ -19,7 +19,11 @@
       "Bash(cd:*)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nユーザー登録機能とメール認証システムを実装\n\n- Google OAuth認証の統合\n- 電話番号フィールドの追加\n- メール認証トークンシステム（仮登録→本登録フロー）\n- iCloud SMTP経由でのメール送信設定\n- 登録フォームのフロントエンドバリデーション追加\n- base_simple.htmlテンプレートの追加\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "WebSearch",
+      "WebFetch(domain:jp.mercari.com)",
+      "Bash(python manage.py:*)"
     ],
     "deny": [],
     "ask": []
