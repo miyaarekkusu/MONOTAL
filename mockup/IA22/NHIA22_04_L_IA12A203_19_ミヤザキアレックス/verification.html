@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>本人確認 - monotal</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/verification.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="verification-container">
+            <h1 class="page-title">本人確認</h1>
+            <p class="page-subtitle">
+                安心・安全なお取引のために、本人確認を行っています。<br>
+                顔写真と運転免許証の写真をアップロードしてください。
+            </p>
+
+            <form class="verification-form" id="verificationForm">
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-user"></i>
+                        顔写真の撮影・アップロード
+                    </h2>
+                    <p class="section-description">
+                        正面を向いて、顔全体が写るように撮影してください。帽子やマスクは外してください。
+                    </p>
+
+                    <div class="upload-area" id="faceUploadArea">
+                        <input type="file" class="file-input" id="faceInput" accept="image/*" capture="user">
+                        <i class="fas fa-camera upload-icon"></i>
+                        <div class="upload-text">顔写真をアップロード</div>
+                        <div class="upload-hint">クリックして写真を選択、またはドラッグ&ドロップ</div>
+                    </div>
+
+                    <div class="preview-container" id="facePreview">
+                        <img class="preview-image" id="faceImage" src="" alt="顔写真プレビュー">
+                        <div class="preview-info">
+                            <div id="faceFileName"></div>
+                            <button type="button" class="remove-btn" id="removeFace">削除</button>
+                        </div>
+                    </div>
+
+                    <div class="requirements">
+                        <div class="requirements-title">
+                            <i class="fas fa-info-circle"></i>
+                            撮影時の注意点
+                        </div>
+                        <ul class="requirements-list">
+                            <li>明るい場所で撮影してください</li>
+                            <li>顔全体がはっきりと写るようにしてください</li>
+                            <li>帽子、マスク、サングラスは外してください</li>
+                            <li>正面を向いて撮影してください</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-section">
+                    <h2 class="section-title">
+                        <i class="fas fa-id-card"></i>
+                        運転免許証の撮影・アップロード
+                    </h2>
+                    <p class="section-description">
+                        運転免許証の表面を撮影してください。文字がはっきりと読めるように撮影してください。
+                    </p>
+
+                    <div class="upload-area" id="licenseUploadArea">
+                        <input type="file" class="file-input" id="licenseInput" accept="image/*">
+                        <i class="fas fa-id-card upload-icon"></i>
+                        <div class="upload-text">運転免許証をアップロード</div>
+                        <div class="upload-hint">クリックして写真を選択、またはドラッグ&ドロップ</div>
+                    </div>
+
+                    <div class="preview-container" id="licensePreview">
+                        <img class="preview-image" id="licenseImage" src="" alt="免許証プレビュー">
+                        <div class="preview-info">
+                            <div id="licenseFileName"></div>
+                            <button type="button" class="remove-btn" id="removeLicense">削除</button>
+                        </div>
+                    </div>
+
+                    <div class="requirements">
+                        <div class="requirements-title">
+                            <i class="fas fa-info-circle"></i>
+                            撮影時の注意点
+                        </div>
+                        <ul class="requirements-list">
+                            <li>免許証の表面全体が写るように撮影してください</li>
+                            <li>文字がはっきりと読めるように撮影してください</li>
+                            <li>光の反射で文字が見えなくならないよう注意してください</li>
+                            <li>有効期限内の免許証をご使用ください</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="back-btn" onclick="history.back()">戻る</button>
+                    <button type="submit" class="submit-btn" id="submitBtn" disabled>本人確認を申請する</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="js/verification.js"></script>
+</body>
+</html>

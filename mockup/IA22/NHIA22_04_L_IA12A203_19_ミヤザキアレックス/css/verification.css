@@ -1,0 +1,278 @@
+﻿/* メインコンテンツ */
+.main-content {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px 16px;
+    flex: 1;
+}
+
+.verification-container {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.page-title {
+    text-align: center;
+    color: #333;
+    font-size: 28px;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.page-subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+}
+
+.verification-form {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.form-section {
+    margin-bottom: 40px;
+}
+
+.section-title {
+    color: #333;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .section-title i {
+        color: #ff4757;
+    }
+
+.section-description {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.upload-area {
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+    .upload-area:hover {
+        border-color: #ff4757;
+        background-color: #fef7f7;
+    }
+
+    .upload-area.dragover {
+        border-color: #ff4757;
+        background-color: #fef7f7;
+    }
+
+.upload-icon {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 16px;
+}
+
+.upload-area:hover .upload-icon {
+    color: #ff4757;
+}
+
+.upload-text {
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.upload-hint {
+    color: #999;
+    font-size: 12px;
+}
+
+.file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.preview-container {
+    margin-top: 20px;
+    display: none;
+}
+
+.preview-image {
+    max-width: 200px;
+    max-height: 200px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    margin: 0 auto;
+    display: block;
+}
+
+.preview-info {
+    text-align: center;
+    margin-top: 12px;
+    color: #666;
+    font-size: 14px;
+}
+
+.remove-btn {
+    background: none;
+    border: none;
+    color: #ff4757;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 8px;
+    text-decoration: underline;
+}
+
+    .remove-btn:hover {
+        color: #ff3742;
+    }
+
+.requirements {
+    background-color: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+.requirements-title {
+    color: #333;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+    .requirements-title i {
+        color: #ff4757;
+    }
+
+.requirements-list {
+    list-style: none;
+}
+
+    .requirements-list li {
+        color: #666;
+        font-size: 13px;
+        margin-bottom: 6px;
+        padding-left: 16px;
+        position: relative;
+    }
+
+        .requirements-list li:before {
+            content: "•";
+            color: #ff4757;
+            position: absolute;
+            left: 0;
+        }
+
+.form-actions {
+    text-align: center;
+    margin-top: 50px;
+    padding-top: 30px;
+    border-top: 1px solid #e0e0e0;
+}
+
+.submit-btn {
+    background-color: #ff4757;
+    color: white;
+    padding: 16px 60px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    min-width: 200px;
+}
+
+    .submit-btn:hover {
+        background-color: #ff3742;
+    }
+
+    .submit-btn:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+    }
+
+.back-btn {
+    background: none;
+    border: 1px solid #e0e0e0;
+    color: #666;
+    padding: 16px 40px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    margin-right: 20px;
+    transition: all 0.2s;
+}
+
+    .back-btn:hover {
+        border-color: #ccc;
+        background-color: #f8f9fa;
+    }
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .main-content {
+        padding: 20px 16px;
+    }
+
+    .verification-container {
+        padding: 20px;
+    }
+
+    .page-title {
+        font-size: 24px;
+    }
+
+    .form-actions {
+        margin-top: 30px;
+    }
+
+    .back-btn {
+        margin-right: 0;
+        margin-bottom: 12px;
+        display: block;
+        width: 100%;
+    }
+
+    .submit-btn {
+        width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .verification-container {
+        padding: 16px;
+    }
+
+    .upload-area {
+        padding: 30px 16px;
+    }
+
+    .upload-icon {
+        font-size: 36px;
+    }
+}

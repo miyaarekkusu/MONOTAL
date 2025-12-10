@@ -1,0 +1,257 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>monotal - レンタルマーケットプレイス</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="index.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <nav class="main-nav">
+        <div class="nav-container">
+            <ul class="nav-menu">
+                <li class="nav-item active">
+                    <a href="/">おすすめ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/mylist">マイリスト</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/games">ゲーム・おもちゃ・グッズ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/books">本・雑誌・漫画</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/mens">メンズ</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/ladies">レディース</a>
+                </li>
+                <li class="nav-item">
+                    <a href="/category/baby">ベビー・キッズ</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+    <main>
+        <!-- Banner de propaganda -->
+        <section class="banner-section">
+            <div class="banner-container">
+                <img src="https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1200&h=400&fit=crop&auto=format" alt="キャンペーン" class="banner-image">
+            </div>
+        </section>
+
+        <!-- おすすめ商品 -->
+        <section class="products-section">
+            <div class="container">
+                <h2 class="section-title">おすすめ商品</h2>
+                <div class="products-grid">
+                    <div class="product-card">
+                        <a href="/product/1" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=250&h=250&fit=crop" alt="一眼レフカメラ" class="product-img">
+                                <div class="rental-badge">7日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">Canon EOS R5 一眼レフカメラ</h3>
+                                <p class="rental-period">レンタル日数：7日間</p>
+                                <p class="product-price">¥8,000</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/2" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=250&h=250&fit=crop" alt="ヘッドフォン" class="product-img">
+                                <div class="rental-badge">3日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">Sony WH-1000XM4 ヘッドフォン</h3>
+                                <p class="rental-period">レンタル日数：3日間</p>
+                                <p class="product-price">¥2,400</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/3" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=250&h=250&fit=crop" alt="テント" class="product-img">
+                                <div class="rental-badge">5日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">キャンプ用テント 4人用</h3>
+                                <p class="rental-period">レンタル日数：5日間</p>
+                                <p class="product-price">¥3,500</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/4" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=250&h=250&fit=crop" alt="電動工具" class="product-img">
+                                <div class="rental-badge">3日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">マキタ 電動ドリルセット</h3>
+                                <p class="rental-period">レンタル日数：3日間</p>
+                                <p class="product-price">¥2,100</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/5" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=250&h=250&fit=crop" alt="ギター" class="product-img">
+                                <div class="rental-badge">10日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">ヤマハ アコースティックギター</h3>
+                                <p class="rental-period">レンタル日数：10日間</p>
+                                <p class="product-price">¥4,800</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/6" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1566479179817-c8f7c1b9c5e9?w=250&h=250&fit=crop" alt="ドレス" class="product-img">
+                                <div class="rental-badge">1日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">パーティー用ドレス</h3>
+                                <p class="rental-period">レンタル日数：1日間</p>
+                                <p class="product-price">¥3,000</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/7" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=250&h=250&fit=crop" alt="スニーカー" class="product-img">
+                                <div class="rental-badge">5日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">ナイキ エアジョーダン</h3>
+                                <p class="rental-period">レンタル日数：5日間</p>
+                                <p class="product-price">¥2,800</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/8" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=250&h=250&fit=crop" alt="スマートウォッチ" class="product-img">
+                                <div class="rental-badge">14日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">Apple Watch Series 9</h3>
+                                <p class="rental-period">レンタル日数：14日間</p>
+                                <p class="product-price">¥5,200</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/9" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=250&h=250&fit=crop" alt="チェア" class="product-img">
+                                <div class="rental-badge">3日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">アウトドアチェア</h3>
+                                <p class="rental-period">レンタル日数：3日間</p>
+                                <p class="product-price">¥1,800</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/10" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1558618796-fcd54a82d53b?w=250&h=250&fit=crop" alt="プロジェクター" class="product-img">
+                                <div class="rental-badge">7日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">4K プロジェクター</h3>
+                                <p class="rental-period">レンタル日数：7日間</p>
+                                <p class="product-price">¥6,800</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/11" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=250&h=250&fit=crop" alt="キーボード" class="product-img">
+                                <div class="rental-badge">7日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">ゲーミングキーボード</h3>
+                                <p class="rental-period">レンタル日数：7日間</p>
+                                <p class="product-price">¥2,200</p>
+                            </div>
+                        </a>
+                    </div>
+                    <div class="product-card">
+                        <a href="/product/12" class="product-link">
+                            <div class="product-image">
+                                <img src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=250&h=250&fit=crop" alt="ドローン" class="product-img">
+                                <div class="rental-badge">5日間</div>
+                            </div>
+                            <div class="product-info">
+                                <h3 class="product-name">DJI Mini 3 Pro ドローン</h3>
+                                <p class="rental-period">レンタル日数：5日間</p>
+                                <p class="product-price">¥9,500</p>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>

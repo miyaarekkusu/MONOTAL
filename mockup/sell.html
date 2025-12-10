@@ -1,0 +1,227 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品を出品する</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/sell.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+    <main>
+        <div class="container">
+            <form id="sellForm">
+                <div class="section">
+                    <h2 class="section-title">
+                        商品画像
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="image-upload-area" onclick="document.getElementById('imageInput').click()">
+                        <div class="upload-icon">📷</div>
+                        <div class="upload-text">
+                            写真を追加する<br>
+                            ここをタップして写真を選択
+                        </div>
+                        <div class="upload-limit">最大10枚まで</div>
+                    </div>
+                    <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageUpload(event)">
+                    <div class="image-preview" id="imagePreview"></div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">
+                        商品情報
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="form-group">
+                        <label class="form-label" for="productName">商品名</label>
+                        <input type="text" id="productName" class="form-input" maxlength="40"
+                               placeholder="商品名を入力してください" oninput="updateCharCount('productName', 'nameCount', 40)">
+                        <div class="char-count" id="nameCount">0/40</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="category">カテゴリー</label>
+                        <select id="category" class="form-select">
+                            <option value="">カテゴリーを選択</option>
+                            <option value="fashion">ファッション</option>
+                            <option value="electronics">家電・スマホ・カメラ</option>
+                            <option value="books">本・音楽・ゲーム</option>
+                            <option value="beauty">コスメ・香水・美容</option>
+                            <option value="sports">スポーツ・レジャー</option>
+                            <option value="handmade">ハンドメイド</option>
+                            <option value="kids">ベビー・キッズ</option>
+                            <option value="interior">インテリア・住まい・小物</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="brand">ブランド</label>
+                        <input type="text" id="brand" class="form-input" placeholder="ブランド名（任意）">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="description">商品の説明</label>
+                        <textarea id="description" class="form-textarea" maxlength="1000"
+                                  placeholder="商品の説明を入力してください（色、素材、重さ、定価、注意点など）"
+                                  oninput="updateCharCount('description', 'descCount', 1000)"></textarea>
+                        <div class="char-count" id="descCount">0/1000</div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">
+                        商品の状態
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="form-group">
+                        <select id="condition" class="form-select">
+                            <option value="">状態を選択</option>
+                            <option value="new">新品、未使用</option>
+                            <option value="near-new">未使用に近い</option>
+                            <option value="good">目立った傷や汚れなし</option>
+                            <option value="fair">やや傷や汚れあり</option>
+                            <option value="poor">傷や汚れあり</option>
+                            <option value="bad">全体的に状態が悪い</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">
+                        配送について
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="form-group">
+                        <label class="form-label" for="shippingMethod">配送方法</label>
+                        <select id="shippingMethod" class="form-select">
+                            <option value="">配送方法を選択</option>
+                            <option value="mercari-post">メルカリ便</option>
+                            <option value="yu-packet">ゆうゆうメルカリ便</option>
+                            <option value="regular-post">普通郵便</option>
+                            <option value="yamato">ヤマト運輸</option>
+                            <option value="sagawa">佐川急便</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="shippingArea">発送元地域</label>
+                        <select id="shippingArea" class="form-select">
+                            <option value="">都道府県を選択</option>
+                            <option value="tokyo">東京都</option>
+                            <option value="osaka">大阪府</option>
+                            <option value="kanagawa">神奈川県</option>
+                            <option value="saitama">埼玉県</option>
+                            <option value="chiba">千葉県</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="shippingDays">発送までの日数</label>
+                        <select id="shippingDays" class="form-select">
+                            <option value="">日数を選択</option>
+                            <option value="1-2">1〜2日で発送</option>
+                            <option value="2-3">2〜3日で発送</option>
+                            <option value="4-7">4〜7日で発送</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">
+                        レンタル期間
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="form-group">
+                        <label class="form-label" for="rentalDays">レンタル期間</label>
+                        <div class="price-group">
+                            <input type="number" id="rentalDays" class="form-input price-input"
+                                   placeholder="0" min="1" max="999" oninput="validateForm()">
+                            <span class="currency">日</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <h2 class="section-title">
+                        価格設定
+                        <span class="required">必須</span>
+                    </h2>
+                    <div class="form-group">
+                        <label class="form-label" for="price">販売価格</label>
+                        <div class="price-group">
+                            <input type="number" id="price" class="form-input price-input"
+                                   placeholder="0" min="300" max="9999999" oninput="calculateFees()">
+                            <span class="currency">¥</span>
+                        </div>
+                        <div class="price-info">
+                            <div class="fee-row">
+                                <span>販売手数料 (10%)</span>
+                                <span id="salesFee">¥0</span>
+                            </div>
+                            <div class="fee-row">
+                                <span>送料</span>
+                                <span id="shippingFee">¥0</span>
+                            </div>
+                            <div class="fee-row total">
+                                <span>販売利益</span>
+                                <span id="profit">¥0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="checkbox-group">
+                        <label class="custom-checkbox">
+                            <input type="checkbox" id="agreeTerms" required>
+                            <span class="checkmark"></span>
+                        </label>
+                        <label class="checkbox-label" for="agreeTerms">
+                            <a href="#" class="policy-link">出品者利用規約</a>および<a href="#" class="policy-link">禁止されている出品物</a>を確認し、同意しました。また、<a href="#" class="policy-link">特定商取引法に基づく表記</a>を確認しました。
+                        </label>
+                    </div>
+                </div>
+            </form>
+            <div class="submit-section">
+                <button type="button" class="submit-btn" onclick="submitProduct()" disabled>
+                    出品する
+                </button>
+            </div>
+        </div>
+    </main>
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="js/sell.js"></script>
+</body>
+</html>

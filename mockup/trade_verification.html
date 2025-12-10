@@ -1,0 +1,218 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>取引認証 - monotal</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/trade_verification.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="trade-verification-container">
+        <div class="page-header">
+            <h1 class="page-title">取引認証</h1>
+            <p class="page-description">取引申請を確認して、取引相手を決定してください</p>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-tab active" data-status="all">すべて</button>
+            <button class="filter-tab" data-status="pending">未承認</button>
+            <button class="filter-tab" data-status="approved">承認済み</button>
+            <button class="filter-tab" data-status="rejected">却下</button>
+        </div>
+
+        <div class="trade-requests-list">
+            <!-- 取引申請1 -->
+            <div class="trade-request-item" data-status="pending" data-request="request1">
+                <div class="request-header">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">田中太郎</div>
+                        <div class="user-rating">
+                            <div class="rating-stars">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="far fa-star star empty"></i>
+                            </div>
+                            <span class="rating-score">(4.0) 152件の評価</span>
+                        </div>
+                        <div class="request-time">2時間前に申請</div>
+                    </div>
+                    <div class="request-status status-pending">未承認</div>
+                </div>
+
+                <div class="product-info">
+                    <div class="product-name">iPhone 14 Pro 128GB スペースブラック</div>
+                    <div class="product-price">¥98,000</div>
+                    <div class="product-details">
+                        <span>コンディション: 美品</span>
+                        <span>配送方法: らくらくメルカリ便</span>
+                    </div>
+                </div>
+
+                <div class="request-message">
+                    <div class="message-label">購入希望メッセージ:</div>
+                    <div class="message-content">
+                        こんにちは。こちらの商品のレンタルを希望します。写真で確認する限り状態も良さそうで、価格も適正だと思います。即決でレンタルさせていただきたいのですが、可能でしょうか？よろしくお願いいたします。
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="rejectTrade('request1')">
+                        <i class="fas fa-times"></i> 却下
+                    </button>
+                    <button class="btn btn-primary" onclick="approveTrade('request1')">
+                        <i class="fas fa-check"></i> 承認
+                    </button>
+                </div>
+            </div>
+
+            <!-- 取引申請2 -->
+            <div class="trade-request-item" data-status="pending" data-request="request2">
+                <div class="request-header">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">佐藤花子</div>
+                        <div class="user-rating">
+                            <div class="rating-stars">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                            </div>
+                            <span class="rating-score">(5.0) 89件の評価</span>
+                        </div>
+                        <div class="request-time">5時間前に申請</div>
+                    </div>
+                    <div class="request-status status-pending">未承認</div>
+                </div>
+
+                <div class="product-info">
+                    <div class="product-name">iPhone 14 Pro 128GB スペースブラック</div>
+                    <div class="product-price">¥98,000</div>
+                    <div class="product-details">
+                        <span>コンディション: 美品</span>
+                        <span>配送方法: らくらくメルカリ便</span>
+                    </div>
+                </div>
+
+                <div class="request-message">
+                    <div class="message-label">購入希望メッセージ:</div>
+                    <div class="message-content">
+                        レンタルを検討しています。バッテリーの最大容量は何％でしょうか？また、付属品は全て揃っていますでしょうか？ご返答お待ちしております。
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="rejectTrade('request2')">
+                        <i class="fas fa-times"></i> 却下
+                    </button>
+                    <button class="btn btn-primary" onclick="approveTrade('request2')">
+                        <i class="fas fa-check"></i> 承認
+                    </button>
+                </div>
+            </div>
+
+            <!-- 承認済みの取引申請 -->
+            <div class="trade-request-item" data-status="approved" data-request="request3">
+                <div class="request-header">
+                    <div class="user-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="user-info">
+                        <div class="user-name">山田次郎</div>
+                        <div class="user-rating">
+                            <div class="rating-stars">
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="fas fa-star star"></i>
+                                <i class="far fa-star star empty"></i>
+                            </div>
+                            <span class="rating-score">(4.2) 67件の評価</span>
+                        </div>
+                        <div class="request-time">1日前に申請</div>
+                    </div>
+                    <div class="request-status status-approved">承認済み</div>
+                </div>
+
+                <div class="product-info">
+                    <div class="product-name">MacBook Air M2 13インチ 256GB</div>
+                    <div class="product-price">¥145,000</div>
+                    <div class="product-details">
+                        <span>コンディション: 良好</span>
+                        <span>配送方法: ゆうゆうメルカリ便</span>
+                    </div>
+                </div>
+
+                <div class="request-message">
+                    <div class="message-label">購入希望メッセージ:</div>
+                    <div class="message-content">
+                        MacBook Airのレンタルを希望します。学習用に使用予定です。よろしくお願いします。
+                    </div>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="startTrade('request3')">
+                        <i class="fas fa-handshake"></i> 取引開始
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="js/trade_verification.js"></script>
+</body>
+</html>

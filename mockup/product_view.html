@@ -1,0 +1,434 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品一覧 - monotal</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/product_view.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="product-page-wrapper">
+            <!-- サイドバーフィルター -->
+            <aside class="category-sidebar">
+                <div class="sidebar-header">
+                    <h3 class="sidebar-title">絞り込み</h3>
+                    <span class="clear-btn">クリア</span>
+                </div>
+
+                <form>
+                    <!-- カテゴリーフィルター -->
+                    <div class="filter-section category-filter">
+                        <h4 class="filter-title">カテゴリー <i class="fas fa-chevron-down"></i></h4>
+                        <div class="filter-content">
+                            <ul class="category-list">
+                                <li><a href="/" class="category-link active">すべて</a></li>
+                                <li class="category-item">
+                                    <a href="/category/ladies" class="category-link">レディース <i class="fas fa-chevron-right"></i></a>
+                                    <ul class="subcategory-list">
+                                        <li><a href="/category/tops" class="subcategory-link">トップス</a></li>
+                                        <li><a href="/category/jackets" class="subcategory-link">ジャケット/アウター</a></li>
+                                        <li><a href="/category/pants" class="subcategory-link">パンツ</a></li>
+                                        <li><a href="/category/skirts" class="subcategory-link">スカート</a></li>
+                                        <li><a href="/category/dresses" class="subcategory-link">ワンピース</a></li>
+                                    </ul>
+                                </li>
+                                <li class="category-item">
+                                    <a href="/category/mens" class="category-link">メンズ <i class="fas fa-chevron-right"></i></a>
+                                    <ul class="subcategory-list">
+                                        <li><a href="/category/tops" class="subcategory-link">トップス</a></li>
+                                        <li><a href="/category/jackets" class="subcategory-link">ジャケット/アウター</a></li>
+                                        <li><a href="/category/pants" class="subcategory-link">パンツ</a></li>
+                                        <li><a href="/category/suits" class="subcategory-link">スーツ</a></li>
+                                        <li><a href="/category/shoes" class="subcategory-link">靴</a></li>
+                                    </ul>
+                                </li>
+                                <li class="category-item">
+                                    <a href="/category/baby" class="category-link">ベビー・キッズ <i class="fas fa-chevron-right"></i></a>
+                                    <ul class="subcategory-list">
+                                        <li><a href="/category/baby-clothes" class="subcategory-link">ベビー服(~85cm)</a></li>
+                                        <li><a href="/category/kids-clothes" class="subcategory-link">キッズ服(男の子用)</a></li>
+                                        <li><a href="/category/kids-girls" class="subcategory-link">キッズ服(女の子用)</a></li>
+                                        <li><a href="/category/kids-shoes" class="subcategory-link">キッズ靴</a></li>
+                                        <li><a href="/category/toys" class="subcategory-link">おもちゃ</a></li>
+                                    </ul>
+                                </li>
+                                <li class="category-item">
+                                    <a href="/category/interior" class="category-link">インテリア・住まい・小物 <i class="fas fa-chevron-right"></i></a>
+                                    <ul class="subcategory-list">
+                                        <li><a href="/category/beds" class="subcategory-link">ベッド/マットレス</a></li>
+                                        <li><a href="/category/tables" class="subcategory-link">机/テーブル</a></li>
+                                        <li><a href="/category/storage" class="subcategory-link">収納家具</a></li>
+                                        <li><a href="/category/lighting" class="subcategory-link">ライト/照明</a></li>
+                                        <li><a href="/category/decorations" class="subcategory-link">インテリア小物</a></li>
+                                    </ul>
+                                </li>
+                                <li class="category-item">
+                                    <a href="/category/electronics" class="category-link">家電・スマホ・カメラ <i class="fas fa-chevron-right"></i></a>
+                                    <ul class="subcategory-list">
+                                        <li><a href="/category/smartphones" class="subcategory-link">スマートフォン/携帯電話</a></li>
+                                        <li><a href="/category/cameras" class="subcategory-link">カメラ</a></li>
+                                        <li><a href="/category/audio" class="subcategory-link">オーディオ機器</a></li>
+                                        <li><a href="/category/appliances" class="subcategory-link">生活家電</a></li>
+                                        <li><a href="/category/computers" class="subcategory-link">PC/タブレット</a></li>
+                                    </ul>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- 価格フィルター -->
+                    <div class="filter-section price-filter">
+                        <h4 class="filter-title">価格 <i class="fas fa-chevron-down"></i></h4>
+                        <div class="filter-content">
+                            <div class="price-input-group">
+                                <input type="number" name="min_fee" placeholder="¥ 最小" class="price-input min-price">
+                                <span>から</span>
+                                <input type="number" name="max_fee" placeholder="¥ 最大" class="price-input max-price">
+                                <span>まで</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- レンタル期間フィルター -->
+                    <div class="filter-section rental-period-filter">
+                        <h4 class="filter-title">レンタル期間 <i class="fas fa-chevron-down"></i></h4>
+                        <div class="filter-content">
+                            <div class="rental-period-input-group">
+                                <input type="number" name="min_days" placeholder="日数 最小" class="rental-input min-days">
+                                <span>から</span>
+                                <input type="number" name="max_days" placeholder="日数 最大" class="rental-input max-days">
+                                <span>まで</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 商品状態フィルター -->
+                    <div class="filter-section condition-filter">
+                        <h4 class="filter-title">商品状態 <i class="fas fa-chevron-down"></i></h4>
+                        <div class="filter-content">
+                            <div class="condition-list">
+                                <label class="condition-option">
+                                    <input type="checkbox" name="condition" value="new"> 新品、未使用
+                                </label>
+                                <label class="condition-option">
+                                    <input type="checkbox" name="condition" value="like_new"> 未使用に近い
+                                </label>
+                                <label class="condition-option">
+                                    <input type="checkbox" name="condition" value="good"> 目立った傷や汚れなし
+                                </label>
+                                <label class="condition-option">
+                                    <input type="checkbox" name="condition" value="fair"> やや傷や汚れあり
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- フィルター適用ボタン -->
+                    <div class="filter-apply-btn-container">
+                        <button type="submit" class="apply-filter-btn">
+                            絞り込む
+                        </button>
+                    </div>
+                </form>
+            </aside>
+
+            <!-- メインコンテンツ -->
+            <main class="product-main-content">
+                <div class="main-header-section">
+                    <h2 class="page-title">おすすめ商品</h2>
+                </div>
+
+                <!-- 商品グリッド -->
+                <div class="item-grid">
+                    <div class="item-card">
+                        <a href="/product/1" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=250&h=250&fit=crop" alt="革製トートバッグ" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">革製トートバッグ</h3>
+                                <p class="rental-detail">レンタル日数：3日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥1,500</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/2" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=250&h=250&fit=crop" alt="高機能一眼レフカメラ" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">高機能一眼レフカメラ</h3>
+                                <p class="rental-detail">レンタル日数：7日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">新品、未使用</span>
+                                </div>
+                                <div class="item-price">¥8,000</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/3" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=250&h=250&fit=crop" alt="ヴィンテージギター" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ヴィンテージギター</h3>
+                                <p class="rental-detail">レンタル日数：10日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">やや傷あり</span>
+                                </div>
+                                <div class="item-price">¥12,000</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/4" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?w=250&h=250&fit=crop" alt="アウトドアテント" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">アウトドアテント</h3>
+                                <p class="rental-detail">レンタル日数：2日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">未使用に近い</span>
+                                </div>
+                                <div class="item-price">¥2,500</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/5" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1572981779307-38b8cabb2407?w=250&h=250&fit=crop" alt="電動工具セット" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">電動工具セット</h3>
+                                <p class="rental-detail">レンタル日数：5日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥4,500</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/6" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1566479179817-c8f7c1b9c5e9?w=250&h=250&fit=crop" alt="パーティー用ドレス" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">パーティー用ドレス</h3>
+                                <p class="rental-detail">レンタル日数：1日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">新品、未使用</span>
+                                </div>
+                                <div class="item-price">¥3,000</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/7" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=250&h=250&fit=crop" alt="ノイズキャンセリングヘッドフォン" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ノイズキャンセリングヘッドフォン</h3>
+                                <p class="rental-detail">レンタル日数：7日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥2,800</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/8" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=250&h=250&fit=crop" alt="スマートウォッチ" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">スマートウォッチ</h3>
+                                <p class="rental-detail">レンタル日数：14日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">未使用に近い</span>
+                                </div>
+                                <div class="item-price">¥5,200</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/9" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=250&h=250&fit=crop" alt="キャンプチェア" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">キャンプチェア</h3>
+                                <p class="rental-detail">レンタル日数：3日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥1,800</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/10" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=250&h=250&fit=crop" alt="ランニングシューズ" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ランニングシューズ</h3>
+                                <p class="rental-detail">レンタル日数：5日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">やや傷あり</span>
+                                </div>
+                                <div class="item-price">¥3,200</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/11" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1558618796-fcd54a82d53b?w=250&h=250&fit=crop" alt="プロジェクター" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">プロジェクター</h3>
+                                <p class="rental-detail">レンタル日数：3日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥6,800</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/12" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1541140532154-b024d705b90a?w=250&h=250&fit=crop" alt="ゲーミングキーボード" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ゲーミングキーボード</h3>
+                                <p class="rental-detail">レンタル日数：7日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">新品、未使用</span>
+                                </div>
+                                <div class="item-price">¥2,200</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/13" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1473968512647-3e447244af8f?w=250&h=250&fit=crop" alt="ドローン" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ドローン</h3>
+                                <p class="rental-detail">レンタル日数：5日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">未使用に近い</span>
+                                </div>
+                                <div class="item-price">¥9,500</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/14" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?w=250&h=250&fit=crop" alt="エスプレッソマシン" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">エスプレッソマシン</h3>
+                                <p class="rental-detail">レンタル日数：10日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">目立った傷なし</span>
+                                </div>
+                                <div class="item-price">¥4,200</div>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div class="item-card">
+                        <a href="/product/15" class="item-link">
+                            <div class="item-image-wrapper">
+                                <img src="https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=250&h=250&fit=crop" alt="ヨガマット" class="item-image">
+                            </div>
+                            <div class="item-details">
+                                <h3 class="item-name">ヨガマット</h3>
+                                <p class="rental-detail">レンタル日数：14日間</p>
+                                <div class="item-meta">
+                                    <span class="item-condition">やや傷あり</span>
+                                </div>
+                                <div class="item-price">¥800</div>
+                            </div>
+                        </a>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="js/product_view.js"></script>
+</body>
+</html>

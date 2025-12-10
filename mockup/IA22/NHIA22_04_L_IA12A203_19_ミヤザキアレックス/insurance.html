@@ -1,0 +1,277 @@
+﻿
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レンタル保険 - monotal</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/insurance.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="insurance-container">
+            <div class="hero-section">
+                <h1 class="page-title">レンタル保険</h1>
+                <p class="page-subtitle">
+                    安心・安全なレンタル取引のために<br>
+                    万が一のトラブルに備えた保険サービス
+                </p>
+                <div class="hero-features">
+                    <div class="feature-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>破損・紛失保障</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-handshake"></i>
+                        <span>トラブル解決サポート</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-clock"></i>
+                        <span>24時間365日対応</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="plans-section">
+                <h2 class="section-title">保険プラン</h2>
+                <p class="section-description">
+                    レンタル商品の価格帯に応じて、最適な保険プランをお選びください
+                </p>
+
+                <div class="plans-grid">
+                    <!-- ベーシックプラン -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <h3 class="plan-name">ベーシックプラン</h3>
+                            <div class="plan-price">
+                                <span class="price-amount">レンタル料金の5%</span>
+                                <span class="price-note">（最低100円）</span>
+                            </div>
+                        </div>
+                        <div class="plan-coverage">
+                            <div class="coverage-title">補償対象商品</div>
+                            <div class="coverage-range">〜30,000円の商品</div>
+                        </div>
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check"></i>破損時の修理費用補償（上限10万円）</li>
+                            <li><i class="fas fa-check"></i>紛失時の代替品費用補償（上限3万円）</li>
+                            <li><i class="fas fa-check"></i>基本的なトラブル解決サポート</li>
+                            <li><i class="fas fa-check"></i>平日9-18時のサポート対応</li>
+                        </ul>
+                        <button class="plan-select-btn" data-plan="basic">このプランを選択</button>
+                    </div>
+
+                    <!-- スタンダードプラン -->
+                    <div class="plan-card recommended">
+                        <div class="plan-badge">おすすめ</div>
+                        <div class="plan-header">
+                            <h3 class="plan-name">スタンダードプラン</h3>
+                            <div class="plan-price">
+                                <span class="price-amount">レンタル料金の8%</span>
+                                <span class="price-note">（最低200円）</span>
+                            </div>
+                        </div>
+                        <div class="plan-coverage">
+                            <div class="coverage-title">補償対象商品</div>
+                            <div class="coverage-range">〜100,000円の商品</div>
+                        </div>
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check"></i>破損時の修理費用補償（上限30万円）</li>
+                            <li><i class="fas fa-check"></i>紛失時の代替品費用補償（上限10万円）</li>
+                            <li><i class="fas fa-check"></i>盗難時の補償（上限10万円）</li>
+                            <li><i class="fas fa-check"></i>専門スタッフによるトラブル解決</li>
+                            <li><i class="fas fa-check"></i>平日9-21時のサポート対応</li>
+                            <li><i class="fas fa-check"></i>返却遅延時の延長料金サポート</li>
+                        </ul>
+                        <button class="plan-select-btn recommended-btn" data-plan="standard">このプランを選択</button>
+                    </div>
+
+                    <!-- プレミアムプラン -->
+                    <div class="plan-card">
+                        <div class="plan-header">
+                            <h3 class="plan-name">プレミアムプラン</h3>
+                            <div class="plan-price">
+                                <span class="price-amount">レンタル料金の12%</span>
+                                <span class="price-note">（最低500円）</span>
+                            </div>
+                        </div>
+                        <div class="plan-coverage">
+                            <div class="coverage-title">補償対象商品</div>
+                            <div class="coverage-range">すべての商品</div>
+                        </div>
+                        <ul class="plan-features">
+                            <li><i class="fas fa-check"></i>破損時の修理費用補償（上限100万円）</li>
+                            <li><i class="fas fa-check"></i>紛失時の代替品費用補償（上限50万円）</li>
+                            <li><i class="fas fa-check"></i>盗難時の補償（上限50万円）</li>
+                            <li><i class="fas fa-check"></i>法的トラブル時の弁護士費用補償</li>
+                            <li><i class="fas fa-check"></i>24時間365日のサポート対応</li>
+                            <li><i class="fas fa-check"></i>返却遅延時の延長料金サポート</li>
+                            <li><i class="fas fa-check"></i>配送時の事故補償</li>
+                            <li><i class="fas fa-check"></i>優先サポート対応</li>
+                        </ul>
+                        <button class="plan-select-btn" data-plan="premium">このプランを選択</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 補償内容詳細 -->
+            <div class="coverage-details-section">
+                <h2 class="section-title">補償内容詳細</h2>
+
+                <div class="coverage-grid">
+                    <div class="coverage-item">
+                        <div class="coverage-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h3 class="coverage-name">破損補償</h3>
+                        <p class="coverage-description">
+                            正常な使用により生じた破損や故障の修理費用を補償します。故意や重過失による破損は対象外となります。
+                        </p>
+                    </div>
+
+                    <div class="coverage-item">
+                        <div class="coverage-icon">
+                            <i class="fas fa-search"></i>
+                        </div>
+                        <h3 class="coverage-name">紛失補償</h3>
+                        <p class="coverage-description">
+                            レンタル期間中の紛失について、代替品の購入費用を補償します。警察届出が必要な場合があります。
+                        </p>
+                    </div>
+
+                    <div class="coverage-item">
+                        <div class="coverage-icon">
+                            <i class="fas fa-user-shield"></i>
+                        </div>
+                        <h3 class="coverage-name">盗難補償</h3>
+                        <p class="coverage-description">
+                            第三者による盗難被害について補償します。警察への被害届提出が補償の条件となります。
+                        </p>
+                    </div>
+
+                    <div class="coverage-item">
+                        <div class="coverage-icon">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <h3 class="coverage-name">法的サポート</h3>
+                        <p class="coverage-description">
+                            レンタル取引に関する法的トラブルが発生した場合の弁護士相談費用をサポートします。
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FAQ -->
+            <div class="faq-section">
+                <h2 class="section-title">よくある質問</h2>
+
+                <div class="faq-list">
+                    <div class="faq-item">
+                        <button class="faq-question" data-faq="1">
+                            <span>保険料はいつ支払うのですか？</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-1">
+                            <p>レンタル料金のお支払いと同時に保険料も決済されます。レンタル開始前に必ずお支払いください。</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" data-faq="2">
+                            <span>補償の対象外となるケースはありますか？</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-2">
+                            <p>故意・重過失による破損、取扱説明書に記載された禁止事項への違反、地震・津波等の天災による損害は補償対象外です。</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" data-faq="3">
+                            <span>事故が発生した場合の連絡方法は？</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-3">
+                            <p>事故発生から24時間以内にmonotalサポートセンターまでご連絡ください。迅速な対応が補償の条件となります。</p>
+                        </div>
+                    </div>
+
+                    <div class="faq-item">
+                        <button class="faq-question" data-faq="4">
+                            <span>保険の加入は必須ですか？</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer" id="faq-4">
+                            <p>保険加入は任意ですが、高額商品のレンタルの場合は加入を強く推奨しています。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 申し込みセクション -->
+            <div class="application-section">
+                <div class="selected-plan-info" id="selectedPlanInfo" style="display: none;">
+                    <h3>選択中のプラン</h3>
+                    <div class="selected-plan-details">
+                        <span class="selected-plan-name" id="selectedPlanName"></span>
+                        <span class="selected-plan-price" id="selectedPlanPrice"></span>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="back-btn" onclick="history.back()">戻る</button>
+                    <button type="button" class="apply-btn" id="applyBtn" disabled>保険に申し込む</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="js/insurance.js"></script>
+</body>
+</html>

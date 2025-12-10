@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>コミュニティ - レンタルサイト</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/community.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <div class="community-container">
+        <!-- 左側カテゴリー一覧 -->
+        <aside class="categories-sidebar">
+            <h2 class="sidebar-title">カテゴリー</h2>
+            <div class="category-list">
+                <div class="category-item active" data-category="electronics">
+                    <i class="fas fa-tv category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">家電・デジタル機器</div>
+                        <div class="category-desc">PC、カメラ、家電製品</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>24</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="vehicles">
+                    <i class="fas fa-car category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">車・バイク</div>
+                        <div class="category-desc">レンタカー、バイク</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>18</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="fashion">
+                    <i class="fas fa-tshirt category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">ファッション</div>
+                        <div class="category-desc">ドレス、スーツ、アクセサリー</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>31</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="sports">
+                    <i class="fas fa-skiing category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">スポーツ・アウトドア</div>
+                        <div class="category-desc">スキー、キャンプ、釣り</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>27</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="music">
+                    <i class="fas fa-guitar category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">楽器・音響機器</div>
+                        <div class="category-desc">ピアノ、ギター、音響設備</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>15</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="tools">
+                    <i class="fas fa-tools category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">工具・DIY用品</div>
+                        <div class="category-desc">電動工具、建設機械</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>12</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="party">
+                    <i class="fas fa-birthday-cake category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">パーティー・イベント</div>
+                        <div class="category-desc">テント、照明、音響</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>9</span>
+                    </div>
+                </div>
+
+                <div class="category-item" data-category="baby">
+                    <i class="fas fa-baby-carriage category-icon"></i>
+                    <div class="category-info">
+                        <div class="category-name">ベビー・キッズ</div>
+                        <div class="category-desc">ベビーカー、チャイルドシート</div>
+                    </div>
+                    <div class="online-indicator">
+                        <span class="status-dot"></span>
+                        <span>16</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右側チャット欄 -->
+        <main class="chat-main">
+            <div class="chat-header">
+                <h1 class="chat-title">家電・デジタル機器</h1>
+                <p class="chat-subtitle">PC、カメラ、家電製品についての情報交換</p>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="message">
+                    <div class="message-avatar">田</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-user">田中</span>
+                            <span class="message-time">10分前</span>
+                        </div>
+                        <div class="message-text">MacBookのレンタルでおすすめの業者ってありますか？動画編集用に1週間ほど借りたいです。</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">山</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-user">山田</span>
+                            <span class="message-time">8分前</span>
+                        </div>
+                        <div class="message-text">〇〇レンタルがコスパ良いですよ！MacBook Pro 16インチが1週間で3万円でした。Premiere Proも入ってます。</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">佐</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-user">佐藤</span>
+                            <span class="message-time">6分前</span>
+                        </div>
+                        <div class="message-text">一眼レフカメラのレンタルなら△△カメラがおすすめです。保険もしっかりしてて安心でした。</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">鈴</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-user">鈴木</span>
+                            <span class="message-time">4分前</span>
+                        </div>
+                        <div class="message-text">プロジェクターのレンタルについて質問です。会議室で使うのですが、明るさはどれくらい必要でしょうか？</div>
+                    </div>
+                </div>
+
+                <div class="message">
+                    <div class="message-avatar">高</div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-user">高橋</span>
+                            <span class="message-time">2分前</span>
+                        </div>
+                        <div class="message-text">会議室なら3000ルーメン以上がおすすめです。私は〇〇レンタルで4000ルーメンのを借りましたが、とても見やすかったです。</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <form class="chat-input-form" id="chatForm">
+                    <textarea class="chat-input" id="messageInput" placeholder="メッセージを入力してください..." rows="1"></textarea>
+                    <button type="submit" class="chat-send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- 外部JavaScriptファイルの読み込み -->
+    <script src="js/community.js"></script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+﻿/* メインコンテナ */
+.container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* セクション共通スタイル */
+.section {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.required {
+    background: #ff4757;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+/* 画像アップロードセクション */
+.image-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 40px 20px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-bottom: 12px;
+}
+
+    .image-upload-area:hover {
+        border-color: #ff6b7a;
+        background: #fff5f5;
+    }
+
+.upload-icon {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 12px;
+}
+
+.upload-text {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.upload-limit {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+}
+
+#imageInput {
+    display: none;
+}
+
+.image-preview {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+.image-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #eee;
+}
+
+    .image-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+.remove-image {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.6);
+    color: white;
+    border: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* フォーム要素 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.3s ease;
+}
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #ff6b7a;
+        box-shadow: 0 0 0 2px rgba(255, 107, 122, 0.1);
+    }
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+/* 価格入力 */
+.price-group {
+    position: relative;
+}
+
+.price-input {
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    padding-right: 40px;
+}
+
+.currency {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 16px;
+}
+
+.price-info {
+    background: #f8f9fa;
+    padding: 12px;
+    border-radius: 6px;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #666;
+}
+
+.fee-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+    .fee-row.total {
+        font-weight: 600;
+        color: #333;
+        border-top: 1px solid #e0e0e0;
+        padding-top: 8px;
+        margin-top: 8px;
+    }
+
+/* レンタル期間 */
+.rental-days {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.day-option {
+    flex: 1;
+    min-width: 80px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+    .day-option:hover {
+        border-color: #ff6b7a;
+    }
+
+    .day-option.selected {
+        background: #ff6b7a;
+        color: white;
+        border-color: #ff6b7a;
+    }
+
+/* チェックボックス */
+.checkbox-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.custom-checkbox {
+    position: relative;
+    width: 20px;
+    height: 20px;
+    margin-top: 2px;
+}
+
+    .custom-checkbox input {
+        opacity: 0;
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        cursor: pointer;
+    }
+
+.checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border: 2px solid #ddd;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.custom-checkbox input:checked + .checkmark {
+    background: #ff6b7a;
+    border-color: #ff6b7a;
+}
+
+.checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 6px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked + .checkmark:after {
+    display: block;
+}
+
+.checkbox-label {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.4;
+}
+
+.policy-link {
+    color: #ff6b7a;
+    text-decoration: none;
+}
+
+    .policy-link:hover {
+        text-decoration: underline;
+    }
+
+/* 出品ボタン */
+.submit-section {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    text-align: center;
+    margin-top: 24px;
+}
+
+.submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: #ff6b7a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+    .submit-btn:hover {
+        background: #ff5a6b;
+    }
+
+    .submit-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .section {
+        padding: 20px 16px;
+    }
+
+    .rental-days {
+        grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    }
+}

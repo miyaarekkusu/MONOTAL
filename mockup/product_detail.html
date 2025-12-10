@@ -1,0 +1,251 @@
+﻿<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品詳細 - Bluetooth ヘッドフォン</title>
+    <link rel="stylesheet" type="text/css" href="css/common.css">
+    <link rel="stylesheet" type="text/css" href="css/product_detail.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <header class="main-header">
+        <div class="header-container">
+            <div class="logo-section">
+                <a href="common.html" class="logo">
+                    <img src="images/monotal.jpg" alt="monotal" class="logo-image">
+                </a>
+            </div>
+            <div class="search-section">
+                <form class="search-form">
+                    <input type="text" class="search-input" placeholder="なにをお探しですか？">
+                    <button type="submit" class="search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+            <div class="user-actions">
+                <a href="/community" class="action-link community-btn">コミュニティ</a>
+                <a href="/login" class="action-link">ログイン</a>
+                <a href="/register" class="action-link">会員登録</a>
+                <a href="/notifications" class="action-icon">
+                    <i class="fas fa-bell"></i>
+                </a>
+                <a href="/profile" class="action-icon">
+                    <i class="fas fa-user"></i>
+                </a>
+                <a href="/bookmarks" class="action-icon">
+                    <i class="fas fa-heart"></i>
+                </a>
+                <a href="/create_sell" class="sell-btn-header">出品</a>
+            </div>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <!-- パンくずナビ -->
+        <div class="breadcrumb">
+            <a href="#">ホーム</a> &gt; <a href="#">家電・スマホ・カメラ</a> &gt; <a href="#">オーディオ機器</a> &gt; ヘッドフォン
+        </div>
+
+        <div class="product-page-container">
+            <!-- 画像ギャラリー - sticky -->
+            <div class="product-image-gallery">
+                <div class="image-gallery-container">
+                    <div class="thumbnail-list">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop" alt="製品画像1" class="thumbnail active" data-index="0">
+                        <img src="https://images.unsplash.com/photo-1572569511254-d8f925fe2cbb?w=500&h=500&fit=crop" alt="製品画像2" class="thumbnail" data-index="1">
+                        <img src="https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&h=500&fit=crop" alt="製品画像3" class="thumbnail" data-index="2">
+                        <img src="https://images.unsplash.com/photo-1484704849700-f032a568e944?w=500&h=500&fit=crop" alt="製品画像4" class="thumbnail" data-index="3">
+                    </div>
+
+                    <div class="main-image-display">
+                        <img src="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop" alt="メイン製品画像" id="main-product-image">
+                        <button class="image-nav prev-btn" id="prevBtn">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button class="image-nav next-btn" id="nextBtn">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                        <div class="image-counter">
+                            <span id="currentImageIndex">1</span> / <span id="totalImages">4</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品情報 -->
+            <div class="product-info-section">
+                <!-- アクションボタン -->
+                <div class="product-actions">
+                    <button class="action-btn favorite-btn" id="favoriteBtn">
+                        <i class="fas fa-heart"></i>
+                        <span>いいね!</span>
+                    </button>
+                    <button class="action-btn share-btn">
+                        <i class="fas fa-share"></i>
+                        <span>シェア</span>
+                    </button>
+                </div>
+
+                <h1 class="product-title">プレミアムBluetoothヘッドフォン ノイズキャンセリング機能付き</h1>
+
+                <!-- カテゴリー -->
+                <div class="categories-section">
+                    <div class="categories-title">カテゴリー:</div>
+                    <div class="category-tags">
+                        <a href="#" class="category-tag">家電・スマホ・カメラ</a>
+                        <a href="#" class="category-tag">オーディオ機器</a>
+                        <a href="#" class="category-tag">ヘッドフォン</a>
+                    </div>
+                </div>
+
+                <!-- 価格ブロック -->
+                <div class="price-block">
+                    <span class="product-price">¥ 15,800</span>
+                    <span class="tax-shipping">(税込) 送料込み</span>
+                </div>
+
+                <!-- レンタル期間 - 簡素化 -->
+                <div class="rental-period-section">
+                    <h3 class="rental-title">レンタル期間</h3>
+                    <div class="rental-period-display">
+                        7日間レンタル
+                    </div>
+                </div>
+
+                <!-- 商品メタ情報 -->
+                <div class="product-meta">
+                    <div class="meta-item">
+                        <span class="meta-label">商品の状態</span>
+                        <span class="meta-value">目立った傷や汚れなし</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">発送までの日数</span>
+                        <span class="meta-value">1~2日で発送</span>
+                    </div>
+                    <div class="meta-item">
+                        <span class="meta-label">発送元</span>
+                        <span class="meta-value">東京都</span>
+                    </div>
+                </div>
+
+                <!-- 商品説明 -->
+                <div class="product-description">
+                    <p>
+                        高品質なBluetoothヘッドフォンです。アクティブノイズキャンセリング機能搭載で、クリアな音質をお楽しみいただけます。
+                        最大30時間のバッテリー持続時間で、長時間の使用にも対応しています。
+                    </p>
+                    <p>
+                        仕事、勉強、音楽鑑賞など様々なシーンでご利用いただけます。人間工学に基づいた設計で、長時間着用しても快適です。
+                    </p>
+                </div>
+
+                <!-- 出品者情報 -->
+                <div class="seller-info">
+                    <h3 class="seller-title">出品者情報</h3>
+                    <div class="seller-details">
+                        <div class="seller-avatar">田中</div>
+                        <div class="seller-text">
+                            <p class="seller-name">田中太郎</p>
+                            <p class="seller-stats">
+                                <i class="fas fa-star"></i> 4.8 (評価 89件)
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- レンタルボタン -->
+                <button class="rental-button" id="rentalButton">レンタルする</button>
+            </div>
+        </div>
+
+        <!-- コメント・評価セクション -->
+        <div class="comments-section">
+            <div class="comments-header">
+                <i class="fas fa-comments"></i>
+                <h2>コメント・評価 (25件)</h2>
+            </div>
+
+            <!-- コメント投稿フォーム -->
+            <form class="comment-form" id="commentForm">
+                <div class="rating-input">
+                    <span>評価:</span>
+                    <div class="star-rating" id="starRating">
+                        <span class="star active" data-rating="1">★</span>
+                        <span class="star active" data-rating="2">★</span>
+                        <span class="star active" data-rating="3">★</span>
+                        <span class="star active" data-rating="4">★</span>
+                        <span class="star active" data-rating="5">★</span>
+                    </div>
+                </div>
+                <textarea class="comment-textarea" placeholder="商品についてのコメントを書いてください..." id="commentText" required></textarea>
+                <button type="submit" class="submit-comment">
+                    <i class="fas fa-paper-plane"></i>
+                    コメントを投稿
+                </button>
+            </form>
+
+            <!-- コメント一覧 -->
+            <div class="comments-list" id="commentsList">
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">佐藤</div>
+                        <div class="comment-user-info">
+                            <h4>佐藤花子</h4>
+                            <div class="comment-meta">
+                                <span class="stars">★★★★★</span>
+                                <span>•</span>
+                                <span>2日前</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="comment-text">音質が素晴らしく、ノイズキャンセリング機能も期待通りでした。レンタルで試せるのがとても良いです！</p>
+                </div>
+
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">山田</div>
+                        <div class="comment-user-info">
+                            <h4>山田次郎</h4>
+                            <div class="comment-meta">
+                                <span class="stars">★★★★☆</span>
+                                <span>•</span>
+                                <span>1週間前</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="comment-text">バッテリー持ちが良く、長時間使用できます。少し重いですが、音質を考えると満足です。</p>
+                </div>
+
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <div class="comment-avatar">鈴木</div>
+                        <div class="comment-user-info">
+                            <h4>鈴木一郎</h4>
+                            <div class="comment-meta">
+                                <span class="stars">★★★★★</span>
+                                <span>•</span>
+                                <span>2週間前</span>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="comment-text">仕事用に使用しました。通話品質も良く、会議でも問題なく使えました。おすすめです！</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="main-footer">
+        <div class="footer-container">
+            <div class="footer-content">
+                <div class="footer-credit">
+                    <p>&copy; monotal</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/product_detail.js"></script>
+</body>
+</html>

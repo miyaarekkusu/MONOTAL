@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 from datetime import timedelta
 from django.views import View
@@ -10,7 +10,9 @@ from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.conf import settings
 from django.utils import timezone
-from .models import User, UserStatus, EmailVerificationToken
+from django.contrib.auth.mixins import LoginRequiredMixin
+from .models import *
+#from .models import User, UserStatus, EmailVerificationToken
 
 
 def send_verification_email(email, user_name, phone_number, password, request, is_google_auth=False):
@@ -174,7 +176,6 @@ class RegisterFormView(View):
 
             # 重複チェック
             # メールアドレス: 重複OK（複数アカウント可）
-            # ユーザー名・電話番号: ステータス1,2,3で重複不可（4:削除済みのみ再利用可）
             if not email:
                 errors['email'] = 'メールアドレスは必須です'
             if not user_name:
@@ -431,10 +432,199 @@ class ProfileSettingView(View):
         return redirect('profile_setting', username=username)
 
 
+# 出品ステータス定数
+PRODUCT_STATUS_DRAFT = 1      # 下書き
+PRODUCT_STATUS_LISTED = 2     # 出品中
+PRODUCT_STATUS_RENTING = 3    # レンタル中
+PRODUCT_STATUS_PAUSED = 4     # 出品停止
+PRODUCT_STATUS_COMPLETED = 5  # 取引完了
+PRODUCT_STATUS_DELETED = 6    # 削除済み
+
+
 class CreateSellView(View):
+
+#    login_url = '/monotal/login/'
+
     def get(self, request, *args, **kwargs):
         return render(request, 'create_sell.html')
 
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # ログインチェック(確認用ー後で削除)
+        if not request.user.is_authenticated:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'ログインが必要です',
+                    'redirect_url': '/monotal/login/'
+                }, status=401)
+            return redirect('/monotal/login/')
+
+        try:
+            # FormDataから取得
+            product_name = request.POST.get('product_name', '').strip()
+            product_category_id = request.POST.get('product_category', '')
+            brand = request.POST.get('brand', '').strip()
+            product_description = request.POST.get('product_description', '').strip()
+            product_condition_id = request.POST.get('product_condition', '')
+            shipping_method_id = request.POST.get('shipping_method', '')
+            shipping_area = request.POST.get('shipping_area', '')
+            shipping_days = request.POST.get('shipping_days', '')
+            rental_days = request.POST.get('rental_days', '')
+            rental_fee = request.POST.get('rental_fee', '')
+            images = request.FILES.getlist('images')
+            is_draft = request.POST.get('is_draft', 'false') == 'true'
+
+            errors = {}
+
+            # ========================================
+            # バリデーション
+            # ========================================
+
+            if not is_draft:
+                # 出品時は全て必須
+                if not images:
+                    errors['images'] = '商品画像を1枚以上アップロードしてください'
+                elif len(images) > 10:
+                    errors['images'] = '画像は最大10枚までです'
+
+                if not product_name:
+                    errors['product_name'] = '商品名は必須です'
+                elif len(product_name) > 40:
+                    errors['product_name'] = '商品名は40文字以内で入力してください'
+
+                if not product_category_id:
+                    errors['product_category'] = 'カテゴリーを選択してください'
+
+                if not product_description:
+                    errors['product_description'] = '商品の説明は必須です'
+                elif len(product_description) > 1000:
+                    errors['product_description'] = '商品の説明は1000文字以内で入力してください'
+
+                if not product_condition_id:
+                    errors['product_condition'] = '商品の状態を選択してください'
+
+                if not shipping_method_id:
+                    errors['shipping_method'] = '配送方法を選択してください'
+
+                if not shipping_area:
+                    errors['shipping_area'] = '発送元地域を選択してください'
+
+                if not shipping_days:
+                    errors['shipping_days'] = '発送までの日数を選択してください'
+
+                if not rental_days:
+                    errors['rental_days'] = 'レンタル期間は必須です'
+                elif not rental_days.isdigit():
+                    errors['rental_days'] = 'レンタル期間は数字で入力してください'
+                else:
+                    rental_days_int = int(rental_days)
+                    if rental_days_int < 1 or rental_days_int > 999:
+                        errors['rental_days'] = 'レンタル期間は1〜999日で入力してください'
+
+                if not rental_fee:
+                    errors['rental_fee'] = '販売価格は必須です'
+                elif not rental_fee.isdigit():
+                    errors['rental_fee'] = '販売価格は数字で入力してください'
+                else:
+                    rental_fee_int = int(rental_fee)
+                    if rental_fee_int < 300:
+                        errors['rental_fee'] = '販売価格は300円以上で設定してください'
+                    elif rental_fee_int > 9999999:
+                        errors['rental_fee'] = '販売価格は9,999,999円以下で設定してください'
+            else:
+                # 下書きの場合は商品名のみ必須
+                if not product_name:
+                    errors['product_name'] = '商品名は必須です'
+                elif len(product_name) > 40:
+                    errors['product_name'] = '商品名は40文字以内で入力してください'
+
+            if errors:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': errors}, status=400)
+                return render(request, 'create_sell.html', {
+                    'errors': list(errors.values()),
+                })
+
+            # ========================================
+            # マスターデータ取得（registerと同じパターン）
+            # ========================================
+
+            # カテゴリー
+            category_obj = None
+            if product_category_id:
+                try:
+                    category_obj = ProductCategory.objects.get(product_category_id=product_category_id)
+                except ProductCategory.DoesNotExist:
+                    pass
+
+            # 商品状態
+            condition_obj = None
+            if product_condition_id:
+                try:
+                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
+                except ProductCondition.DoesNotExist:
+                    pass
+
+            # 配送方法
+            shipping_obj = None
+            if shipping_method_id:
+                try:
+                    shipping_obj = ShippingMethod.objects.get(shipping_method_id=shipping_method_id)
+                except ShippingMethod.DoesNotExist:
+                    pass
+
+            # 商品ステータス
+            status_id = PRODUCT_STATUS_DRAFT if is_draft else PRODUCT_STATUS_LISTED
+            try:
+                status_obj = ProductStatus.objects.get(product_status_id=status_id)
+            except ProductStatus.DoesNotExist:
+                status_obj = ProductStatus.objects.create(
+                    product_status_id=status_id,
+                    status_name='下書き' if is_draft else '出品中'
+                )
+
+            # ========================================
+            # 商品作成
+            # ========================================
+            product = Product.objects.create(
+                product_name=product_name,
+                product_description=product_description or '',
+                shipping_method=shipping_obj,
+                product_condition=condition_obj,
+                product_status=status_obj,
+                product_category=category_obj,
+                rental_days=int(rental_days) if rental_days and rental_days.isdigit() else 0,
+                rental_fee=int(rental_fee) if rental_fee and rental_fee.isdigit() else 0,
+                user=request.user
+            )
+
+            # TODO: 画像保存
+
+            if is_ajax:
+                if is_draft:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '下書きを保存しました',
+#                        'redirect_url': f'/monotal/sell/edit/{product.product_id}/'
+                    })
+                else:
+                    return JsonResponse({
+                        'success': True,
+                        'message': '商品を出品しました',
+                        'redirect_url': '/monotal/'
+                    })
+
+            messages.success(request, '下書きを保存しました' if is_draft else '商品を出品しました')
+            return redirect('index')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': f'エラーが発生しました: {str(e)}'}, status=500)
+            return render(request, 'create_sell.html', {'errors': [f'エラーが発生しました: {str(e)}']})
+
+ 
 
 index = IndexView.as_view()
 login_view = LoginView.as_view()

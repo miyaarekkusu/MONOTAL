@@ -1,0 +1,390 @@
+﻿/* ============================================
+   create-sell.css - 商品出品フォーム
+   ============================================ */
+
+/* メインコンテナ */
+.container {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* セクション共通スタイル */
+.section {
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    padding: 24px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+}
+
+.required {
+    background: #ff4757;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    margin-left: 8px;
+    font-weight: normal;
+}
+
+/* ============================================
+   画像アップロードセクション
+   ============================================ */
+.image-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 30px 20px;
+    text-align: center;
+    background: #fafafa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .image-upload-area:hover {
+        border-color: #ff6b7a;
+        background: #fff5f5;
+    }
+
+.upload-icon {
+    font-size: 36px;
+    color: #ccc;
+    margin-bottom: 8px;
+}
+
+.upload-text {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.upload-limit {
+    font-size: 12px;
+    color: #999;
+    margin-top: 8px;
+}
+
+#imageInput {
+    display: none;
+}
+
+/* 画像プレビューグリッド - 10枚収まるレイアウト */
+.image-preview {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.preview-item {
+    position: relative;
+    aspect-ratio: 1;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #eee;
+    background: #f5f5f5;
+}
+
+    .preview-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+
+    .preview-item .remove-btn {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        border: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 14px;
+        line-height: 18px;
+        text-align: center;
+        padding: 0;
+        transition: background 0.2s;
+    }
+
+        .preview-item .remove-btn:hover {
+            background: #ff4757;
+        }
+
+    .preview-item .main-badge {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        background: #ff6b7a;
+        color: white;
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: 500;
+    }
+
+/* ============================================
+   フォーム要素
+   ============================================ */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+    .form-input:focus,
+    .form-select:focus,
+    .form-textarea:focus {
+        outline: none;
+        border-color: #ff6b7a;
+        box-shadow: 0 0 0 2px rgba(255, 107, 122, 0.1);
+    }
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.char-count {
+    text-align: right;
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
+}
+
+    .char-count.error {
+        color: #d63031;
+        font-weight: 500;
+    }
+
+/* セレクトボックス */
+.form-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+    cursor: pointer;
+}
+
+    /* プレースホルダーの色 */
+    .form-select option[value=""][disabled] {
+        color: #999;
+    }
+
+/* ============================================
+   価格入力
+   ============================================ */
+.price-group {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.price-input {
+    text-align: left;
+    font-size: 18px;
+    font-weight: 600;
+    padding-right: 40px;
+    flex: 1;
+}
+
+.currency {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 16px;
+    pointer-events: none;
+}
+
+/* ============================================
+   利用規約（シンプルスタイル - div白なし）
+   ============================================ */
+.terms-section {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 16px 0;
+}
+
+.terms-checkbox {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    cursor: pointer;
+    accent-color: #ff6b7a;
+    flex-shrink: 0;
+}
+
+.terms-label {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.5;
+    cursor: pointer;
+}
+
+.terms-link {
+    color: #ff6b7a;
+    text-decoration: none;
+}
+
+    .terms-link:hover {
+        text-decoration: underline;
+    }
+
+/* ============================================
+   送信ボタンセクション
+   ============================================ */
+.submit-section {
+    padding: 24px;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 16px;
+}
+
+/* 下書き保存ボタン */
+.draft-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 14px 24px;
+    background: white;
+    color: #666;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+    .draft-btn:hover {
+        border-color: #999;
+        color: #333;
+        background: #f9f9f9;
+    }
+
+    .draft-btn:disabled {
+        background: #f5f5f5;
+        color: #ccc;
+        border-color: #eee;
+        cursor: not-allowed;
+    }
+
+/* 出品ボタン */
+.submit-btn {
+    flex: 1;
+    max-width: 200px;
+    padding: 14px 24px;
+    background: #ff6b7a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+    .submit-btn:hover {
+        background: #ff5a6b;
+    }
+
+    .submit-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+
+/* ============================================
+   エラーメッセージ（全て統一スタイル）
+   ============================================ */
+.error-message {
+    color: #d63031;
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.input-error {
+    border-color: #d63031 !important;
+}
+
+/* ============================================
+   レスポンシブ対応
+   ============================================ */
+@media (max-width: 768px) {
+    .container {
+        padding: 12px;
+    }
+
+    .section {
+        padding: 20px 16px;
+    }
+
+    /* モバイルでは画像を4列に */
+    .image-preview {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+    }
+
+    .submit-section {
+        padding: 20px 16px;
+        flex-direction: column;
+    }
+
+    .draft-btn,
+    .submit-btn {
+        max-width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+    }
+}
+
+@media (max-width: 480px) {
+    /* 小さい画面では画像を3列に */
+    .image-preview {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .preview-item .main-badge {
+        font-size: 8px;
+        padding: 1px 4px;
+    }
+}

@@ -1,10 +1,171 @@
-<!DOCTYPE html>
-<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>出品</title>
-</head>
-<body>
-    出品
-</body>
-</html>
+﻿{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/create-sell.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="container">
+    <form id="sellForm" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <div class="section">
+            <h2 class="section-title">
+                商品画像
+                <span class="required">必須</span>
+            </h2>
+            <div class="image-upload-area" onclick="document.getElementById('imageInput').click()">
+                <div class="upload-icon">📷</div>
+                <div class="upload-text">
+                    写真を追加する<br>
+                    ここをタップして写真を選択
+                </div>
+                <div class="upload-limit">最大10枚まで</div>
+            </div>
+            <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageUpload(event)">
+            <div class="image-preview" id="imagePreview"></div>
+            <div id="imageError"></div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                商品情報
+                <span class="required">必須</span>
+            </h2>
+            <div class="form-group">
+                <label class="form-label" for="productName">商品名</label>
+                <input type="text" id="productName" class="form-input"
+                       placeholder="商品名を入力してください">
+                <div class="char-count" id="nameCount">0/40</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="category">カテゴリー</label>
+                <select id="category" class="form-select">
+                    <option value="" disabled selected hidden>カテゴリーを選択</option>
+                    <option value="1">ファッション</option>
+                    <option value="2">家電・スマホ・カメラ</option>
+                    <option value="3">本・音楽・ゲーム</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="brand">ブランド</label>
+                <input type="text" id="brand" class="form-input" placeholder="ブランド名（任意）">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="description">商品の説明</label>
+                <textarea id="description" class="form-textarea"
+                          placeholder="商品の説明を入力してください（色、素材、重さ、定価、注意点など）"></textarea>
+                <div class="char-count" id="descCount">0/1000</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                商品の状態
+                <span class="required">必須</span>
+            </h2>
+            <div class="form-group">
+                <select id="condition" class="form-select">
+                    <option value="" disabled selected hidden>状態を選択</option>
+                    <option value="1">新品、未使用</option>
+                    <option value="2">未使用に近い</option>
+                    <option value="3">目立った傷や汚れなし</option>
+                    <option value="4">やや傷や汚れあり</option>
+                    <option value="5">傷や汚れあり</option>
+                    <option value="6">全体的に状態が悪い</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                配送について
+                <span class="required">必須</span>
+            </h2>
+            <div class="form-group">
+                <label class="form-label" for="shippingMethod">配送方法</label>
+                <select id="shippingMethod" class="form-select">
+                    <option value="" disabled selected hidden>配送方法を選択</option>
+                    <option value="1">モノタル便</option>
+                    <option value="2">ゆうゆうモノタル便</option>
+                    <option value="3">普通郵便</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="shippingArea">発送元地域</label>
+                <select id="shippingArea" class="form-select">
+                    <option value="" disabled selected hidden>都道府県を選択</option>
+                    <option value="13">東京都</option>
+                    <option value="27">大阪府</option>
+                    <option value="23">愛知県</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="shippingDays">発送までの日数</label>
+                <select id="shippingDays" class="form-select">
+                    <option value="" disabled selected hidden>日数を選択</option>
+                    <option value="1-2">1〜2日で発送</option>
+                    <option value="2-3">2〜3日で発送</option>
+                    <option value="4-7">4〜7日で発送</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                レンタル期間
+                <span class="required">必須</span>
+            </h2>
+            <div class="form-group">
+                <label class="form-label" for="rentalDays">レンタル期間</label>
+                <div class="price-group">
+                    <input type="number" id="rentalDays" class="form-input price-input"
+                           placeholder="0">
+                    <span class="currency">日</span>
+                </div>
+                <div id="rentalDaysError"></div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2 class="section-title">
+                価格設定
+                <span class="required">必須</span>
+            </h2>
+            <div class="form-group">
+                <label class="form-label" for="price">販売価格</label>
+                <div class="price-group">
+                    <input type="number" id="price" class="form-input price-input"
+                           placeholder="0">
+                    <span class="currency">¥</span>
+                </div>
+                <div id="priceError"></div>
+            </div>
+        </div>
+
+        <!-- 利用規約（シンプル - div白なし） -->
+        <div class="terms-section">
+            <input type="checkbox" id="agreeTerms" class="terms-checkbox">
+            <label class="terms-label" for="agreeTerms">
+                <a href="#" class="terms-link">出品者利用規約</a>および<a href="#" class="terms-link">禁止されている出品物</a>を確認し、同意しました。また、<a href="#" class="terms-link">特定商取引法に基づく表記</a>を確認しました。
+            </label>
+        </div>
+        <div id="termsError"></div>
+
+        <div class="submit-section">
+            <button type="button" id="draftBtn" class="draft-btn">
+                下書き保存
+            </button>
+            <button type="submit" class="submit-btn">
+                出品する
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/create-sell.js' %}"></script>
+{% endblock %}
