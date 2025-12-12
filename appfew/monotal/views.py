@@ -12,6 +12,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import *
+from django.core.paginator import Paginator
+from django.db.models import Q
 #from .models import User, UserStatus, EmailVerificationToken
 
 
@@ -624,6 +626,132 @@ class CreateSellView(View):
                 return JsonResponse({'success': False, 'message': f'エラーが発生しました: {str(e)}'}, status=500)
             return render(request, 'create_sell.html', {'errors': [f'エラーが発生しました: {str(e)}']})
 
+
+class ProductListView(View):
+    """
+    商品一覧ページ
+    フィルター機能付き
+    """
+    template_name = 'product_list.html'
+    items_per_page = 20
+
+    def get(self, request, *args, **kwargs):
+        # 公開中の商品のみ取得（delete_datetimeがnullのもの）
+        products = Product.objects.filter(
+            delete_datetime__isnull=True
+        ).select_related(
+            'product_condition',
+            'product_status',
+            'product_category',
+            'user'
+        ).order_by('-register_datetime')
+
+        # フィルター適用
+        products = self.apply_filters(request, products)
+
+        # ページネーション
+        paginator = Paginator(products, self.items_per_page)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+
+        # カテゴリ一覧（親カテゴリのみ、子カテゴリも取得）
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).prefetch_related('subcategories')
+
+        # 商品状態一覧
+        conditions = ProductCondition.objects.all()
+
+        context = {
+            'products': page_obj,
+            'categories': categories,
+            'conditions': conditions,
+            'page_obj': page_obj,
+            'filters': self.get_active_filters(request),
+        }
+
+        return render(request, self.template_name, context)
+
+    def apply_filters(self, request, queryset):
+        """
+        GETパラメータからフィルター適用
+        """
+        # カテゴリフィルター
+        category_id = request.GET.get('category')
+        if category_id:
+            try:
+                queryset = queryset.filter(
+                    Q(product_category_id=int(category_id)) |
+                    Q(product_category__parent_product_category_id=int(category_id))
+                )
+            except ValueError:
+                pass
+
+        # 価格フィルター（最小）
+        min_fee = request.GET.get('min_fee')
+        if min_fee:
+            try:
+                queryset = queryset.filter(rental_fee__gte=int(min_fee))
+            except ValueError:
+                pass
+
+        # 価格フィルター（最大）
+        max_fee = request.GET.get('max_fee')
+        if max_fee:
+            try:
+                queryset = queryset.filter(rental_fee__lte=int(max_fee))
+            except ValueError:
+                pass
+
+        # レンタル日数フィルター（最小）
+        min_days = request.GET.get('min_days')
+        if min_days:
+            try:
+                queryset = queryset.filter(rental_days__gte=int(min_days))
+            except ValueError:
+                pass
+
+        # レンタル日数フィルター（最大）
+        max_days = request.GET.get('max_days')
+        if max_days:
+            try:
+                queryset = queryset.filter(rental_days__lte=int(max_days))
+            except ValueError:
+                pass
+
+        # 商品状態フィルター
+        conditions = request.GET.getlist('condition')
+        if conditions:
+            try:
+                condition_ids = [int(c) for c in conditions]
+                queryset = queryset.filter(product_condition_id__in=condition_ids)
+            except ValueError:
+                pass
+
+        # テキスト検索
+        search_query = request.GET.get('q')
+        if search_query:
+            queryset = queryset.filter(
+                Q(product_name__icontains=search_query) |
+                Q(product_description__icontains=search_query)
+            )
+
+        return queryset
+
+    def get_active_filters(self, request):
+        """
+        現在適用中のフィルター値を返す
+        """
+        return {
+            'category': request.GET.get('category', ''),
+            'min_fee': request.GET.get('min_fee', ''),
+            'max_fee': request.GET.get('max_fee', ''),
+            'min_days': request.GET.get('min_days', ''),
+            'max_days': request.GET.get('max_days', ''),
+            'conditions': request.GET.getlist('condition'),
+            'q': request.GET.get('q', ''),
+        }
+
  
 
 index = IndexView.as_view()
@@ -637,3 +765,4 @@ email_verify = EmailVerifyView.as_view()
 profile = ProfileView.as_view()
 profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()
+product_list = ProductListView.as_view()

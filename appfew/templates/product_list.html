@@ -1,0 +1,183 @@
+﻿{% extends 'base_simple.html' %}
+{% load static %}
+
+{% block style %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/product_list.css' %}">
+{% endblock %}
+
+{% block main %}
+<div class="product-page-wrapper">
+    <!-- サイドバーフィルター -->
+    <aside class="category-sidebar">
+        <div class="sidebar-header">
+            <h3 class="sidebar-title">絞り込み</h3>
+            <a href="{% url 'product_list' %}" class="clear-btn">クリア</a>
+        </div>
+
+        <form method="GET" action="{% url 'product_list' %}">
+            <!-- カテゴリーフィルター -->
+            <div class="filter-section category-filter">
+                <h4 class="filter-title">カテゴリー <i class="fas fa-chevron-down"></i></h4>
+                <div class="filter-content">
+                    <ul class="category-list">
+                        <li>
+                            <a href="{% url 'product_list' %}" class="category-link {% if not filters.category %}active{% endif %}">
+                                すべて
+                            </a>
+                        </li>
+                        {% for category in categories %}
+                        <li class="category-item">
+                            <a href="?category={{ category.product_category_id }}"
+                               class="category-link {% if filters.category == category.product_category_id|stringformat:'d' %}active{% endif %}">
+                                {{ category.category_name }}
+                                {% if category.subcategories.exists %}
+                                <i class="fas fa-chevron-right"></i>
+                                {% endif %}
+                            </a>
+                            {% if category.subcategories.exists %}
+                            <ul class="subcategory-list">
+                                {% for subcategory in category.subcategories.all %}
+                                <li>
+                                    <a href="?category={{ subcategory.product_category_id }}"
+                                       class="subcategory-link {% if filters.category == subcategory.product_category_id|stringformat:'d' %}active{% endif %}">
+                                        {{ subcategory.category_name }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% endif %}
+                        </li>
+                        {% empty %}
+                        <li class="category-item">
+                            <span class="category-link">カテゴリーなし</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 価格フィルター -->
+            <div class="filter-section price-filter">
+                <h4 class="filter-title">価格 <i class="fas fa-chevron-down"></i></h4>
+                <div class="filter-content">
+                    <div class="price-input-group">
+                        <input type="number" name="min_fee" placeholder="¥ 最小"
+                               class="price-input min-price" value="{{ filters.min_fee }}">
+                        <span>から</span>
+                        <input type="number" name="max_fee" placeholder="¥ 最大"
+                               class="price-input max-price" value="{{ filters.max_fee }}">
+                        <span>まで</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- レンタル期間フィルター -->
+            <div class="filter-section rental-period-filter">
+                <h4 class="filter-title">レンタル期間 <i class="fas fa-chevron-down"></i></h4>
+                <div class="filter-content">
+                    <div class="rental-period-input-group">
+                        <input type="number" name="min_days" placeholder="日数 最小"
+                               class="rental-input min-days" value="{{ filters.min_days }}">
+                        <span>から</span>
+                        <input type="number" name="max_days" placeholder="日数 最大"
+                               class="rental-input max-days" value="{{ filters.max_days }}">
+                        <span>まで</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 商品状態フィルター -->
+            <div class="filter-section condition-filter">
+                <h4 class="filter-title">商品状態 <i class="fas fa-chevron-down"></i></h4>
+                <div class="filter-content">
+                    <div class="condition-list">
+                        {% for condition in conditions %}
+                        <label class="condition-option">
+                            <input type="checkbox" name="condition"
+                                   value="{{ condition.product_condition_id }}"
+                                   {% if condition.product_condition_id|stringformat:'d' in filters.conditions %}checked{% endif %}>
+                            {{ condition.condition_name }}
+                        </label>
+                        {% empty %}
+                        <span>商品状態なし</span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- フィルター適用ボタン -->
+            <div class="filter-apply-btn-container">
+                <button type="submit" class="apply-filter-btn">
+                    絞り込む
+                </button>
+            </div>
+        </form>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <div class="product-main-content">
+        <div class="main-header-section">
+            <h2 class="page-title">おすすめ商品</h2>
+            {% if page_obj %}
+            <p class="result-count">{{ page_obj.paginator.count }}件の商品</p>
+            {% endif %}
+        </div>
+
+        <!-- 商品グリッド -->
+        <div class="item-grid">
+            {% for product in products %}
+            <div class="item-card">
+                <a href="{% url 'product_detail' product.product_id %}" class="item-link">
+                    <div class="item-image-wrapper">
+                        {% if product.first_image %}
+                        <img src="{{ product.first_image.url }}" alt="{{ product.product_name }}" class="item-image">
+                        {% else %}
+                        <img src="https://via.placeholder.com/250x250?text=No+Image" alt="{{ product.product_name }}" class="item-image">
+                        {% endif %}
+                    </div>
+                    <div class="item-details">
+                        <h3 class="item-name">{{ product.product_name }}</h3>
+                        <p class="rental-detail">レンタル日数：{{ product.rental_days }}日間</p>
+                        <div class="item-meta">
+                            <span class="item-condition">{{ product.product_condition.condition_name }}</span>
+                        </div>
+                        <div class="item-price">¥{{ product.rental_fee|floatformat:0 }}</div>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="no-products">
+                <i class="fas fa-search"></i>
+                <p>商品が見つかりませんでした。</p>
+                <a href="{% url 'product_list' %}" class="clear-filter-link">フィルターをクリア</a>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- ページネーション -->
+        {% if page_obj.has_other_pages %}
+        <div class="pagination">
+            {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                <i class="fas fa-chevron-left"></i> 前へ
+            </a>
+            {% endif %}
+
+            <span class="page-info">
+                {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}
+            </span>
+
+            {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}{% for key, value in filters.items %}{% if value %}&{{ key }}={{ value }}{% endif %}{% endfor %}" class="page-link">
+                次へ <i class="fas fa-chevron-right"></i>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{% static 'js/product_filter.js' %}"></script>
+{% endblock %}

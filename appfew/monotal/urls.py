@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 
 urlpatterns = [
@@ -13,4 +13,5 @@ urlpatterns = [
     path('profile/<str:username>/', views.profile, name='profile'),
     path('profile/profile_setting/<str:username>/', views.profile_setting, name='profile_setting'),
     path('sell/', views.create_sell, name='create_sell'),
+    path('shop/', views.product_list, name='product_list')
 ]
