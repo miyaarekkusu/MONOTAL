@@ -22,6 +22,62 @@
     }
 
     // ========================================
+    // レンタル期間選択と価格フィールド管理
+    // ========================================
+    let selectedPeriods = {}; // { days: label } 形式で選択された期間を保持
+
+    const periodButtons = document.querySelectorAll('.period-btn');
+    const priceFieldsContainer = document.getElementById('priceFieldsContainer');
+
+    periodButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const days = this.getAttribute('data-days');
+            const label = this.getAttribute('data-label');
+
+            if (this.classList.contains('active')) {
+                // 選択解除
+                this.classList.remove('active');
+                delete selectedPeriods[days];
+            } else {
+                // 選択
+                this.classList.add('active');
+                selectedPeriods[days] = label;
+            }
+
+            renderPriceFields();
+        });
+    });
+
+    function renderPriceFields() {
+        priceFieldsContainer.innerHTML = '';
+
+        // 日数順にソート
+        const sortedPeriods = Object.keys(selectedPeriods).sort((a, b) => parseInt(a) - parseInt(b));
+
+        sortedPeriods.forEach(days => {
+            const label = selectedPeriods[days];
+            const fieldItem = document.createElement('div');
+            fieldItem.className = 'price-field-item';
+            fieldItem.innerHTML = `
+                <label class="price-field-label">
+                    <span class="price-field-period">${label}</span> のレンタル料金
+                </label>
+                <div class="price-group">
+                    <input type="number"
+                           id="price_${days}"
+                           class="form-input price-input"
+                           data-days="${days}"
+                           placeholder="0"
+                           min="100">
+                    <span class="currency">¥</span>
+                </div>
+                <div id="price_${days}_error"></div>
+            `;
+            priceFieldsContainer.appendChild(fieldItem);
+        });
+    }
+
+    // ========================================
     // リアルタイムバリデーション設定
     // ========================================
     const productNameInput = document.getElementById('productName');
@@ -47,6 +103,18 @@
     async function submitProduct(isDraft) {
         clearErrors();
 
+        // 選択された期間と価格を収集
+        const rentalPeriods = [];
+        Object.keys(selectedPeriods).forEach(days => {
+            const priceInput = document.getElementById(`price_${days}`);
+            const price = priceInput ? priceInput.value : '';
+            rentalPeriods.push({
+                days: parseInt(days),
+                label: selectedPeriods[days],
+                price: price
+            });
+        });
+
         const formData = {
             product_name: document.getElementById('productName').value,
             product_category: document.getElementById('category').value,
@@ -56,8 +124,7 @@
             shipping_method: document.getElementById('shippingMethod').value,
             shipping_area: document.getElementById('shippingArea').value,
             shipping_days: document.getElementById('shippingDays').value,
-            rental_days: document.getElementById('rentalDays').value,
-            rental_fee: document.getElementById('price').value,
+            rental_periods: rentalPeriods,
             images: uploadedImages,
             is_draft: isDraft
         };
@@ -80,8 +147,7 @@
             submitData.append('shipping_method', formData.shipping_method);
             submitData.append('shipping_area', formData.shipping_area);
             submitData.append('shipping_days', formData.shipping_days);
-            submitData.append('rental_days', formData.rental_days);
-            submitData.append('rental_fee', formData.rental_fee);
+            submitData.append('rental_periods', JSON.stringify(formData.rental_periods));
             submitData.append('is_draft', isDraft ? 'true' : 'false');
 
             uploadedImages.forEach(img => {
@@ -124,8 +190,7 @@
                         'shipping_method': 'shippingMethod',
                         'shipping_area': 'shippingArea',
                         'shipping_days': 'shippingDays',
-                        'rental_days': 'rentalDays',
-                        'rental_fee': 'price'
+                        'rental_periods': 'rentalPeriods'
                     };
 
                     const mappedErrors = {};
@@ -156,12 +221,12 @@
                 showErrorAt('imageError', errors[field]);
             } else if (field === 'agreeTerms') {
                 showErrorAt('termsError', errors[field]);
-            } else if (field === 'rentalDays') {
-                showErrorAt('rentalDaysError', errors[field]);
-                document.getElementById('rentalDays')?.classList.add('input-error');
-            } else if (field === 'price') {
-                showErrorAt('priceError', errors[field]);
-                document.getElementById('price')?.classList.add('input-error');
+            } else if (field === 'rentalPeriods') {
+                showErrorAt('rentalPeriodsError', errors[field]);
+            } else if (field.startsWith('price_')) {
+                // 個別の価格フィールドエラー (例: price_1, price_30)
+                showErrorAt(`${field}_error`, errors[field]);
+                document.getElementById(field)?.classList.add('input-error');
             } else {
                 const input = document.getElementById(field);
                 if (input) {
@@ -214,9 +279,14 @@
         });
 
         // 専用エラーコンテナをクリア
-        ['imageError', 'termsError', 'rentalDaysError', 'priceError'].forEach(id => {
+        ['imageError', 'termsError', 'rentalPeriodsError', 'priceError'].forEach(id => {
             const container = document.getElementById(id);
             if (container) container.innerHTML = '';
+        });
+
+        // 動的に生成された価格フィールドのエラーもクリア
+        document.querySelectorAll('[id^="price_"][id$="_error"]').forEach(el => {
+            el.innerHTML = '';
         });
     }
 
@@ -273,27 +343,25 @@
                 errors.shippingDays = '発送までの日数を選択してください';
             }
 
-            if (!formData.rental_days) {
-                errors.rentalDays = 'レンタル期間は必須です';
-            } else if (!/^[0-9]+$/.test(formData.rental_days)) {
-                errors.rentalDays = 'レンタル期間は数字で入力してください';
+            // レンタル期間と価格のバリデーション
+            if (!formData.rental_periods || formData.rental_periods.length === 0) {
+                errors.rentalPeriods = '少なくとも1つのレンタル期間を選択してください';
             } else {
-                const days = parseInt(formData.rental_days);
-                if (days < 1 || days > 999) {
-                    errors.rentalDays = 'レンタル期間は1〜999日で入力してください';
-                }
-            }
+                // 各期間の価格をチェック
+                let hasValidPrice = false;
+                formData.rental_periods.forEach(period => {
+                    const price = period.price ? parseInt(period.price) : 0;
 
-            if (!formData.rental_fee) {
-                errors.price = '販売価格は必須です';
-            } else if (!/^[0-9]+$/.test(formData.rental_fee)) {
-                errors.price = '販売価格は数字で入力してください';
-            } else {
-                const price = parseInt(formData.rental_fee);
-                if (price < 300) {
-                    errors.price = '販売価格は300円以上で設定してください';
-                } else if (price > 9999999) {
-                    errors.price = '販売価格は9,999,999円以下で設定してください';
+                    if (price > 0) {
+                        hasValidPrice = true;
+                        if (price < 100 || price > 9999999) {
+                            errors[`price_${period.days}`] = '料金は100円〜9,999,999円で設定してください';
+                        }
+                    }
+                });
+
+                if (!hasValidPrice) {
+                    errors.rentalPeriods = '少なくとも1つの期間に料金を設定してください';
                 }
             }
 

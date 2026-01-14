@@ -1,0 +1,326 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}興味のあるジャンル | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/interest_selection.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="flex-1 w-full mx-auto max-w-[1400px] px-4 lg:px-6 py-10 pb-10 flex flex-col relative">
+
+    <!-- Page Header -->
+    <div class="text-center max-w-2xl mx-auto mb-12">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 mb-3">
+            興味のあるジャンルを選んでください
+        </h1>
+        <p class="text-sm text-zinc-500">
+            あなたの好みに合わせて、おすすめの商品をピックアップして表示します。<br class="hidden md:inline">
+            あとからいつでも変更できます。
+        </p>
+    </div>
+
+    <!-- Square Grid -->
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6 mb-12" id="interestGrid">
+
+        <!-- 1. Camera -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-4 ring-pink-600 ring-offset-2 transition-all duration-200 shadow-sm bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1516035069371-29a1b244cc32?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">カメラ・レンズ</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-100">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. Gadgets -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">PC・ガジェット</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Camping -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">アウトドア</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Gaming -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-4 ring-pink-600 ring-offset-2 transition-all duration-200 shadow-sm bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1552820728-8b83bb6b773f?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover opacity-90 transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">ゲーム</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-100">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Fashion -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">ファッション</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. Interior -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1586023492125-27b2c045efd7?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">家具・インテリア</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Kitchen -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1556910103-1c02745a30bf?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">キッチン・料理</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. Beauty -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1596462502278-27bfdd403348?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">美容・コスメ</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. Music -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">楽器・音楽</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. Travel -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1504609773096-104ff2c73ba4?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">旅行・トラベル</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 11. Baby -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1519689680058-324335c77eba?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">ベビー・キッズ</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12. DIY -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1581242163695-19d0acacd465?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">DIY・工具</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 13. Sports -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1461896836934-ffe607ba8211?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">スポーツ</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 14. Books -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">本・コミック</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 15. Art -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1513364776144-60967b0f800f?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">アート・画材</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 16. Pets -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1548199973-03cce0bbc87b?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">ペット用品</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 17. Fitness -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">フィットネス</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 18. Board Games -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1610890716171-6b1c9f2c6a59?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">ボードゲーム</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 19. Car -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">カー用品</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 20. Smart Home -->
+        <div class="relative aspect-square group cursor-pointer" onclick="toggleSelection(this)">
+            <div class="w-full h-full rounded-2xl overflow-hidden relative ring-0 ring-transparent ring-offset-2 hover:ring-2 hover:ring-zinc-200 transition-all duration-200 bg-zinc-100">
+                <img src="https://images.unsplash.com/photo-1558002038-1091a1661116?q=80&w=600&auto=format&fit=crop" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"></div>
+                <div class="absolute bottom-4 left-4 right-4">
+                    <span class="block text-white font-bold text-base md:text-lg tracking-tight leading-tight">スマート家電</span>
+                </div>
+                <div class="absolute top-3 right-3 h-6 w-6 rounded-full bg-pink-600 flex items-center justify-center text-white shadow-sm transition-transform duration-200 scale-0">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- Sticky Floating Action Bar -->
+<div class="fixed bottom-6 left-0 right-0 z-40 flex justify-center px-4 pointer-events-none">
+    <div class="bg-white/90 backdrop-blur-md border border-zinc-200 p-2 pl-6 pr-2 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] flex items-center gap-6 pointer-events-auto transform transition-all duration-300 hover:scale-[1.02]">
+        <div class="text-sm font-medium text-zinc-600">
+            <span id="selected-count" class="font-bold text-pink-600">2</span> 個選択中
+        </div>
+        <button class="bg-zinc-900 text-white hover:bg-zinc-800 px-6 py-2.5 rounded-full font-bold text-sm transition-colors flex items-center gap-2">
+            次へ進む
+            <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/interest_selection.js' %}"></script>
+{% endblock %}

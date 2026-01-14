@@ -1,11 +1,149 @@
-<!DOCTYPE html>
-<html lang="ja" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <meta charset="utf-8" />
-    <title>{{ profile_user.display_name }} - プロフィール</title>
-</head>
-<body>
-    <h1>{{ profile_user.display_name }}</h1>
-    <p>@{{ profile_user.user_name }}</p>
-</body>
-</html>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ profile_user.display_name }} - プロフィール | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="flex-1 w-full mx-auto max-w-[800px] px-4 lg:px-6 py-8 space-y-8">
+
+    <!-- Profile Section -->
+    <section class="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-sm relative overflow-hidden">
+        <!-- Background Pattern decoration -->
+        <div class="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-pink-50 to-zinc-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+
+        <div class="flex flex-col md:flex-row gap-6 md:gap-8 relative z-10">
+            <!-- Avatar -->
+            <div class="flex-shrink-0 flex justify-center md:block">
+                <div class="relative">
+                    <div class="h-24 w-24 md:h-28 md:w-28 rounded-full border-4 border-white shadow-md overflow-hidden bg-zinc-100">
+                        {% if profile_user.user_image %}
+                        <img src="{{ profile_user.user_image.url }}" alt="{{ profile_user.display_name }}" class="h-full w-full object-cover">
+                        {% else %}
+                        <div class="h-full w-full flex items-center justify-center text-zinc-400">
+                            <span class="iconify" data-icon="lucide:user" data-width="48" data-height="48"></span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="absolute bottom-1 right-1 bg-green-500 text-white p-1 rounded-full border-2 border-white shadow-sm" title="本人確認済み">
+                        <span class="iconify block" data-icon="lucide:check" data-width="12"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Info -->
+            <div class="flex-1 text-center md:text-left space-y-5">
+                <div class="space-y-2">
+                    <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 justify-center md:justify-start">
+                        <h1 class="text-xl md:text-2xl font-bold text-zinc-900 tracking-tight">{{ profile_user.display_name }}</h1>
+                        <div class="flex items-center justify-center gap-2">
+                            <span class="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-bold text-green-700 ring-1 ring-inset ring-green-600/20">
+                                <span class="iconify" data-icon="lucide:shield-check" data-width="12"></span>
+                                本人確認済
+                            </span>
+                        </div>
+                    </div>
+                    <!-- Stats -->
+                    <div class="flex items-center justify-center md:justify-start gap-4 text-sm">
+                        <div class="text-zinc-500">
+                            <span class="font-bold text-zinc-900">{{ user_products_count }}</span> 出品
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bio -->
+                {% if profile_user.bio %}
+                <p class="text-sm text-zinc-600 leading-relaxed max-w-2xl mx-auto md:mx-0">
+                    {{ profile_user.bio }}
+                </p>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                {% if request.user == profile_user %}
+                <div class="flex items-center justify-center md:justify-start gap-3 pt-2">
+                    <a href="{% url 'profile_setting' username=profile_user.user_name %}" class="flex-1 md:flex-none w-full md:w-auto min-w-[240px] items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-zinc-800 active:scale-[0.98] flex">
+                        <span class="iconify" data-icon="lucide:edit" data-width="16"></span>
+                        プロフィールを編集
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Tabs & Content -->
+    <section>
+        <!-- Tab Headers -->
+        <div class="flex items-center border-b border-zinc-200 mb-6 sticky top-16 bg-zinc-50/95 backdrop-blur-sm z-30 pt-2">
+            <button class="relative px-6 py-3 text-sm font-semibold text-pink-600">
+                出品リスト
+                <span class="absolute bottom-0 left-0 h-0.5 w-full bg-pink-600 rounded-t-full"></span>
+            </button>
+        </div>
+
+        <!-- Grid Layout -->
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+            {% for product in user_products %}
+            <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 3 %}opacity-90{% endif %}">
+                <div class="aspect-square w-full bg-zinc-100 relative overflow-hidden">
+                    {% if product.images.all %}
+                    <img src="{{ product.images.all.0.image.url }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ product.product_name }}">
+                    {% else %}
+                    <div class="h-full w-full flex items-center justify-center text-zinc-400">
+                        <span class="iconify" data-icon="lucide:image" data-width="48" data-height="48"></span>
+                    </div>
+                    {% endif %}
+
+                    {% if product.product_status.product_status_id == 3 %}
+                    <!-- Renting Badge -->
+                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="absolute bottom-0 left-0 bg-black/60 backdrop-blur-sm px-2 py-1 text-white rounded-tr-lg">
+                        <span class="text-xs font-semibold">¥{{ product.rental_fee|floatformat:0 }}</span>
+                        <span class="text-[10px] font-normal opacity-80">/日</span>
+                    </div>
+                </div>
+                <div class="p-3">
+                    <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
+                    <div class="mt-2 flex items-center gap-1.5">
+                        {% if product.product_status.product_status_id == 2 %}
+                        <span class="inline-flex items-center rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 border border-zinc-200">
+                            レンタル可
+                        </span>
+                        {% elif product.product_status.product_status_id == 3 %}
+                        <span class="text-[10px] text-zinc-400">返却予定 --</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <div class="col-span-full text-center py-16 text-zinc-400">
+                <span class="iconify" data-icon="lucide:package-open" data-width="48" data-height="48"></span>
+                <p class="mt-4 text-sm">まだ出品がありません</p>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Load More -->
+        {% if user_products.count > 8 %}
+        <div class="mt-8 flex justify-center">
+            <button class="flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-6 py-2.5 text-sm font-semibold text-zinc-600 shadow-sm transition-all hover:bg-zinc-50 hover:text-zinc-900 hover:shadow-md">
+                もっと見る
+                <span class="iconify" data-icon="lucide:chevron-down" data-width="16"></span>
+            </button>
+        </div>
+        {% endif %}
+    </section>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/profile.js' %}"></script>
+{% endblock %}

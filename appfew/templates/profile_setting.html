@@ -1,11 +1,13 @@
-{% extends 'base_simple.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}プロフィール編集 - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/profile_setting.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="profile-setting-container">
     <h1 class="page-title">プロフィール編集</h1>
 
@@ -61,6 +63,6 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="{% static 'js/profile_setting.js' %}"></script>
 {% endblock %}

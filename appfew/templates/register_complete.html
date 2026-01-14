@@ -1,11 +1,13 @@
-{% extends 'base_simple.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}登録完了 - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="register-container">
     <h1 class="register-title">追加情報の入力</h1>
     <p class="register-subtitle">Googleアカウントで登録するための追加情報を入力してください</p>

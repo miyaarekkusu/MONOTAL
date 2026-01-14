@@ -1,12 +1,14 @@
-﻿{% extends 'base_simple.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}商品を出品 - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'css/create-sell.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="container">
     <form id="sellForm" enctype="multipart/form-data">
         {% csrf_token %}
@@ -69,12 +71,12 @@
             <div class="form-group">
                 <select id="condition" class="form-select">
                     <option value="" disabled selected hidden>状態を選択</option>
-                    <option value="1">新品、未使用</option>
-                    <option value="2">未使用に近い</option>
-                    <option value="3">目立った傷や汚れなし</option>
-                    <option value="4">やや傷や汚れあり</option>
-                    <option value="5">傷や汚れあり</option>
-                    <option value="6">全体的に状態が悪い</option>
+                    <option value="1">新品・未使用</option>
+                    <option value="2">極美品（使用感なし）</option>
+                    <option value="3">美品（軽微な使用感）</option>
+                    <option value="4">良好（通常使用レベル）</option>
+                    <option value="5">やや傷あり（動作問題なし）</option>
+                    <option value="6">傷・汚れあり（動作正常）</option>
                 </select>
             </div>
         </div>
@@ -115,34 +117,29 @@
 
         <div class="section">
             <h2 class="section-title">
-                レンタル期間
+                レンタル期間と価格設定
                 <span class="required">必須</span>
             </h2>
             <div class="form-group">
-                <label class="form-label" for="rentalDays">レンタル期間</label>
-                <div class="price-group">
-                    <input type="number" id="rentalDays" class="form-input price-input"
-                           placeholder="0">
-                    <span class="currency">日</span>
+                <label class="form-label">提供するレンタル期間を選択</label>
+                <div class="rental-periods-grid">
+                    <button type="button" class="period-btn" data-days="1" data-label="1日">1日</button>
+                    <button type="button" class="period-btn" data-days="3" data-label="3日">3日</button>
+                    <button type="button" class="period-btn" data-days="7" data-label="7日">7日</button>
+                    <button type="button" class="period-btn" data-days="14" data-label="14日">14日</button>
+                    <button type="button" class="period-btn" data-days="30" data-label="1ヶ月">1ヶ月</button>
+                    <button type="button" class="period-btn" data-days="60" data-label="2ヶ月">2ヶ月</button>
+                    <button type="button" class="period-btn" data-days="90" data-label="3ヶ月">3ヶ月</button>
+                    <button type="button" class="period-btn" data-days="180" data-label="6ヶ月">6ヶ月</button>
+                    <button type="button" class="period-btn" data-days="365" data-label="1年">1年</button>
                 </div>
-                <div id="rentalDaysError"></div>
+                <div id="rentalPeriodsError"></div>
             </div>
-        </div>
 
-        <div class="section">
-            <h2 class="section-title">
-                価格設定
-                <span class="required">必須</span>
-            </h2>
-            <div class="form-group">
-                <label class="form-label" for="price">販売価格</label>
-                <div class="price-group">
-                    <input type="number" id="price" class="form-input price-input"
-                           placeholder="0">
-                    <span class="currency">¥</span>
-                </div>
-                <div id="priceError"></div>
+            <div id="priceFieldsContainer" class="price-fields-container">
+                <!-- 選択された期間の価格フィールドがここに動的に表示されます -->
             </div>
+            <div id="priceError"></div>
         </div>
 
         <!-- 利用規約（シンプル - div白なし） -->
@@ -166,6 +163,6 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="{% static 'js/create-sell.js' %}"></script>
 {% endblock %}

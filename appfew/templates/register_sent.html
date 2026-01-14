@@ -1,11 +1,13 @@
-{% extends 'base_simple.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}認証メール送信 - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="register-container">
     <h1 class="register-title">認証メールを送信しました</h1>
 

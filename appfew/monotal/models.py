@@ -594,6 +594,37 @@ class Product(models.Model):
         return self.product_name
 
 
+class ProductImage(models.Model):
+    """
+    商品画像テーブル
+    商品の画像を管理（複数画像対応）
+
+    【CASCADE の理由】
+    商品が削除されたら、その画像も不要になるため
+    """
+    product_image_id = models.AutoField(primary_key=True)
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='images',
+        db_column='product_id'
+    )
+
+    image = models.ImageField(upload_to='product_images/')
+    display_order = models.IntegerField(default=0)  # 表示順序（0が最初）
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_ProductImage'
+        verbose_name = '商品画像'
+        verbose_name_plural = '商品画像'
+        ordering = ['display_order', 'product_image_id']
+
+    def __str__(self):
+        return f"{self.product.product_name} - 画像 {self.display_order + 1}"
+
+
 class Bookmark(models.Model):
     """
     お気に入りテーブル

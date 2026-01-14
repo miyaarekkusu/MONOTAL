@@ -14,6 +14,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import *
 from django.core.paginator import Paginator
 from django.db.models import Q
+from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
 
@@ -66,7 +67,7 @@ monotal
 
 class IndexView(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'common.html')
+        return render(request, 'home.html')
 
 
 class LoginView(View):
@@ -351,7 +352,24 @@ class ProfileView(View):
             messages.error(request, 'ユーザーが見つかりません。')
             return redirect('index')
 
-        return render(request, 'profile.html', {'profile_user': user})
+        # ユーザーの出品商品を取得（画像も一緒に取得）
+        user_products = Product.objects.filter(
+            user=user,
+            delete_datetime__isnull=True
+        ).select_related(
+            'product_status',
+            'product_category'
+        ).prefetch_related(
+            'images'
+        ).order_by('-register_datetime')
+
+        context = {
+            'profile_user': user,
+            'user_products': user_products,
+            'user_products_count': user_products.count(),
+        }
+
+        return render(request, 'profile.html', context)
 
 
 class ProfileSettingView(View):
@@ -473,10 +491,16 @@ class CreateSellView(View):
             shipping_method_id = request.POST.get('shipping_method', '')
             shipping_area = request.POST.get('shipping_area', '')
             shipping_days = request.POST.get('shipping_days', '')
-            rental_days = request.POST.get('rental_days', '')
-            rental_fee = request.POST.get('rental_fee', '')
+            rental_periods_json = request.POST.get('rental_periods', '[]')
             images = request.FILES.getlist('images')
             is_draft = request.POST.get('is_draft', 'false') == 'true'
+
+            # rental_periodsをパース
+            import json
+            try:
+                rental_periods = json.loads(rental_periods_json)
+            except json.JSONDecodeError:
+                rental_periods = []
 
             errors = {}
 
@@ -516,25 +540,24 @@ class CreateSellView(View):
                 if not shipping_days:
                     errors['shipping_days'] = '発送までの日数を選択してください'
 
-                if not rental_days:
-                    errors['rental_days'] = 'レンタル期間は必須です'
-                elif not rental_days.isdigit():
-                    errors['rental_days'] = 'レンタル期間は数字で入力してください'
+                # レンタル期間と価格のバリデーション
+                if not rental_periods or len(rental_periods) == 0:
+                    errors['rental_periods'] = '少なくとも1つのレンタル期間を選択してください'
                 else:
-                    rental_days_int = int(rental_days)
-                    if rental_days_int < 1 or rental_days_int > 999:
-                        errors['rental_days'] = 'レンタル期間は1〜999日で入力してください'
+                    has_valid_price = False
+                    for period in rental_periods:
+                        days = period.get('days', 0)
+                        price = period.get('price', '')
 
-                if not rental_fee:
-                    errors['rental_fee'] = '販売価格は必須です'
-                elif not rental_fee.isdigit():
-                    errors['rental_fee'] = '販売価格は数字で入力してください'
-                else:
-                    rental_fee_int = int(rental_fee)
-                    if rental_fee_int < 300:
-                        errors['rental_fee'] = '販売価格は300円以上で設定してください'
-                    elif rental_fee_int > 9999999:
-                        errors['rental_fee'] = '販売価格は9,999,999円以下で設定してください'
+                        if price and str(price).isdigit():
+                            price_int = int(price)
+                            if price_int > 0:
+                                has_valid_price = True
+                                if price_int < 100 or price_int > 9999999:
+                                    errors[f'price_{days}'] = '料金は100円〜9,999,999円で設定してください'
+
+                    if not has_valid_price:
+                        errors['rental_periods'] = '少なくとも1つの期間に料金を設定してください'
             else:
                 # 下書きの場合は商品名のみ必須
                 if not product_name:
@@ -588,21 +611,43 @@ class CreateSellView(View):
                 )
 
             # ========================================
-            # 商品作成
+            # 商品作成（トランザクション使用）
             # ========================================
-            product = Product.objects.create(
-                product_name=product_name,
-                product_description=product_description or '',
-                shipping_method=shipping_obj,
-                product_condition=condition_obj,
-                product_status=status_obj,
-                product_category=category_obj,
-                rental_days=int(rental_days) if rental_days and rental_days.isdigit() else 0,
-                rental_fee=int(rental_fee) if rental_fee and rental_fee.isdigit() else 0,
-                user=request.user
-            )
+            # rental_periodsから最初の有効な期間と価格を取得
+            rental_days_value = 0
+            rental_fee_value = 0
 
-            # TODO: 画像保存
+            if rental_periods:
+                for period in rental_periods:
+                    days = period.get('days', 0)
+                    price = period.get('price', '')
+                    if price and str(price).isdigit() and int(price) > 0:
+                        rental_days_value = days
+                        rental_fee_value = int(price)
+                        break
+
+            # トランザクション開始：エラーが発生したらすべてロールバック
+            with transaction.atomic():
+                product = Product.objects.create(
+                    product_name=product_name,
+                    product_description=product_description or '',
+                    shipping_method=shipping_obj,
+                    product_condition=condition_obj,
+                    product_status=status_obj,
+                    product_category=category_obj,
+                    rental_days=rental_days_value,
+                    rental_fee=rental_fee_value,
+                    user=request.user
+                )
+
+                # 画像保存
+                if images:
+                    for index, image in enumerate(images):
+                        ProductImage.objects.create(
+                            product=product,
+                            image=image,
+                            display_order=index
+                        )
 
             if is_ajax:
                 if is_draft:
@@ -644,6 +689,8 @@ class ProductListView(View):
             'product_status',
             'product_category',
             'user'
+        ).prefetch_related(
+            'images'  # 商品画像も取得
         ).order_by('-register_datetime')
 
         # フィルター適用
@@ -752,7 +799,52 @@ class ProductListView(View):
             'q': request.GET.get('q', ''),
         }
 
- 
+
+
+class ProductDetailView(View):
+    """
+    商品詳細ページ
+    """
+    template_name = 'product_detail.html'
+
+    def get(self, request, product_id, *args, **kwargs):
+        try:
+            # 商品を取得（削除されていない、公開中のもの）
+            product = Product.objects.select_related(
+                'product_condition',
+                'product_status',
+                'product_category',
+                'shipping_method',
+                'user'
+            ).prefetch_related(
+                'images'  # 商品画像も一緒に取得
+            ).get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            messages.error(request, '商品が見つかりません。')
+            return redirect('product_list')
+
+        # 商品画像を取得
+        product_images = list(product.images.all())
+
+        context = {
+            'product': product,
+            'product_images': product_images,
+        }
+
+        return render(request, self.template_name, context)
+
+
+class InterestSelectionView(View):
+    """
+    趣味・興味のあるジャンル選択ページ
+    画面表示のみ（データベース保存は後で実装）
+    """
+    def get(self, request, *args, **kwargs):
+        return render(request, 'interest_selection.html')
+
 
 index = IndexView.as_view()
 login_view = LoginView.as_view()
@@ -766,3 +858,7 @@ profile = ProfileView.as_view()
 profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()
 product_list = ProductListView.as_view()
+product_detail = ProductDetailView.as_view()
+interest_selection = InterestSelectionView.as_view()
+
+

@@ -1,11 +1,13 @@
-{% extends 'base_simple.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}ログイン - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/login.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="login-container">
     <h1 class="login-title">ログイン</h1>
 
@@ -42,6 +44,6 @@
 </div>
 {% endblock %}
 
-{% block scripts %}
+{% block extra_js %}
 <script src="{% static 'js/login.js' %}"></script>
 {% endblock %}
