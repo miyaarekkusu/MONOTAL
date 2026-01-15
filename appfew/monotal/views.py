@@ -859,37 +859,47 @@ IDENTITY_STATUS_REJECTED = 2  # 却下
 class IdentityVerificationView(LoginRequiredMixin, View):
     """
     本人確認申請ページ（ユーザー向け）
-    顔写真と身分証の2枚をアップロード
+    顔写真、身分証（表面）、身分証（裏面/厚み）の3枚をアップロード
     """
     login_url = '/monotal/login/'
 
     def get(self, request, *args, **kwargs):
-        # 既存の申請状態を確認
-        existing = IdentityVerification.objects.filter(
-            user=request.user
-        ).order_by('-register_datetime').first()
-
         context = {}
-        if existing:
-            context['existing_status'] = existing.identity_verification_status_id
-            context['submitted_at'] = existing.register_datetime
+
+        # ユーザーステータスで本人確認完了を判定（user_status_id=2が承認済み）
+        if request.user.user_status_id == 2:
+            context['existing_status'] = 1  # 承認済み表示
+        else:
+            # 申請中または却下の場合はIdentityVerificationを確認
+            existing = IdentityVerification.objects.filter(
+                user=request.user
+            ).order_by('-register_datetime').first()
+
+            if existing:
+                context['existing_status'] = existing.identity_verification_status_id
+                context['submitted_at'] = existing.register_datetime
 
         return render(request, 'identity_verification.html', context)
 
     def post(self, request, *args, **kwargs):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        # 既に審査中または承認済みの申請があるか確認
+        # ユーザーステータスで本人確認完了を判定
+        if request.user.user_status_id == 2:
+            message = '既に本人確認が完了しています'
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': message}, status=400)
+            messages.error(request, message)
+            return redirect('identity_verification')
+
+        # 審査中の申請があるか確認
         existing = IdentityVerification.objects.filter(
             user=request.user,
-            identity_verification_status_id__in=[IDENTITY_STATUS_PENDING, IDENTITY_STATUS_APPROVED]
+            identity_verification_status_id=IDENTITY_STATUS_PENDING
         ).first()
 
         if existing:
-            if existing.identity_verification_status_id == IDENTITY_STATUS_APPROVED:
-                message = '既に本人確認が完了しています'
-            else:
-                message = '現在審査中です。結果をお待ちください'
+            message = '現在審査中です。結果をお待ちください'
 
             if is_ajax:
                 return JsonResponse({'success': False, 'message': message}, status=400)
@@ -899,6 +909,7 @@ class IdentityVerificationView(LoginRequiredMixin, View):
         # 画像取得
         face_image = request.FILES.get('face_image')
         id_image = request.FILES.get('id_image')
+        id_back_image = request.FILES.get('id_back_image')
 
         errors = {}
 
@@ -911,11 +922,18 @@ class IdentityVerificationView(LoginRequiredMixin, View):
             errors['face_image'] = '画像ファイルを選択してください'
 
         if not id_image:
-            errors['id_image'] = '身分証明書は必須です'
+            errors['id_image'] = '身分証明書（表面）は必須です'
         elif id_image.size > 5 * 1024 * 1024:
-            errors['id_image'] = '身分証明書は5MB以下にしてください'
+            errors['id_image'] = '身分証明書（表面）は5MB以下にしてください'
         elif not id_image.content_type.startswith('image/'):
             errors['id_image'] = '画像ファイルを選択してください'
+
+        if not id_back_image:
+            errors['id_back_image'] = '身分証明書（裏面/厚み）は必須です'
+        elif id_back_image.size > 5 * 1024 * 1024:
+            errors['id_back_image'] = '身分証明書（裏面/厚み）は5MB以下にしてください'
+        elif not id_back_image.content_type.startswith('image/'):
+            errors['id_back_image'] = '画像ファイルを選択してください'
 
         if errors:
             if is_ajax:
@@ -948,10 +966,16 @@ class IdentityVerificationView(LoginRequiredMixin, View):
                     image_data=face_image.read()
                 )
 
-                # 身分証を保存
+                # 身分証（表面）を保存
                 IdentityVerificationImage.objects.create(
                     identity_verification=verification,
                     image_data=id_image.read()
+                )
+
+                # 身分証（裏面/厚み）を保存
+                IdentityVerificationImage.objects.create(
+                    identity_verification=verification,
+                    image_data=id_back_image.read()
                 )
 
             if is_ajax:
@@ -1076,8 +1100,16 @@ class AdminVerificationDetailView(LoginRequiredMixin, View):
                     verification.save()
 
                     # ユーザーステータスを承認済み(2)に更新
-                    verification.user.user_status_id = 2
-                    verification.user.save(update_fields=['user_status_id', 'update_datetime'])
+                    try:
+                        user_approved_status = UserStatus.objects.get(user_status_id=2)
+                    except UserStatus.DoesNotExist:
+                        user_approved_status = UserStatus.objects.create(
+                            user_status_id=2,
+                            status_name='承認済みユーザー'
+                        )
+
+                    verification.user.user_status = user_approved_status
+                    verification.user.save()
 
                     message = '承認しました'
 

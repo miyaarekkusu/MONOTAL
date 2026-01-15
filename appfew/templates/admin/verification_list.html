@@ -66,13 +66,16 @@
 
     {% else %}
     <div class="empty-message">
-        <i class="fas fa-check-circle fa-3x" style="color: #28a745; margin-bottom: 15px;"></i>
+        <span class="iconify empty-icon" data-icon="lucide:check-circle" data-width="48"></span>
         <p>審査待ちの申請はありません</p>
     </div>
     {% endif %}
 
     <p class="back-link">
-        <a href="{% url 'index' %}"><i class="fas fa-arrow-left"></i> ホームに戻る</a>
+        <a href="{% url 'index' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            ホームに戻る
+        </a>
     </p>
 </div>
 {% endblock %}

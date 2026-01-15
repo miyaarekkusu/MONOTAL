@@ -8,116 +8,314 @@
 {% endblock %}
 
 {% block content %}
-<div class="verification-container">
-    <h1 class="page-title">本人確認</h1>
+<main class="verification-container">
+
+    <!-- ページヘッダー -->
+    <div class="page-header">
+        <div class="page-badge">
+            <span class="iconify" data-icon="lucide:shield-check" data-width="12"></span>
+            TRUST & SAFETY
+        </div>
+        <h1 class="page-title">本人確認書類の提出</h1>
+        <p class="page-description">
+            安心・安全な取引のために、公的証明書の提出をお願いしております。提出された情報は厳重に管理されます。
+        </p>
+    </div>
 
     {% if existing_status == 0 %}
+        <!-- 審査中 -->
         <div class="status-message pending">
-            <i class="fas fa-clock fa-2x"></i>
+            <span class="iconify status-icon" data-icon="lucide:clock" data-width="32"></span>
             <h3>審査中です</h3>
             <p>本人確認の審査中です。結果をお待ちください。</p>
             <p>申請日時: {{ submitted_at|date:"Y/m/d H:i" }}</p>
         </div>
+
     {% elif existing_status == 1 %}
+        <!-- 承認済み -->
         <div class="status-message approved">
-            <i class="fas fa-check-circle fa-2x"></i>
+            <span class="iconify status-icon" data-icon="lucide:check-circle" data-width="32"></span>
             <h3>本人確認完了</h3>
             <p>本人確認が完了しています。</p>
         </div>
+
     {% elif existing_status == 2 %}
+        <!-- 却下 - 再申請フォーム表示 -->
         <div class="status-message rejected">
-            <i class="fas fa-times-circle fa-2x"></i>
+            <span class="iconify status-icon" data-icon="lucide:x-circle" data-width="32"></span>
             <h3>本人確認が却下されました</h3>
             <p>申請内容に不備がありました。再度お申し込みください。</p>
         </div>
 
+        <!-- プライバシー通知 -->
+        <div class="privacy-notice">
+            <span class="iconify notice-icon" data-icon="lucide:lock" data-width="16"></span>
+            <div>
+                <p class="notice-title">情報は暗号化して送信されます</p>
+                <p class="notice-text">
+                    お預かりした画像データは本人確認の目的のみに使用し、承認完了後に適切に処理されます。第三者に公開されることはありません。
+                </p>
+            </div>
+        </div>
+
         <form id="verificationForm" class="verification-form" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="general-error" id="generalError"></div>
 
-            <div class="form-group">
-                <label>顔写真<span class="required">*</span></label>
-                <div class="image-upload-area" id="faceUploadArea">
-                    <input type="file" id="faceImage" name="face_image" accept="image/*">
-                    <div class="upload-preview" id="facePreview"></div>
-                    <div class="upload-placeholder">
-                        <i class="fas fa-user"></i>
-                        <p>クリックして顔写真をアップロード</p>
-                        <p class="hint">正面を向いた鮮明な写真</p>
+            <!-- Step 1: 書類画像のアップロード -->
+            <div class="form-section">
+                <label class="section-label">
+                    <span class="step-number">1</span>
+                    書類画像のアップロード
+                </label>
+
+                <div class="upload-grid">
+                    <!-- 表面 -->
+                    <div class="upload-item">
+                        <span class="upload-item-label">表面</span>
+                        <div class="image-upload-area" id="idUploadArea">
+                            <input type="file" id="idImage" name="id_image" accept="image/*">
+                            <div class="upload-preview" id="idPreview"></div>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-wrapper">
+                                    <span class="iconify upload-icon" data-icon="lucide:image-plus" data-width="20"></span>
+                                </div>
+                                <div class="upload-text">
+                                    <p class="upload-text-main">タップして画像を選択</p>
+                                    <p class="upload-text-sub">またはドラッグ＆ドロップ</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="error-message" id="id_image-error"></p>
+                    </div>
+
+                    <!-- 裏面 -->
+                    <div class="upload-item">
+                        <span class="upload-item-label">裏面 (または厚み)</span>
+                        <div class="image-upload-area" id="idBackUploadArea">
+                            <input type="file" id="idBackImage" name="id_back_image" accept="image/*">
+                            <div class="upload-preview" id="idBackPreview"></div>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-wrapper">
+                                    <span class="iconify upload-icon" data-icon="lucide:image-plus" data-width="20"></span>
+                                </div>
+                                <div class="upload-text">
+                                    <p class="upload-text-main">タップして画像を選択</p>
+                                    <p class="upload-text-sub">またはドラッグ＆ドロップ</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="error-message" id="id_back_image-error"></p>
                     </div>
                 </div>
-                <p class="hint">5MB以下のJPG、PNG形式</p>
-                <p class="error-message" id="face_image-error"></p>
+
+                <div class="upload-notice">
+                    <strong>注意点：</strong> 文字が鮮明に読めるように撮影してください。光の反射や影が入らないようにご注意ください。
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>身分証明書<span class="required">*</span></label>
-                <div class="image-upload-area" id="idUploadArea">
-                    <input type="file" id="idImage" name="id_image" accept="image/*">
-                    <div class="upload-preview" id="idPreview"></div>
-                    <div class="upload-placeholder">
-                        <i class="fas fa-id-card"></i>
-                        <p>クリックして身分証明書をアップロード</p>
-                        <p class="hint">運転免許証・マイナンバーカード・パスポートなど</p>
+            <!-- Step 2: 顔写真 -->
+            <div class="form-section with-border">
+                <label class="section-label">
+                    <span class="step-number">2</span>
+                    ご自身の顔写真 (セルフィー)
+                </label>
+
+                <div class="selfie-section">
+                    <div class="selfie-upload-wrapper">
+                        <div class="selfie-upload-area" id="faceUploadArea">
+                            <input type="file" id="faceImage" name="face_image" accept="image/*">
+                            <div class="selfie-preview" id="facePreview"></div>
+                            <div class="selfie-placeholder">
+                                <div class="selfie-icon-wrapper">
+                                    <span class="iconify" data-icon="lucide:camera" data-width="24"></span>
+                                </div>
+                                <p class="selfie-text">顔写真を撮影・選択</p>
+                            </div>
+                            <div class="selfie-guide-overlay">
+                                <span class="iconify" data-icon="lucide:user" data-width="120"></span>
+                            </div>
+                        </div>
+                        <p class="error-message" id="face_image-error"></p>
+                    </div>
+
+                    <div class="selfie-tips">
+                        <h4 class="selfie-tips-title">撮影のポイント</h4>
+                        <ul class="selfie-tips-list">
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>無帽・マスクなしで正面を向いてください</span>
+                            </li>
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>背景は無地（白壁など）が望ましいです</span>
+                            </li>
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>加工アプリ等は使用しないでください</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-                <p class="hint">5MB以下のJPG、PNG形式</p>
-                <p class="error-message" id="id_image-error"></p>
             </div>
 
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span class="btn-text">申請する</span>
-                <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> 送信中...</span>
-            </button>
+            <!-- 送信ボタン -->
+            <div class="submit-section">
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span class="btn-text">本人確認書類を提出する</span>
+                    <span class="iconify btn-icon" data-icon="lucide:arrow-right" data-width="16"></span>
+                    <span class="btn-loading">
+                        <span class="iconify fa-spin" data-icon="lucide:loader-2" data-width="16"></span>
+                        送信中...
+                    </span>
+                </button>
+                <p class="terms-notice">
+                    提出ボタンを押すことで、<a href="#">利用規約</a>および<a href="#">プライバシーポリシー</a>に同意したものとみなされます。
+                </p>
+            </div>
         </form>
+
     {% else %}
+        <!-- 新規申請フォーム -->
+
+        <!-- プライバシー通知 -->
+        <div class="privacy-notice">
+            <span class="iconify notice-icon" data-icon="lucide:lock" data-width="16"></span>
+            <div>
+                <p class="notice-title">情報は暗号化して送信されます</p>
+                <p class="notice-text">
+                    お預かりした画像データは本人確認の目的のみに使用し、承認完了後に適切に処理されます。第三者に公開されることはありません。
+                </p>
+            </div>
+        </div>
+
         <form id="verificationForm" class="verification-form" enctype="multipart/form-data">
             {% csrf_token %}
 
             <div class="general-error" id="generalError"></div>
 
-            <div class="form-group">
-                <label>顔写真<span class="required">*</span></label>
-                <div class="image-upload-area" id="faceUploadArea">
-                    <input type="file" id="faceImage" name="face_image" accept="image/*">
-                    <div class="upload-preview" id="facePreview"></div>
-                    <div class="upload-placeholder">
-                        <i class="fas fa-user"></i>
-                        <p>クリックして顔写真をアップロード</p>
-                        <p class="hint">正面を向いた鮮明な写真</p>
+            <!-- Step 1: 書類画像のアップロード -->
+            <div class="form-section">
+                <label class="section-label">
+                    <span class="step-number">1</span>
+                    書類画像のアップロード
+                </label>
+
+                <div class="upload-grid">
+                    <!-- 表面 -->
+                    <div class="upload-item">
+                        <span class="upload-item-label">表面</span>
+                        <div class="image-upload-area" id="idUploadArea">
+                            <input type="file" id="idImage" name="id_image" accept="image/*">
+                            <div class="upload-preview" id="idPreview"></div>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-wrapper">
+                                    <span class="iconify upload-icon" data-icon="lucide:image-plus" data-width="20"></span>
+                                </div>
+                                <div class="upload-text">
+                                    <p class="upload-text-main">タップして画像を選択</p>
+                                    <p class="upload-text-sub">またはドラッグ＆ドロップ</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="error-message" id="id_image-error"></p>
+                    </div>
+
+                    <!-- 裏面 -->
+                    <div class="upload-item">
+                        <span class="upload-item-label">裏面 (または厚み)</span>
+                        <div class="image-upload-area" id="idBackUploadArea">
+                            <input type="file" id="idBackImage" name="id_back_image" accept="image/*">
+                            <div class="upload-preview" id="idBackPreview"></div>
+                            <div class="upload-placeholder">
+                                <div class="upload-icon-wrapper">
+                                    <span class="iconify upload-icon" data-icon="lucide:image-plus" data-width="20"></span>
+                                </div>
+                                <div class="upload-text">
+                                    <p class="upload-text-main">タップして画像を選択</p>
+                                    <p class="upload-text-sub">またはドラッグ＆ドロップ</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="error-message" id="id_back_image-error"></p>
                     </div>
                 </div>
-                <p class="hint">5MB以下のJPG、PNG形式</p>
-                <p class="error-message" id="face_image-error"></p>
+
+                <div class="upload-notice">
+                    <strong>注意点：</strong> 文字が鮮明に読めるように撮影してください。光の反射や影が入らないようにご注意ください。
+                </div>
             </div>
 
-            <div class="form-group">
-                <label>身分証明書<span class="required">*</span></label>
-                <div class="image-upload-area" id="idUploadArea">
-                    <input type="file" id="idImage" name="id_image" accept="image/*">
-                    <div class="upload-preview" id="idPreview"></div>
-                    <div class="upload-placeholder">
-                        <i class="fas fa-id-card"></i>
-                        <p>クリックして身分証明書をアップロード</p>
-                        <p class="hint">運転免許証・マイナンバーカード・パスポートなど</p>
+            <!-- Step 2: 顔写真 -->
+            <div class="form-section with-border">
+                <label class="section-label">
+                    <span class="step-number">2</span>
+                    ご自身の顔写真 (セルフィー)
+                </label>
+
+                <div class="selfie-section">
+                    <div class="selfie-upload-wrapper">
+                        <div class="selfie-upload-area" id="faceUploadArea">
+                            <input type="file" id="faceImage" name="face_image" accept="image/*">
+                            <div class="selfie-preview" id="facePreview"></div>
+                            <div class="selfie-placeholder">
+                                <div class="selfie-icon-wrapper">
+                                    <span class="iconify" data-icon="lucide:camera" data-width="24"></span>
+                                </div>
+                                <p class="selfie-text">顔写真を撮影・選択</p>
+                            </div>
+                            <div class="selfie-guide-overlay">
+                                <span class="iconify" data-icon="lucide:user" data-width="120"></span>
+                            </div>
+                        </div>
+                        <p class="error-message" id="face_image-error"></p>
+                    </div>
+
+                    <div class="selfie-tips">
+                        <h4 class="selfie-tips-title">撮影のポイント</h4>
+                        <ul class="selfie-tips-list">
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>無帽・マスクなしで正面を向いてください</span>
+                            </li>
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>背景は無地（白壁など）が望ましいです</span>
+                            </li>
+                            <li>
+                                <span class="iconify tip-icon" data-icon="lucide:check" data-width="12"></span>
+                                <span>加工アプリ等は使用しないでください</span>
+                            </li>
+                        </ul>
                     </div>
                 </div>
-                <p class="hint">5MB以下のJPG、PNG形式</p>
-                <p class="error-message" id="id_image-error"></p>
             </div>
 
-            <button type="submit" class="submit-btn" id="submitBtn">
-                <span class="btn-text">申請する</span>
-                <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> 送信中...</span>
-            </button>
+            <!-- 送信ボタン -->
+            <div class="submit-section">
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    <span class="btn-text">本人確認書類を提出する</span>
+                    <span class="iconify btn-icon" data-icon="lucide:arrow-right" data-width="16"></span>
+                    <span class="btn-loading">
+                        <span class="iconify fa-spin" data-icon="lucide:loader-2" data-width="16"></span>
+                        送信中...
+                    </span>
+                </button>
+                <p class="terms-notice">
+                    提出ボタンを押すことで、<a href="#">利用規約</a>および<a href="#">プライバシーポリシー</a>に同意したものとみなされます。
+                </p>
+            </div>
         </form>
     {% endif %}
 
     <p class="back-link">
-        <a href="{% url 'index' %}"><i class="fas fa-arrow-left"></i> ホームに戻る</a>
+        <a href="{% url 'index' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            ホームに戻る
+        </a>
     </p>
-</div>
+</main>
 {% endblock %}
 
 {% block extra_js %}

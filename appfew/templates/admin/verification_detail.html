@@ -52,7 +52,7 @@
         <div class="images-container">
             {% for img in images %}
             <div class="image-card">
-                <h3>{% if forloop.first %}顔写真{% else %}身分証明書{% endif %}</h3>
+                <h3>{% if forloop.counter == 1 %}顔写真{% elif forloop.counter == 2 %}身分証明書（表面）{% else %}身分証明書（裏面/厚み）{% endif %}</h3>
                 <img src="data:image/jpeg;base64,{{ img.data }}" alt="確認書類" onclick="openModal(this.src)">
             </div>
             {% empty %}
@@ -73,7 +73,10 @@
     {% endif %}
 
     <p class="back-link">
-        <a href="{% url 'admin_verification_list' %}"><i class="fas fa-arrow-left"></i> 一覧に戻る</a>
+        <a href="{% url 'admin_verification_list' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            一覧に戻る
+        </a>
     </p>
 </div>
 

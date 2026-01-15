@@ -66,11 +66,6 @@ function showToast(message, isSuccess = true) {
  * 審査処理を送信
  */
 async function submitReview(action) {
-    const actionText = action === 'approve' ? '承認' : '却下';
-    if (!confirm(`この申請を${actionText}しますか？`)) {
-        return;
-    }
-
     const approveBtn = document.getElementById('approveBtn');
     const rejectBtn = document.getElementById('rejectBtn');
 
