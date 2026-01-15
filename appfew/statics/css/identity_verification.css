@@ -1,0 +1,229 @@
+.verification-container {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+/* ステータスメッセージ */
+.status-message {
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.status-message.pending {
+    background-color: #fff3cd;
+    border: 1px solid #ffc107;
+    color: #856404;
+}
+
+.status-message.approved {
+    background-color: #d4edda;
+    border: 1px solid #28a745;
+    color: #155724;
+}
+
+.status-message.rejected {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+    color: #721c24;
+}
+
+.status-message h3 {
+    margin: 15px 0 10px;
+}
+
+.status-message p {
+    margin-top: 10px;
+    font-size: 14px;
+}
+
+/* フォーム */
+.verification-form {
+    background: #fff;
+    border-radius: 8px;
+    padding: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 25px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+.form-group label .required {
+    color: #dc3545;
+    margin-left: 5px;
+}
+
+/* 画像アップロードエリア */
+.image-upload-area {
+    border: 2px dashed #ddd;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: #fafafa;
+}
+
+.image-upload-area:hover {
+    border-color: #007bff;
+    background: #f0f7ff;
+}
+
+.image-upload-area.has-image {
+    border-style: solid;
+    border-color: #28a745;
+}
+
+.image-upload-area input[type="file"] {
+    display: none;
+}
+
+.upload-placeholder {
+    color: #666;
+}
+
+.upload-placeholder i {
+    font-size: 48px;
+    color: #ccc;
+    margin-bottom: 15px;
+    display: block;
+}
+
+.upload-placeholder p {
+    margin: 5px 0;
+}
+
+.upload-preview {
+    display: none;
+}
+
+.upload-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+}
+
+.upload-preview.show {
+    display: block;
+}
+
+.upload-preview.show + .upload-placeholder {
+    display: none;
+}
+
+/* ヒント */
+.hint {
+    font-size: 12px;
+    color: #666;
+    margin-top: 8px;
+}
+
+/* エラーメッセージ */
+.error-message {
+    color: #dc3545;
+    font-size: 12px;
+    margin-top: 5px;
+    display: none;
+}
+
+.error-message.show {
+    display: block;
+}
+
+/* 送信ボタン */
+.submit-btn {
+    width: 100%;
+    padding: 15px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+.submit-btn:hover {
+    background: #0056b3;
+}
+
+.submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.submit-btn .btn-loading {
+    display: none;
+}
+
+.submit-btn.loading .btn-text {
+    display: none;
+}
+
+.submit-btn.loading .btn-loading {
+    display: inline;
+}
+
+/* 戻るリンク */
+.back-link {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.back-link a {
+    color: #666;
+    text-decoration: none;
+}
+
+.back-link a:hover {
+    color: #007bff;
+}
+
+/* 一般エラー */
+.general-error {
+    background-color: #f8d7da;
+    border: 1px solid #dc3545;
+    color: #721c24;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: none;
+}
+
+.general-error.show {
+    display: block;
+}
+
+/* レスポンシブ */
+@media (max-width: 600px) {
+    .verification-container {
+        margin: 20px auto;
+        padding: 0 15px;
+    }
+
+    .verification-form {
+        padding: 20px;
+    }
+
+    .image-upload-area {
+        padding: 20px;
+    }
+}

@@ -16,4 +16,12 @@ urlpatterns = [
     path('shop/', views.product_list, name='product_list'),
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     path('interest/', views.interest_selection, name='interest_selection'),
+
+    # 本人確認（ユーザー向け）
+    path('identity-verification/', views.identity_verification, name='identity_verification'),
+
+    # 管理者用本人確認審査
+    path('admin/verifications/', views.admin_verification_list, name='admin_verification_list'),
+    path('admin/verifications/<int:verification_id>/', views.admin_verification_detail, name='admin_verification_detail'),
+    path('admin/verification-image/<int:image_id>/', views.verification_image, name='verification_image'),
 ]

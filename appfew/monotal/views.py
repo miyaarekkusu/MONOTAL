@@ -846,6 +846,290 @@ class InterestSelectionView(View):
         return render(request, 'interest_selection.html')
 
 
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  本人確認関連 / IDENTITY VERIFICATION                                         ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# 本人確認ステータス定数
+IDENTITY_STATUS_PENDING = 0   # 未確認（審査待ち）
+IDENTITY_STATUS_APPROVED = 1  # 承認
+IDENTITY_STATUS_REJECTED = 2  # 却下
+
+
+class IdentityVerificationView(LoginRequiredMixin, View):
+    """
+    本人確認申請ページ（ユーザー向け）
+    顔写真と身分証の2枚をアップロード
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 既存の申請状態を確認
+        existing = IdentityVerification.objects.filter(
+            user=request.user
+        ).order_by('-register_datetime').first()
+
+        context = {}
+        if existing:
+            context['existing_status'] = existing.identity_verification_status_id
+            context['submitted_at'] = existing.register_datetime
+
+        return render(request, 'identity_verification.html', context)
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # 既に審査中または承認済みの申請があるか確認
+        existing = IdentityVerification.objects.filter(
+            user=request.user,
+            identity_verification_status_id__in=[IDENTITY_STATUS_PENDING, IDENTITY_STATUS_APPROVED]
+        ).first()
+
+        if existing:
+            if existing.identity_verification_status_id == IDENTITY_STATUS_APPROVED:
+                message = '既に本人確認が完了しています'
+            else:
+                message = '現在審査中です。結果をお待ちください'
+
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': message}, status=400)
+            messages.error(request, message)
+            return redirect('identity_verification')
+
+        # 画像取得
+        face_image = request.FILES.get('face_image')
+        id_image = request.FILES.get('id_image')
+
+        errors = {}
+
+        # バリデーション
+        if not face_image:
+            errors['face_image'] = '顔写真は必須です'
+        elif face_image.size > 5 * 1024 * 1024:
+            errors['face_image'] = '顔写真は5MB以下にしてください'
+        elif not face_image.content_type.startswith('image/'):
+            errors['face_image'] = '画像ファイルを選択してください'
+
+        if not id_image:
+            errors['id_image'] = '身分証明書は必須です'
+        elif id_image.size > 5 * 1024 * 1024:
+            errors['id_image'] = '身分証明書は5MB以下にしてください'
+        elif not id_image.content_type.startswith('image/'):
+            errors['id_image'] = '画像ファイルを選択してください'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return render(request, 'identity_verification.html', {'errors': errors})
+
+        try:
+            # ステータス取得または作成
+            try:
+                pending_status = IdentityVerificationStatus.objects.get(
+                    identity_verification_status_id=IDENTITY_STATUS_PENDING
+                )
+            except IdentityVerificationStatus.DoesNotExist:
+                pending_status = IdentityVerificationStatus.objects.create(
+                    identity_verification_status_id=IDENTITY_STATUS_PENDING,
+                    status_name='未確認'
+                )
+
+            # トランザクション開始
+            with transaction.atomic():
+                # 本人確認レコード作成
+                verification = IdentityVerification.objects.create(
+                    user=request.user,
+                    identity_verification_status=pending_status
+                )
+
+                # 顔写真を保存
+                IdentityVerificationImage.objects.create(
+                    identity_verification=verification,
+                    image_data=face_image.read()
+                )
+
+                # 身分証を保存
+                IdentityVerificationImage.objects.create(
+                    identity_verification=verification,
+                    image_data=id_image.read()
+                )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '本人確認の申請が完了しました。審査結果をお待ちください。'
+                })
+
+            messages.success(request, '本人確認の申請が完了しました。審査結果をお待ちください。')
+            return redirect('identity_verification')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('identity_verification')
+
+
+class AdminVerificationListView(LoginRequiredMixin, View):
+    """
+    本人確認審査一覧ページ（管理者用）
+    未確認の申請を古い順に表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            messages.error(request, '権限がありません')
+            return redirect('index')
+
+        # 未確認の申請を取得（古い順）
+        verifications = IdentityVerification.objects.filter(
+            identity_verification_status_id=IDENTITY_STATUS_PENDING
+        ).select_related('user').order_by('register_datetime')
+
+        # ページネーション
+        paginator = Paginator(verifications, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'verifications': page_obj,
+            'total_count': verifications.count(),
+            'page_obj': page_obj,
+        }
+
+        return render(request, 'admin/verification_list.html', context)
+
+
+class AdminVerificationDetailView(LoginRequiredMixin, View):
+    """
+    本人確認審査詳細ページ（管理者用）
+    画像確認と承認/却下処理
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, verification_id, *args, **kwargs):
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            messages.error(request, '権限がありません')
+            return redirect('index')
+
+        try:
+            verification = IdentityVerification.objects.select_related(
+                'user', 'identity_verification_status'
+            ).prefetch_related('images').get(
+                identity_verification_id=verification_id
+            )
+        except IdentityVerification.DoesNotExist:
+            messages.error(request, '申請が見つかりません')
+            return redirect('admin_verification_list')
+
+        # 画像をBase64エンコード
+        import base64
+        images = []
+        for img in verification.images.all():
+            images.append({
+                'data': base64.b64encode(img.image_data).decode('utf-8'),
+                'id': img.identity_verification_image_id
+            })
+
+        context = {
+            'verification': verification,
+            'images': images,
+        }
+
+        return render(request, 'admin/verification_detail.html', context)
+
+    def post(self, request, verification_id, *args, **kwargs):
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
+
+        action = request.POST.get('action')
+
+        if action not in ['approve', 'reject']:
+            return JsonResponse({'success': False, 'message': '不正な操作です'}, status=400)
+
+        try:
+            with transaction.atomic():
+                verification = IdentityVerification.objects.select_for_update().get(
+                    identity_verification_id=verification_id
+                )
+
+                if action == 'approve':
+                    # 承認ステータス取得または作成
+                    try:
+                        approved_status = IdentityVerificationStatus.objects.get(
+                            identity_verification_status_id=IDENTITY_STATUS_APPROVED
+                        )
+                    except IdentityVerificationStatus.DoesNotExist:
+                        approved_status = IdentityVerificationStatus.objects.create(
+                            identity_verification_status_id=IDENTITY_STATUS_APPROVED,
+                            status_name='承認'
+                        )
+
+                    verification.identity_verification_status = approved_status
+                    verification.approval_datetime = timezone.now()
+                    verification.save()
+
+                    # ユーザーステータスを承認済み(2)に更新
+                    verification.user.user_status_id = 2
+                    verification.user.save(update_fields=['user_status_id', 'update_datetime'])
+
+                    message = '承認しました'
+
+                elif action == 'reject':
+                    # 却下ステータス取得または作成
+                    try:
+                        rejected_status = IdentityVerificationStatus.objects.get(
+                            identity_verification_status_id=IDENTITY_STATUS_REJECTED
+                        )
+                    except IdentityVerificationStatus.DoesNotExist:
+                        rejected_status = IdentityVerificationStatus.objects.create(
+                            identity_verification_status_id=IDENTITY_STATUS_REJECTED,
+                            status_name='却下'
+                        )
+
+                    verification.identity_verification_status = rejected_status
+                    verification.rejection_datetime = timezone.now()
+                    verification.save()
+
+                    message = '却下しました'
+
+            return JsonResponse({'success': True, 'message': message})
+
+        except IdentityVerification.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': f'エラー: {str(e)}'}, status=500)
+
+
+class VerificationImageView(LoginRequiredMixin, View):
+    """
+    本人確認画像取得API（管理者用）
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, image_id, *args, **kwargs):
+        # 管理者権限チェック
+        if not request.user.is_staff:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden()
+
+        try:
+            image = IdentityVerificationImage.objects.get(
+                identity_verification_image_id=image_id
+            )
+            from django.http import HttpResponse
+            return HttpResponse(image.image_data, content_type='image/jpeg')
+        except IdentityVerificationImage.DoesNotExist:
+            from django.http import HttpResponseNotFound
+            return HttpResponseNotFound()
+
+
 index = IndexView.as_view()
 login_view = LoginView.as_view()
 logout_view = LogoutView.as_view()
@@ -861,4 +1145,8 @@ product_list = ProductListView.as_view()
 product_detail = ProductDetailView.as_view()
 interest_selection = InterestSelectionView.as_view()
 
-
+# 本人確認関連
+identity_verification = IdentityVerificationView.as_view()
+admin_verification_list = AdminVerificationListView.as_view()
+admin_verification_detail = AdminVerificationDetailView.as_view()
+verification_image = VerificationImageView.as_view()

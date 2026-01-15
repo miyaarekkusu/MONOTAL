@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}本人確認 - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/identity_verification.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="verification-container">
+    <h1 class="page-title">本人確認</h1>
+
+    {% if existing_status == 0 %}
+        <div class="status-message pending">
+            <i class="fas fa-clock fa-2x"></i>
+            <h3>審査中です</h3>
+            <p>本人確認の審査中です。結果をお待ちください。</p>
+            <p>申請日時: {{ submitted_at|date:"Y/m/d H:i" }}</p>
+        </div>
+    {% elif existing_status == 1 %}
+        <div class="status-message approved">
+            <i class="fas fa-check-circle fa-2x"></i>
+            <h3>本人確認完了</h3>
+            <p>本人確認が完了しています。</p>
+        </div>
+    {% elif existing_status == 2 %}
+        <div class="status-message rejected">
+            <i class="fas fa-times-circle fa-2x"></i>
+            <h3>本人確認が却下されました</h3>
+            <p>申請内容に不備がありました。再度お申し込みください。</p>
+        </div>
+
+        <form id="verificationForm" class="verification-form" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="general-error" id="generalError"></div>
+
+            <div class="form-group">
+                <label>顔写真<span class="required">*</span></label>
+                <div class="image-upload-area" id="faceUploadArea">
+                    <input type="file" id="faceImage" name="face_image" accept="image/*">
+                    <div class="upload-preview" id="facePreview"></div>
+                    <div class="upload-placeholder">
+                        <i class="fas fa-user"></i>
+                        <p>クリックして顔写真をアップロード</p>
+                        <p class="hint">正面を向いた鮮明な写真</p>
+                    </div>
+                </div>
+                <p class="hint">5MB以下のJPG、PNG形式</p>
+                <p class="error-message" id="face_image-error"></p>
+            </div>
+
+            <div class="form-group">
+                <label>身分証明書<span class="required">*</span></label>
+                <div class="image-upload-area" id="idUploadArea">
+                    <input type="file" id="idImage" name="id_image" accept="image/*">
+                    <div class="upload-preview" id="idPreview"></div>
+                    <div class="upload-placeholder">
+                        <i class="fas fa-id-card"></i>
+                        <p>クリックして身分証明書をアップロード</p>
+                        <p class="hint">運転免許証・マイナンバーカード・パスポートなど</p>
+                    </div>
+                </div>
+                <p class="hint">5MB以下のJPG、PNG形式</p>
+                <p class="error-message" id="id_image-error"></p>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">申請する</span>
+                <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> 送信中...</span>
+            </button>
+        </form>
+    {% else %}
+        <form id="verificationForm" class="verification-form" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <div class="general-error" id="generalError"></div>
+
+            <div class="form-group">
+                <label>顔写真<span class="required">*</span></label>
+                <div class="image-upload-area" id="faceUploadArea">
+                    <input type="file" id="faceImage" name="face_image" accept="image/*">
+                    <div class="upload-preview" id="facePreview"></div>
+                    <div class="upload-placeholder">
+                        <i class="fas fa-user"></i>
+                        <p>クリックして顔写真をアップロード</p>
+                        <p class="hint">正面を向いた鮮明な写真</p>
+                    </div>
+                </div>
+                <p class="hint">5MB以下のJPG、PNG形式</p>
+                <p class="error-message" id="face_image-error"></p>
+            </div>
+
+            <div class="form-group">
+                <label>身分証明書<span class="required">*</span></label>
+                <div class="image-upload-area" id="idUploadArea">
+                    <input type="file" id="idImage" name="id_image" accept="image/*">
+                    <div class="upload-preview" id="idPreview"></div>
+                    <div class="upload-placeholder">
+                        <i class="fas fa-id-card"></i>
+                        <p>クリックして身分証明書をアップロード</p>
+                        <p class="hint">運転免許証・マイナンバーカード・パスポートなど</p>
+                    </div>
+                </div>
+                <p class="hint">5MB以下のJPG、PNG形式</p>
+                <p class="error-message" id="id_image-error"></p>
+            </div>
+
+            <button type="submit" class="submit-btn" id="submitBtn">
+                <span class="btn-text">申請する</span>
+                <span class="btn-loading"><i class="fas fa-spinner fa-spin"></i> 送信中...</span>
+            </button>
+        </form>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'index' %}"><i class="fas fa-arrow-left"></i> ホームに戻る</a>
+    </p>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/identity_verification.js' %}"></script>
+{% endblock %}

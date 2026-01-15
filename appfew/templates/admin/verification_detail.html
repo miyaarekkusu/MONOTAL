@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}本人確認審査 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="page-title">本人確認審査</h1>
+
+    <div class="info-card">
+        <h2>申請者情報</h2>
+        <div class="info-row">
+            <span class="info-label">ユーザー名</span>
+            <span class="info-value">{{ verification.user.user_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">表示名</span>
+            <span class="info-value">{{ verification.user.display_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">メールアドレス</span>
+            <span class="info-value">{{ verification.user.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">電話番号</span>
+            <span class="info-value">{{ verification.user.phone_number }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">申請日時</span>
+            <span class="info-value">{{ verification.register_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">ステータス</span>
+            <span class="info-value">
+                {% if verification.identity_verification_status_id == 0 %}
+                    <span class="status-badge pending">審査待ち</span>
+                {% elif verification.identity_verification_status_id == 1 %}
+                    <span class="status-badge approved">承認済み</span>
+                {% elif verification.identity_verification_status_id == 2 %}
+                    <span class="status-badge rejected">却下</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <div class="info-card">
+        <h2>提出書類</h2>
+        <div class="images-container">
+            {% for img in images %}
+            <div class="image-card">
+                <h3>{% if forloop.first %}顔写真{% else %}身分証明書{% endif %}</h3>
+                <img src="data:image/jpeg;base64,{{ img.data }}" alt="確認書類" onclick="openModal(this.src)">
+            </div>
+            {% empty %}
+            <p>画像がありません</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    {% if verification.identity_verification_status_id == 0 %}
+    <div class="action-buttons">
+        <button type="button" class="btn btn-approve" id="approveBtn" onclick="submitReview('approve')">
+            <i class="fas fa-check"></i> 承認
+        </button>
+        <button type="button" class="btn btn-reject" id="rejectBtn" onclick="submitReview('reject')">
+            <i class="fas fa-times"></i> 却下
+        </button>
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'admin_verification_list' %}"><i class="fas fa-arrow-left"></i> 一覧に戻る</a>
+    </p>
+</div>
+
+<!-- 一覧URLをJSに渡す -->
+<input type="hidden" id="verificationListUrl" value="{% url 'admin_verification_list' %}">
+
+<!-- 画像拡大モーダル -->
+<div class="modal-overlay" id="imageModal" onclick="closeModal()">
+    <span class="modal-close">&times;</span>
+    <div class="modal-content">
+        <img id="modalImage" src="" alt="拡大画像">
+    </div>
+</div>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_verification.js' %}"></script>
+{% endblock %}
