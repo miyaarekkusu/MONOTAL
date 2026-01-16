@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python manage.py makemigrations:*)",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew && python manage.py makemigrations monotal --name add_prefecture_rental_plan_update_address\")",
+      "Bash(cmd /c \"cd /d C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew && python manage.py makemigrations monotal\")",
+      "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py makemigrations monotal 2>&1\")",
+      "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py makemigrations monotal --noinput 2>&1\")",
+      "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py migrate monotal 2>&1\")",
+      "Bash(cd /d C:UsersalexmsourcereposmiyaarekkusuHEWSakuhin)"
+    ]
+  }
+}

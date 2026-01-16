@@ -1,84 +1,228 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const sellForm = document.getElementById('sellForm');
 
     // 画像管理
     let uploadedImages = [];
     const MAX_IMAGES = 10;
 
+    // レンタルプラン管理
+    let planRowId = 1;
+
     if (sellForm) {
         sellForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            await submitProduct(false);
-        });
-    }
-
-    // 下書き保存ボタン
-    const draftBtn = document.getElementById('draftBtn');
-    if (draftBtn) {
-        draftBtn.addEventListener('click', async function (e) {
-            e.preventDefault();
-            await submitProduct(true);
+            await submitProduct();
         });
     }
 
     // ========================================
-    // レンタル期間選択と価格フィールド管理
+    // 画像アップロード
     // ========================================
-    let selectedPeriods = {}; // { days: label } 形式で選択された期間を保持
+    const imageInput = document.getElementById('imageInput');
+    if (imageInput) {
+        imageInput.addEventListener('change', handleImageUpload);
+    }
 
-    const periodButtons = document.querySelectorAll('.period-btn');
-    const priceFieldsContainer = document.getElementById('priceFieldsContainer');
+    function handleImageUpload(event) {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
 
-    periodButtons.forEach(btn => {
-        btn.addEventListener('click', function() {
-            const days = this.getAttribute('data-days');
-            const label = this.getAttribute('data-label');
+        clearError('imageError');
 
-            if (this.classList.contains('active')) {
-                // 選択解除
-                this.classList.remove('active');
-                delete selectedPeriods[days];
-            } else {
-                // 選択
-                this.classList.add('active');
-                selectedPeriods[days] = label;
+        const remainingSlots = MAX_IMAGES - uploadedImages.length;
+        if (remainingSlots <= 0) {
+            showErrorAt('imageError', `最大${MAX_IMAGES}枚までアップロードできます`);
+            return;
+        }
+
+        Array.from(files).slice(0, remainingSlots).forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                showErrorAt('imageError', '画像ファイルのみアップロードできます');
+                return;
             }
 
-            renderPriceFields();
+            if (file.size > 10 * 1024 * 1024) {
+                showErrorAt('imageError', '画像は10MB以下にしてください');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                uploadedImages.push({
+                    file: file,
+                    dataUrl: e.target.result
+                });
+                renderImagePreviews();
+            };
+            reader.readAsDataURL(file);
         });
-    });
 
-    function renderPriceFields() {
-        priceFieldsContainer.innerHTML = '';
+        event.target.value = '';
+    }
 
-        // 日数順にソート
-        const sortedPeriods = Object.keys(selectedPeriods).sort((a, b) => parseInt(a) - parseInt(b));
+    function renderImagePreviews() {
+        const imageGrid = document.getElementById('imageGrid');
+        if (!imageGrid) return;
 
-        sortedPeriods.forEach(days => {
-            const label = selectedPeriods[days];
-            const fieldItem = document.createElement('div');
-            fieldItem.className = 'price-field-item';
-            fieldItem.innerHTML = `
-                <label class="price-field-label">
-                    <span class="price-field-period">${label}</span> のレンタル料金
-                </label>
-                <div class="price-group">
-                    <input type="number"
-                           id="price_${days}"
-                           class="form-input price-input"
-                           data-days="${days}"
-                           placeholder="0"
-                           min="100">
-                    <span class="currency">¥</span>
-                </div>
-                <div id="price_${days}_error"></div>
+        // アップロードボックスを保持
+        const uploadBox = document.getElementById('uploadBox');
+
+        // 既存のプレビューを削除
+        const existingPreviews = imageGrid.querySelectorAll('.preview-item');
+        existingPreviews.forEach(el => el.remove());
+
+        // プレビューを追加
+        uploadedImages.forEach((image, index) => {
+            const previewItem = document.createElement('div');
+            previewItem.className = 'preview-item';
+            previewItem.innerHTML = `
+                <img src="${image.dataUrl}" alt="プレビュー ${index + 1}">
+                <button type="button" class="remove-btn" data-index="${index}" title="削除">
+                    <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                </button>
+                ${index === 0 ? '<span class="main-badge">メイン</span>' : ''}
             `;
-            priceFieldsContainer.appendChild(fieldItem);
+            imageGrid.insertBefore(previewItem, uploadBox);
+
+            // 削除ボタンのイベント
+            previewItem.querySelector('.remove-btn').addEventListener('click', function () {
+                removeImage(index);
+            });
+        });
+
+        // アップロード上限に達したらボックスを非表示
+        if (uploadedImages.length >= MAX_IMAGES) {
+            uploadBox.style.display = 'none';
+        } else {
+            uploadBox.style.display = 'flex';
+        }
+
+        // カウント更新
+        const uploadLimit = uploadBox.querySelector('.upload-limit');
+        if (uploadLimit) {
+            uploadLimit.textContent = uploadedImages.length > 0
+                ? `${uploadedImages.length}/${MAX_IMAGES}枚`
+                : `最大${MAX_IMAGES}枚`;
+        }
+    }
+
+    function removeImage(index) {
+        uploadedImages.splice(index, 1);
+        renderImagePreviews();
+    }
+
+    // ========================================
+    // レンタルプラン動的追加・削除
+    // ========================================
+    const addPlanBtn = document.getElementById('addPlanBtn');
+    const rentalPlansContainer = document.getElementById('rentalPlansContainer');
+
+    if (addPlanBtn) {
+        addPlanBtn.addEventListener('click', addPlanRow);
+    }
+
+    if (rentalPlansContainer) {
+        rentalPlansContainer.addEventListener('click', function (e) {
+            const deleteBtn = e.target.closest('.delete-plan-btn');
+            if (deleteBtn && !deleteBtn.disabled) {
+                const row = deleteBtn.closest('.rental-plan-row');
+                if (row) {
+                    row.remove();
+                    updateDeleteButtons();
+                }
+            }
+        });
+    }
+
+    function addPlanRow() {
+        planRowId++;
+        const newRow = document.createElement('div');
+        newRow.className = 'rental-plan-row';
+        newRow.dataset.rowId = planRowId;
+        newRow.innerHTML = `
+            <div class="col-days">
+                <input type="number" class="plan-input days-input" placeholder="7" min="1">
+                <span class="input-suffix">日</span>
+            </div>
+            <div class="col-price">
+                <span class="input-prefix">¥</span>
+                <input type="number" class="plan-input price-input" placeholder="3,000" min="100">
+            </div>
+            <div class="col-action">
+                <button type="button" class="delete-plan-btn">
+                    <span class="iconify" data-icon="lucide:trash-2" data-width="16"></span>
+                </button>
+            </div>
+        `;
+        rentalPlansContainer.appendChild(newRow);
+        updateDeleteButtons();
+    }
+
+    function updateDeleteButtons() {
+        const rows = rentalPlansContainer.querySelectorAll('.rental-plan-row');
+        rows.forEach((row, index) => {
+            const deleteBtn = row.querySelector('.delete-plan-btn');
+            if (deleteBtn) {
+                // 1行目は削除不可
+                deleteBtn.disabled = (rows.length === 1);
+            }
         });
     }
 
     // ========================================
-    // リアルタイムバリデーション設定
+    // 郵便番号から住所自動入力
+    // ========================================
+    const autoFillBtn = document.getElementById('autoFillBtn');
+    if (autoFillBtn) {
+        autoFillBtn.addEventListener('click', autoFillAddress);
+    }
+
+    async function autoFillAddress() {
+        const postalCode = document.getElementById('postalCode').value.replace(/[^0-9]/g, '');
+
+        if (postalCode.length !== 7) {
+            showErrorAt('postalCode', '郵便番号は7桁で入力してください');
+            return;
+        }
+
+        try {
+            autoFillBtn.textContent = '検索中...';
+            autoFillBtn.disabled = true;
+
+            // zipcloud API を使用
+            const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`);
+            const data = await response.json();
+
+            if (data.status === 200 && data.results && data.results.length > 0) {
+                const result = data.results[0];
+
+                // 都道府県を設定（都道府県名から検索）
+                const prefectureSelect = document.getElementById('prefecture');
+                const prefectureName = result.address1;
+                for (let option of prefectureSelect.options) {
+                    if (option.text === prefectureName) {
+                        prefectureSelect.value = option.value;
+                        break;
+                    }
+                }
+
+                // 市区町村・町域を設定
+                document.getElementById('city').value = result.address2 + result.address3;
+
+            } else {
+                showErrorAt('postalCode', '住所が見つかりませんでした');
+            }
+        } catch (error) {
+            console.error('Address lookup error:', error);
+            showErrorAt('postalCode', '住所の取得に失敗しました');
+        } finally {
+            autoFillBtn.textContent = '住所を自動入力';
+            autoFillBtn.disabled = false;
+        }
+    }
+
+    // ========================================
+    // リアルタイム文字数カウント
     // ========================================
     const productNameInput = document.getElementById('productName');
     const descriptionInput = document.getElementById('description');
@@ -86,47 +230,66 @@
     if (productNameInput) {
         productNameInput.addEventListener('input', function () {
             updateCharCount('productName', 'nameCount', 40);
-            validateFieldRealtime('productName', 40);
         });
     }
 
     if (descriptionInput) {
         descriptionInput.addEventListener('input', function () {
             updateCharCount('description', 'descCount', 1000);
-            validateFieldRealtime('description', 1000);
         });
+    }
+
+    function updateCharCount(inputId, countId, maxLength) {
+        const input = document.getElementById(inputId);
+        const countDisplay = document.getElementById(countId);
+
+        if (input && countDisplay) {
+            const currentLength = input.value.length;
+            countDisplay.textContent = `${currentLength}/${maxLength}`;
+
+            if (currentLength > maxLength) {
+                countDisplay.classList.add('error');
+                input.classList.add('input-error');
+            } else {
+                countDisplay.classList.remove('error');
+                input.classList.remove('input-error');
+            }
+        }
     }
 
     // ========================================
     // 送信処理
     // ========================================
-    async function submitProduct(isDraft) {
-        clearErrors();
+    async function submitProduct() {
+        clearAllErrors();
 
-        // 選択された期間と価格を収集
-        const rentalPeriods = [];
-        Object.keys(selectedPeriods).forEach(days => {
-            const priceInput = document.getElementById(`price_${days}`);
-            const price = priceInput ? priceInput.value : '';
-            rentalPeriods.push({
-                days: parseInt(days),
-                label: selectedPeriods[days],
-                price: price
-            });
+        // レンタルプランを収集
+        const rentalPlans = [];
+        const planRows = document.querySelectorAll('.rental-plan-row');
+        planRows.forEach(row => {
+            const daysInput = row.querySelector('.days-input');
+            const priceInput = row.querySelector('.price-input');
+            if (daysInput && priceInput) {
+                const days = parseInt(daysInput.value) || 0;
+                const price = parseInt(priceInput.value) || 0;
+                if (days > 0 || price > 0) {
+                    rentalPlans.push({ days, price });
+                }
+            }
         });
 
         const formData = {
-            product_name: document.getElementById('productName').value,
+            product_name: document.getElementById('productName').value.trim(),
             product_category: document.getElementById('category').value,
-            brand: document.getElementById('brand').value,
-            product_description: document.getElementById('description').value,
+            product_description: document.getElementById('description').value.trim(),
             product_condition: document.getElementById('condition').value,
-            shipping_method: document.getElementById('shippingMethod').value,
-            shipping_area: document.getElementById('shippingArea').value,
             shipping_days: document.getElementById('shippingDays').value,
-            rental_periods: rentalPeriods,
-            images: uploadedImages,
-            is_draft: isDraft
+            postal_code: document.getElementById('postalCode').value.trim(),
+            prefecture: document.getElementById('prefecture').value,
+            city: document.getElementById('city').value.trim(),
+            street_address: document.getElementById('streetAddress').value.trim(),
+            rental_plans: rentalPlans,
+            images: uploadedImages
         };
 
         const errors = validateForm(formData);
@@ -135,20 +298,20 @@
             return;
         }
 
-        setLoadingState(true, isDraft);
+        setLoadingState(true);
 
         try {
             const submitData = new FormData();
             submitData.append('product_name', formData.product_name);
             submitData.append('product_category', formData.product_category);
-            submitData.append('brand', formData.brand);
             submitData.append('product_description', formData.product_description);
             submitData.append('product_condition', formData.product_condition);
-            submitData.append('shipping_method', formData.shipping_method);
-            submitData.append('shipping_area', formData.shipping_area);
             submitData.append('shipping_days', formData.shipping_days);
-            submitData.append('rental_periods', JSON.stringify(formData.rental_periods));
-            submitData.append('is_draft', isDraft ? 'true' : 'false');
+            submitData.append('postal_code', formData.postal_code);
+            submitData.append('prefecture', formData.prefecture);
+            submitData.append('city', formData.city);
+            submitData.append('street_address', formData.street_address);
+            submitData.append('rental_plans', JSON.stringify(formData.rental_plans));
 
             uploadedImages.forEach(img => {
                 submitData.append('images', img.file);
@@ -174,31 +337,23 @@
                 return;
             }
 
+            // 本人確認が必要な場合
+            if (response.status === 403) {
+                showErrorAt('termsError', data.message || '本人確認が必要です');
+                if (data.redirect_url) {
+                    setTimeout(() => {
+                        window.location.href = data.redirect_url;
+                    }, 1500);
+                }
+                return;
+            }
+
             if (response.ok && data.success) {
-                sellForm.reset();
-                uploadedImages = [];
-                renderImagePreviews();
                 window.location.href = data.redirect_url || '/monotal/';
 
             } else {
                 if (data.errors) {
-                    const fieldMap = {
-                        'product_name': 'productName',
-                        'product_category': 'category',
-                        'product_description': 'description',
-                        'product_condition': 'condition',
-                        'shipping_method': 'shippingMethod',
-                        'shipping_area': 'shippingArea',
-                        'shipping_days': 'shippingDays',
-                        'rental_periods': 'rentalPeriods'
-                    };
-
-                    const mappedErrors = {};
-                    Object.keys(data.errors).forEach(field => {
-                        const frontendField = fieldMap[field] || field;
-                        mappedErrors[frontendField] = data.errors[field];
-                    });
-                    displayErrors(mappedErrors);
+                    displayErrors(data.errors);
                 } else if (data.message) {
                     showErrorAt('termsError', data.message);
                 }
@@ -208,12 +363,103 @@
             console.error('Submit error:', error);
             showErrorAt('termsError', 'ネットワークエラーが発生しました。時間をおいて再度お試しください。');
         } finally {
-            setLoadingState(false, isDraft);
+            setLoadingState(false);
         }
     }
 
     // ========================================
-    // エラー表示（全て統一スタイル）
+    // バリデーション
+    // ========================================
+    function validateForm(formData) {
+        const errors = {};
+
+        // 画像
+        if (!formData.images || formData.images.length === 0) {
+            errors.images = '商品画像を1枚以上アップロードしてください';
+        } else if (formData.images.length > MAX_IMAGES) {
+            errors.images = `画像は最大${MAX_IMAGES}枚までです`;
+        }
+
+        // 商品名
+        if (!formData.product_name) {
+            errors.productName = '商品名は必須です';
+        } else if (formData.product_name.length > 40) {
+            errors.productName = '商品名は40文字以内で入力してください';
+        }
+
+        // カテゴリー
+        if (!formData.product_category) {
+            errors.category = 'カテゴリーを選択してください';
+        }
+
+        // 商品の説明
+        if (!formData.product_description) {
+            errors.description = '商品の説明は必須です';
+        } else if (formData.product_description.length > 1000) {
+            errors.description = '商品の説明は1000文字以内で入力してください';
+        }
+
+        // 商品の状態
+        if (!formData.product_condition) {
+            errors.condition = '商品の状態を選択してください';
+        }
+
+        // 発送までの日数
+        if (!formData.shipping_days) {
+            errors.shippingDays = '発送までの日数を選択してください';
+        }
+
+        // レンタルプラン
+        if (!formData.rental_plans || formData.rental_plans.length === 0) {
+            errors.rentalPlans = '少なくとも1つのレンタルプランを設定してください';
+        } else {
+            let hasValidPlan = false;
+            formData.rental_plans.forEach((plan, index) => {
+                if (plan.days > 0 && plan.price >= 100) {
+                    hasValidPlan = true;
+                }
+                if (plan.days > 0 && plan.price > 0 && plan.price < 100) {
+                    errors.rentalPlans = '金額は100円以上で設定してください';
+                }
+            });
+            if (!hasValidPlan && !errors.rentalPlans) {
+                errors.rentalPlans = '日数と金額を正しく入力してください';
+            }
+        }
+
+        // 住所（郵便番号）
+        if (!formData.postal_code) {
+            errors.postalCode = '郵便番号は必須です';
+        } else if (formData.postal_code.replace(/[^0-9]/g, '').length !== 7) {
+            errors.postalCode = '郵便番号は7桁で入力してください';
+        }
+
+        // 住所（都道府県）
+        if (!formData.prefecture) {
+            errors.prefecture = '都道府県を選択してください';
+        }
+
+        // 住所（市区町村・町域）
+        if (!formData.city) {
+            errors.city = '市区町村・町域は必須です';
+        }
+
+        // 住所（番地・建物名）
+        if (!formData.street_address) {
+            errors.streetAddress = '番地・建物名は必須です';
+        }
+
+        // 利用規約
+        const agreeTerms = document.getElementById('agreeTerms');
+        if (!agreeTerms || !agreeTerms.checked) {
+            errors.agreeTerms = '利用規約に同意してください';
+        }
+
+        return errors;
+    }
+
+    // ========================================
+    // エラー表示
     // ========================================
     function displayErrors(errors) {
         Object.keys(errors).forEach(field => {
@@ -221,12 +467,8 @@
                 showErrorAt('imageError', errors[field]);
             } else if (field === 'agreeTerms') {
                 showErrorAt('termsError', errors[field]);
-            } else if (field === 'rentalPeriods') {
-                showErrorAt('rentalPeriodsError', errors[field]);
-            } else if (field.startsWith('price_')) {
-                // 個別の価格フィールドエラー (例: price_1, price_30)
-                showErrorAt(`${field}_error`, errors[field]);
-                document.getElementById(field)?.classList.add('input-error');
+            } else if (field === 'rentalPlans') {
+                showErrorAt('rentalPlansError', errors[field]);
             } else {
                 const input = document.getElementById(field);
                 if (input) {
@@ -267,7 +509,14 @@
         container.appendChild(errorDiv);
     }
 
-    function clearErrors() {
+    function clearError(containerId) {
+        const container = document.getElementById(containerId);
+        if (container) {
+            container.innerHTML = '';
+        }
+    }
+
+    function clearAllErrors() {
         document.querySelectorAll('.input-error').forEach(el => {
             el.classList.remove('input-error');
         });
@@ -278,225 +527,14 @@
             el.classList.remove('error');
         });
 
-        // 専用エラーコンテナをクリア
-        ['imageError', 'termsError', 'rentalPeriodsError', 'priceError'].forEach(id => {
+        ['imageError', 'termsError', 'rentalPlansError'].forEach(id => {
             const container = document.getElementById(id);
             if (container) container.innerHTML = '';
         });
-
-        // 動的に生成された価格フィールドのエラーもクリア
-        document.querySelectorAll('[id^="price_"][id$="_error"]').forEach(el => {
-            el.innerHTML = '';
-        });
     }
 
     // ========================================
-    // バリデーション
-    // ========================================
-    function validateForm(formData) {
-        const errors = {};
-
-        if (formData.is_draft) {
-            // 下書きの場合は商品名のみ必須
-            if (!formData.product_name) {
-                errors.productName = '商品名は必須です';
-            } else if (formData.product_name.length > 40) {
-                errors.productName = '商品名は40文字以内で入力してください';
-            }
-        } else {
-            // 出品の場合は全て必須
-            if (!formData.images || formData.images.length === 0) {
-                errors.images = '商品画像を1枚以上アップロードしてください';
-            } else if (formData.images.length > MAX_IMAGES) {
-                errors.images = `画像は最大${MAX_IMAGES}枚までです`;
-            }
-
-            if (!formData.product_name) {
-                errors.productName = '商品名は必須です';
-            } else if (formData.product_name.length > 40) {
-                errors.productName = '商品名は40文字以内で入力してください';
-            }
-
-            if (!formData.product_category) {
-                errors.category = 'カテゴリーを選択してください';
-            }
-
-            if (!formData.product_description) {
-                errors.description = '商品の説明は必須です';
-            } else if (formData.product_description.length > 1000) {
-                errors.description = '商品の説明は1000文字以内で入力してください';
-            }
-
-            if (!formData.product_condition) {
-                errors.condition = '商品の状態を選択してください';
-            }
-
-            if (!formData.shipping_method) {
-                errors.shippingMethod = '配送方法を選択してください';
-            }
-
-            if (!formData.shipping_area) {
-                errors.shippingArea = '発送元地域を選択してください';
-            }
-
-            if (!formData.shipping_days) {
-                errors.shippingDays = '発送までの日数を選択してください';
-            }
-
-            // レンタル期間と価格のバリデーション
-            if (!formData.rental_periods || formData.rental_periods.length === 0) {
-                errors.rentalPeriods = '少なくとも1つのレンタル期間を選択してください';
-            } else {
-                // 各期間の価格をチェック
-                let hasValidPrice = false;
-                formData.rental_periods.forEach(period => {
-                    const price = period.price ? parseInt(period.price) : 0;
-
-                    if (price > 0) {
-                        hasValidPrice = true;
-                        if (price < 100 || price > 9999999) {
-                            errors[`price_${period.days}`] = '料金は100円〜9,999,999円で設定してください';
-                        }
-                    }
-                });
-
-                if (!hasValidPrice) {
-                    errors.rentalPeriods = '少なくとも1つの期間に料金を設定してください';
-                }
-            }
-
-            const agreeTerms = document.getElementById('agreeTerms');
-            if (!agreeTerms || !agreeTerms.checked) {
-                errors.agreeTerms = '利用規約に同意してください';
-            }
-        }
-
-        return errors;
-    }
-
-    // ========================================
-    // リアルタイム文字数バリデーション
-    // ========================================
-    function validateFieldRealtime(inputId, maxLength) {
-        const input = document.getElementById(inputId);
-        if (!input) return;
-
-        const currentLength = input.value.length;
-        const charCount = document.getElementById(inputId === 'productName' ? 'nameCount' : 'descCount');
-
-        // 既存のエラーメッセージを削除
-        const existingError = input.parentElement.querySelector('.error-message');
-        if (existingError) {
-            existingError.remove();
-        }
-
-        if (currentLength > maxLength) {
-            input.classList.add('input-error');
-            if (charCount) {
-                charCount.classList.add('error');
-            }
-
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'error-message';
-            errorDiv.textContent = inputId === 'productName'
-                ? '商品名は40文字以内で入力してください'
-                : '商品の説明は1000文字以内で入力してください';
-            input.parentElement.appendChild(errorDiv);
-        } else {
-            input.classList.remove('input-error');
-            if (charCount) {
-                charCount.classList.remove('error');
-            }
-        }
-    }
-
-    // ========================================
-    // 文字数カウント
-    // ========================================
-    window.updateCharCount = function (inputId, countId, maxLength) {
-        const input = document.getElementById(inputId);
-        const countDisplay = document.getElementById(countId);
-
-        if (input && countDisplay) {
-            const currentLength = input.value.length;
-            countDisplay.textContent = `${currentLength}/${maxLength}`;
-        }
-    };
-
-    // ========================================
-    // 画像アップロード
-    // ========================================
-    window.handleImageUpload = function (event) {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-
-        // エラークリア
-        const imageError = document.getElementById('imageError');
-        if (imageError) imageError.innerHTML = '';
-
-        const remainingSlots = MAX_IMAGES - uploadedImages.length;
-        if (remainingSlots <= 0) {
-            showErrorAt('imageError', `最大${MAX_IMAGES}枚までアップロードできます`);
-            return;
-        }
-
-        Array.from(files).slice(0, remainingSlots).forEach(file => {
-            if (!file.type.startsWith('image/')) {
-                showErrorAt('imageError', '画像ファイルのみアップロードできます');
-                return;
-            }
-
-            if (file.size > 10 * 1024 * 1024) {
-                showErrorAt('imageError', '画像は10MB以下にしてください');
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (e) {
-                uploadedImages.push({
-                    file: file,
-                    dataUrl: e.target.result
-                });
-                renderImagePreviews();
-            };
-            reader.readAsDataURL(file);
-        });
-
-        event.target.value = '';
-    };
-
-    window.removeImage = function (index) {
-        uploadedImages.splice(index, 1);
-        renderImagePreviews();
-    };
-
-    function renderImagePreviews() {
-        const previewContainer = document.getElementById('imagePreview');
-        if (!previewContainer) return;
-
-        previewContainer.innerHTML = '';
-
-        uploadedImages.forEach((image, index) => {
-            const previewItem = document.createElement('div');
-            previewItem.className = 'preview-item';
-            previewItem.innerHTML = `
-                <img src="${image.dataUrl}" alt="プレビュー ${index + 1}">
-                <button type="button" class="remove-btn" onclick="removeImage(${index})" title="削除">×</button>
-                ${index === 0 ? '<span class="main-badge">メイン</span>' : ''}
-            `;
-            previewContainer.appendChild(previewItem);
-        });
-
-        const uploadLimit = document.querySelector('.upload-limit');
-        if (uploadLimit) {
-            uploadLimit.textContent = uploadedImages.length > 0
-                ? `${uploadedImages.length}/${MAX_IMAGES}枚`
-                : `最大${MAX_IMAGES}枚まで`;
-        }
-    }
-
-    // ========================================
-    // ユーティリティ関数
+    // ユーティリティ
     // ========================================
     function getCsrfToken() {
         const csrfInput = document.querySelector('input[name="csrfmiddlewaretoken"]');
@@ -513,20 +551,14 @@
         return '';
     }
 
-    function setLoadingState(isLoading, isDraft) {
-        const submitBtn = document.querySelector('.submit-btn');
-        const draftBtn = document.getElementById('draftBtn');
-
+    function setLoadingState(isLoading) {
+        const submitBtn = document.getElementById('submitBtn');
         if (submitBtn) {
             submitBtn.disabled = isLoading;
-            if (!isDraft) {
-                submitBtn.textContent = isLoading ? '出品中...' : '出品する';
-            }
-        }
-        if (draftBtn) {
-            draftBtn.disabled = isLoading;
-            if (isDraft) {
-                draftBtn.textContent = isLoading ? '保存中...' : '下書き保存';
+            if (isLoading) {
+                submitBtn.innerHTML = '<span class="iconify" data-icon="lucide:loader-2" data-width="18"></span> 出品中...';
+            } else {
+                submitBtn.innerHTML = '<span class="iconify" data-icon="lucide:upload-cloud" data-width="18"></span> 規約に同意して出品する';
             }
         }
     }

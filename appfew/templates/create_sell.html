@@ -1,168 +1,211 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}商品を出品 - MONOTAL{% endblock %}
+{% block title %}新規出品 - MONOTAL{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'css/common.css' %}">
 <link rel="stylesheet" type="text/css" href="{% static 'css/create-sell.css' %}">
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<!-- Main Content -->
+<main class="sell-main">
+    <div class="page-header">
+        <h1 class="page-title">商品の情報を入力</h1>
+        <p class="page-subtitle">必須項目を入力して出品を完了させてください。</p>
+    </div>
+
     <form id="sellForm" enctype="multipart/form-data">
         {% csrf_token %}
 
-        <div class="section">
-            <h2 class="section-title">
-                商品画像
-                <span class="required">必須</span>
-            </h2>
-            <div class="image-upload-area" onclick="document.getElementById('imageInput').click()">
-                <div class="upload-icon">📷</div>
-                <div class="upload-text">
-                    写真を追加する<br>
-                    ここをタップして写真を選択
+        <!-- 1. Image Upload -->
+        <section class="form-section">
+            <label class="section-label">商品画像 <span class="required-badge">*必須</span></label>
+            <div class="image-grid" id="imageGrid">
+                <!-- Upload Box -->
+                <div class="upload-box" id="uploadBox">
+                    <span class="iconify" data-icon="lucide:camera" data-width="24"></span>
+                    <span class="upload-text">画像を追加</span>
+                    <span class="upload-limit">最大10枚</span>
+                    <input type="file" id="imageInput" multiple accept="image/*" class="hidden-input">
                 </div>
-                <div class="upload-limit">最大10枚まで</div>
             </div>
-            <input type="file" id="imageInput" multiple accept="image/*" onchange="handleImageUpload(event)">
-            <div class="image-preview" id="imagePreview"></div>
-            <div id="imageError"></div>
-        </div>
+            <div id="imageError" class="error-container"></div>
+        </section>
 
-        <div class="section">
-            <h2 class="section-title">
-                商品情報
-                <span class="required">必須</span>
-            </h2>
+        <!-- 2. Basic Info -->
+        <section class="form-section">
             <div class="form-group">
-                <label class="form-label" for="productName">商品名</label>
-                <input type="text" id="productName" class="form-input"
-                       placeholder="商品名を入力してください">
+                <label class="input-label">商品名</label>
+                <input type="text" id="productName" class="form-input" placeholder="PCモニター 27インチ 4K対応">
                 <div class="char-count" id="nameCount">0/40</div>
             </div>
-            <div class="form-group">
-                <label class="form-label" for="category">カテゴリー</label>
-                <select id="category" class="form-select">
-                    <option value="" disabled selected hidden>カテゴリーを選択</option>
-                    <option value="1">ファッション</option>
-                    <option value="2">家電・スマホ・カメラ</option>
-                    <option value="3">本・音楽・ゲーム</option>
-                </select>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="input-label">カテゴリー</label>
+                    <div class="select-wrapper">
+                        <select id="category" class="form-select">
+                            <option value="" disabled selected>選択してください</option>
+                            {% for category in categories %}
+                            <option value="{{ category.product_category_id }}">{{ category.category_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="input-label">商品の状態</label>
+                    <div class="select-wrapper">
+                        <select id="condition" class="form-select">
+                            <option value="" disabled selected>選択してください</option>
+                            {% for condition in conditions %}
+                            <option value="{{ condition.product_condition_id }}">{{ condition.condition_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
+                    </div>
+                </div>
             </div>
+
             <div class="form-group">
-                <label class="form-label" for="brand">ブランド</label>
-                <input type="text" id="brand" class="form-input" placeholder="ブランド名（任意）">
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="description">商品の説明</label>
-                <textarea id="description" class="form-textarea"
-                          placeholder="商品の説明を入力してください（色、素材、重さ、定価、注意点など）"></textarea>
+                <label class="input-label">商品の説明</label>
+                <textarea id="description" rows="6" class="form-textarea" placeholder="色、素材、重さ、定価、注意点などを詳しく記載してください。"></textarea>
                 <div class="char-count" id="descCount">0/1000</div>
             </div>
-        </div>
+        </section>
 
-        <div class="section">
-            <h2 class="section-title">
-                商品の状態
-                <span class="required">必須</span>
-            </h2>
-            <div class="form-group">
-                <select id="condition" class="form-select">
-                    <option value="" disabled selected hidden>状態を選択</option>
-                    <option value="1">新品・未使用</option>
-                    <option value="2">極美品（使用感なし）</option>
-                    <option value="3">美品（軽微な使用感）</option>
-                    <option value="4">良好（通常使用レベル）</option>
-                    <option value="5">やや傷あり（動作問題なし）</option>
-                    <option value="6">傷・汚れあり（動作正常）</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2 class="section-title">
-                配送について
-                <span class="required">必須</span>
-            </h2>
-            <div class="form-group">
-                <label class="form-label" for="shippingMethod">配送方法</label>
-                <select id="shippingMethod" class="form-select">
-                    <option value="" disabled selected hidden>配送方法を選択</option>
-                    <option value="1">モノタル便</option>
-                    <option value="2">ゆうゆうモノタル便</option>
-                    <option value="3">普通郵便</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="shippingArea">発送元地域</label>
-                <select id="shippingArea" class="form-select">
-                    <option value="" disabled selected hidden>都道府県を選択</option>
-                    <option value="13">東京都</option>
-                    <option value="27">大阪府</option>
-                    <option value="23">愛知県</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label" for="shippingDays">発送までの日数</label>
-                <select id="shippingDays" class="form-select">
-                    <option value="" disabled selected hidden>日数を選択</option>
-                    <option value="1-2">1〜2日で発送</option>
-                    <option value="2-3">2〜3日で発送</option>
-                    <option value="4-7">4〜7日で発送</option>
-                </select>
-            </div>
-        </div>
-
-        <div class="section">
-            <h2 class="section-title">
-                レンタル期間と価格設定
-                <span class="required">必須</span>
-            </h2>
-            <div class="form-group">
-                <label class="form-label">提供するレンタル期間を選択</label>
-                <div class="rental-periods-grid">
-                    <button type="button" class="period-btn" data-days="1" data-label="1日">1日</button>
-                    <button type="button" class="period-btn" data-days="3" data-label="3日">3日</button>
-                    <button type="button" class="period-btn" data-days="7" data-label="7日">7日</button>
-                    <button type="button" class="period-btn" data-days="14" data-label="14日">14日</button>
-                    <button type="button" class="period-btn" data-days="30" data-label="1ヶ月">1ヶ月</button>
-                    <button type="button" class="period-btn" data-days="60" data-label="2ヶ月">2ヶ月</button>
-                    <button type="button" class="period-btn" data-days="90" data-label="3ヶ月">3ヶ月</button>
-                    <button type="button" class="period-btn" data-days="180" data-label="6ヶ月">6ヶ月</button>
-                    <button type="button" class="period-btn" data-days="365" data-label="1年">1年</button>
+        <!-- 3. Rental Plans (Dynamic One-to-Many) -->
+        <section class="form-section">
+            <div class="section-header">
+                <div>
+                    <label class="section-label">レンタル日数・金額設定</label>
+                    <p class="section-hint">レンタル可能な日数と金額のセットを複数登録できます。</p>
                 </div>
-                <div id="rentalPeriodsError"></div>
             </div>
 
-            <div id="priceFieldsContainer" class="price-fields-container">
-                <!-- 選択された期間の価格フィールドがここに動的に表示されます -->
+            <div class="rental-plans-container" id="rentalPlansContainer">
+                <!-- Header Row -->
+                <div class="rental-plans-header">
+                    <div class="col-days">日数 (Days)</div>
+                    <div class="col-price">金額 (Price)</div>
+                    <div class="col-action"></div>
+                </div>
+
+                <!-- Default Row -->
+                <div class="rental-plan-row" data-row-id="1">
+                    <div class="col-days">
+                        <input type="number" class="plan-input days-input" placeholder="3" min="1">
+                        <span class="input-suffix">日</span>
+                    </div>
+                    <div class="col-price">
+                        <span class="input-prefix">¥</span>
+                        <input type="number" class="plan-input price-input" placeholder="1,500" min="100">
+                    </div>
+                    <div class="col-action">
+                        <button type="button" class="delete-plan-btn" disabled>
+                            <span class="iconify" data-icon="lucide:trash-2" data-width="16"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <div id="priceError"></div>
-        </div>
 
-        <!-- 利用規約（シンプル - div白なし） -->
-        <div class="terms-section">
-            <input type="checkbox" id="agreeTerms" class="terms-checkbox">
-            <label class="terms-label" for="agreeTerms">
-                <a href="#" class="terms-link">出品者利用規約</a>および<a href="#" class="terms-link">禁止されている出品物</a>を確認し、同意しました。また、<a href="#" class="terms-link">特定商取引法に基づく表記</a>を確認しました。
-            </label>
-        </div>
-        <div id="termsError"></div>
+            <div class="add-plan-wrapper">
+                <button type="button" id="addPlanBtn" class="add-plan-btn">
+                    <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                    料金プランを追加
+                </button>
+            </div>
+            <div id="rentalPlansError" class="error-container"></div>
+        </section>
 
+        <!-- 4. Shipping Info & Origin Address -->
+        <section class="form-section">
+            <label class="section-label section-border-bottom">配送・発送元情報</label>
+
+            <div class="form-group">
+                <label class="input-label">発送までの日数</label>
+                <div class="select-wrapper">
+                    <select id="shippingDays" class="form-select">
+                        <option value="" disabled selected>選択してください</option>
+                        {% for sd in shipping_days_list %}
+                        <option value="{{ sd.shipping_days_id }}">{{ sd.days_label }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
+                </div>
+            </div>
+
+            <!-- Address Form -->
+            <div class="address-form">
+                <div class="address-header">
+                    <label class="input-label-bold">発送元住所</label>
+                    <span class="address-hint">※ユーザー住所として登録されます</span>
+                </div>
+
+                <!-- Postal Code -->
+                <div class="form-group">
+                    <label class="input-label-small">郵便番号 (ハイフンなし)</label>
+                    <div class="postal-row">
+                        <input type="text" id="postalCode" class="form-input postal-input" placeholder="1234567" maxlength="7">
+                        <button type="button" id="autoFillBtn" class="auto-fill-btn">
+                            住所を自動入力
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Pref & City -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="input-label-small">都道府県</label>
+                        <div class="select-wrapper">
+                            <select id="prefecture" class="form-select">
+                                <option value="" disabled selected>選択...</option>
+                                {% for pref in prefectures %}
+                                <option value="{{ pref.prefecture_id }}">{{ pref.prefecture_name }}</option>
+                                {% endfor %}
+                            </select>
+                            <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="14"></span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="input-label-small">市区町村・町域</label>
+                        <input type="text" id="city" class="form-input" placeholder="渋谷区神南">
+                    </div>
+                </div>
+
+                <!-- Street Address -->
+                <div class="form-group">
+                    <label class="input-label-small">番地・建物名・部屋番号</label>
+                    <input type="text" id="streetAddress" class="form-input" placeholder="1-1-1 モノタルビル 301">
+                </div>
+            </div>
+        </section>
+
+        <!-- Submit Action -->
         <div class="submit-section">
-            <button type="button" id="draftBtn" class="draft-btn">
-                下書き保存
-            </button>
-            <button type="submit" class="submit-btn">
-                出品する
+            <div class="terms-box">
+                <div class="terms-checkbox-wrapper">
+                    <input id="agreeTerms" type="checkbox" class="terms-checkbox">
+                </div>
+                <label for="agreeTerms" class="terms-label">
+                    <a href="#" class="terms-link">利用規約</a> および
+                    <a href="#" class="terms-link">プライバシーポリシー</a>
+                    に同意し、出品する商品はガイドラインに準拠していることを確認しました。
+                </label>
+            </div>
+            <div id="termsError" class="error-container"></div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">
+                <span class="iconify" data-icon="lucide:upload-cloud" data-width="18"></span>
+                規約に同意して出品する
             </button>
         </div>
     </form>
-</div>
+</main>
 {% endblock %}
 
 {% block extra_js %}
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
 <script src="{% static 'js/create-sell.js' %}"></script>
 {% endblock %}

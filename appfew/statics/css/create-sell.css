@@ -1,458 +1,735 @@
-﻿/* ============================================
-   create-sell.css - 商品出品フォーム
+/* ============================================
+   create-sell.css - 商品出品フォーム (新デザイン)
    ============================================ */
 
-/* メインコンテナ */
-.container {
-    max-width: 680px;
-    margin: 0 auto;
-    padding: 20px;
+/* Base Styles */
+* {
+    box-sizing: border-box;
 }
 
-/* セクション共通スタイル */
-.section {
-    background: white;
-    border-radius: 8px;
-    margin-bottom: 16px;
-    padding: 24px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #fafafa;
+    color: #18181b;
+    -webkit-font-smoothing: antialiased;
+    margin: 0;
+    padding: 0;
 }
 
-.section-title {
-    font-size: 16px;
-    font-weight: 600;
-    color: #333;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-}
-
-.required {
-    background: #ff4757;
+::selection {
+    background-color: #db2777;
     color: white;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 3px;
-    margin-left: 8px;
-    font-weight: normal;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d4d4d8;
+    border-radius: 20px;
+}
+
+/* Number Input Spinner */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 /* ============================================
-   画像アップロードセクション
+   Header
    ============================================ */
-.image-upload-area {
-    border: 2px dashed #ddd;
-    border-radius: 8px;
-    padding: 30px 20px;
-    text-align: center;
-    background: #fafafa;
-    cursor: pointer;
-    transition: all 0.3s ease;
+.sell-header {
+    height: 56px;
+    border-bottom: 1px solid #e4e4e7;
+    background: white;
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 30;
 }
 
-    .image-upload-area:hover {
-        border-color: #ec4899;
-        background: #fff5f5;
-    }
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
 
-.upload-icon {
-    font-size: 36px;
-    color: #ccc;
+.back-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #71717a;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.back-link:hover {
+    color: #18181b;
+}
+
+.back-text {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.header-title {
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    font-size: 14px;
+}
+
+.header-right {
+    width: 80px;
+}
+
+/* ============================================
+   Main Content
+   ============================================ */
+.sell-main {
+    max-width: 768px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 16px;
+}
+
+@media (min-width: 768px) {
+    .sell-main {
+        padding: 32px;
+    }
+}
+
+.page-header {
+    margin-bottom: 32px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #18181b;
+    margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: #71717a;
+    margin: 0;
+}
+
+/* ============================================
+   Form Section
+   ============================================ */
+.form-section {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e4e4e7;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    margin-bottom: 32px;
+}
+
+.section-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin-bottom: 16px;
+}
+
+.section-border-bottom {
+    border-bottom: 1px solid #f4f4f5;
+    padding-bottom: 8px;
+    margin-bottom: 24px;
+}
+
+.required-badge {
+    color: #db2777;
+    font-size: 12px;
+    margin-left: 4px;
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.section-hint {
+    font-size: 10px;
+    color: #71717a;
+    margin: 4px 0 0 0;
+}
+
+/* ============================================
+   Image Upload
+   ============================================ */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+}
+
+@media (min-width: 768px) {
+    .image-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.upload-box {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 2px dashed #d4d4d8;
+    background: #fafafa;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #a1a1aa;
+    transition: all 0.2s;
+    position: relative;
+}
+
+.upload-box:hover {
+    background: #f4f4f5;
+    border-color: #a1a1aa;
+}
+
+.upload-box:hover .iconify {
+    color: #71717a;
+}
+
+.upload-box .iconify {
     margin-bottom: 8px;
+    transition: color 0.2s;
 }
 
 .upload-text {
-    color: #666;
-    font-size: 14px;
-    line-height: 1.4;
+    font-size: 12px;
+    font-weight: 500;
 }
 
 .upload-limit {
-    font-size: 12px;
-    color: #999;
-    margin-top: 8px;
+    font-size: 10px;
+    color: #a1a1aa;
+    margin-top: 4px;
 }
 
-#imageInput {
-    display: none;
+.hidden-input {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
 
-/* 画像プレビューグリッド - 10枚収まるレイアウト */
-.image-preview {
-    display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    margin-top: 16px;
-}
-
+/* Image Preview */
 .preview-item {
-    position: relative;
     aspect-ratio: 1;
     border-radius: 8px;
+    border: 1px solid #e4e4e7;
+    background: #f4f4f5;
+    position: relative;
     overflow: hidden;
-    border: 1px solid #eee;
-    background: #f5f5f5;
 }
 
-    .preview-item img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        display: block;
-    }
+.preview-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-    .preview-item .remove-btn {
-        position: absolute;
-        top: 4px;
-        right: 4px;
-        background: rgba(0,0,0,0.6);
-        color: white;
-        border: none;
-        width: 20px;
-        height: 20px;
-        border-radius: 50%;
-        cursor: pointer;
-        font-size: 14px;
-        line-height: 18px;
-        text-align: center;
-        padding: 0;
-        transition: background 0.2s;
-    }
+.preview-item .remove-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
 
-        .preview-item .remove-btn:hover {
-            background: #ff4757;
-        }
+.preview-item:hover .remove-btn {
+    opacity: 1;
+}
 
-    .preview-item .main-badge {
-        position: absolute;
-        bottom: 4px;
-        left: 4px;
-        background: #ec4899;
-        color: white;
-        font-size: 9px;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-weight: 500;
-    }
+.preview-item .remove-btn:hover {
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.preview-item .main-badge {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    background: #db2777;
+    color: white;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+}
 
 /* ============================================
-   フォーム要素
+   Form Elements
    ============================================ */
 .form-group {
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
-.form-label {
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+}
+
+@media (min-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.input-label {
     display: block;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #3f3f46;
+    margin-bottom: 6px;
+}
+
+.input-label-bold {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: #18181b;
+}
+
+.input-label-small {
+    display: block;
+    font-size: 10px;
     font-weight: 500;
+    color: #71717a;
+    margin-bottom: 4px;
 }
 
 .form-input,
 .form-select,
 .form-textarea {
     width: 100%;
-    padding: 12px 16px;
-    border: 1px solid #ddd;
     border-radius: 6px;
+    border: 1px solid #e4e4e7;
+    background: #fafafa;
+    padding: 10px 12px;
     font-size: 14px;
-    background: white;
-    transition: border-color 0.3s ease;
-    box-sizing: border-box;
+    outline: none;
+    transition: all 0.2s;
+    color: #18181b;
 }
 
-    .form-input:focus,
-    .form-select:focus,
-    .form-textarea:focus {
-        outline: none;
-        border-color: #ec4899;
-        box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.1);
-    }
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+    border-color: #18181b;
+    box-shadow: 0 0 0 1px #18181b;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: #a1a1aa;
+}
 
 .form-textarea {
-    resize: vertical;
-    min-height: 100px;
+    resize: none;
 }
 
 .char-count {
     text-align: right;
     font-size: 12px;
-    color: #999;
+    color: #a1a1aa;
     margin-top: 4px;
 }
 
-    .char-count.error {
-        color: #d63031;
-        font-weight: 500;
-    }
+.char-count.error {
+    color: #dc2626;
+}
 
-/* セレクトボックス */
+/* Select Wrapper */
+.select-wrapper {
+    position: relative;
+}
+
 .form-select {
     appearance: none;
     -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
     padding-right: 36px;
     cursor: pointer;
 }
 
-    /* プレースホルダーの色 */
-    .form-select option[value=""][disabled] {
-        color: #999;
-    }
-
-/* ============================================
-   レンタル期間選択ボタン
-   ============================================ */
-.rental-periods-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.period-btn {
-    padding: 12px 16px;
-    background: white;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    color: #666;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.period-btn:hover {
-    border-color: #ec4899;
-    color: #ec4899;
-    background: #fef2f8;
-}
-
-.period-btn.active {
-    background: #ec4899;
-    border-color: #ec4899;
-    color: white;
-    font-weight: 600;
-}
-
-/* ============================================
-   価格フィールドコンテナ
-   ============================================ */
-.price-fields-container {
-    margin-top: 24px;
-}
-
-.price-field-item {
-    margin-bottom: 16px;
-    padding: 16px;
-    background: #fafafa;
-    border-radius: 8px;
-    border: 1px solid #eee;
-}
-
-.price-field-label {
-    display: block;
-    font-size: 14px;
-    color: #333;
-    margin-bottom: 8px;
-    font-weight: 600;
-}
-
-.price-field-period {
-    color: #ec4899;
-    font-weight: 700;
-}
-
-/* ============================================
-   価格入力
-   ============================================ */
-.price-group {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.price-input {
-    text-align: left;
-    font-size: 18px;
-    font-weight: 600;
-    padding-right: 40px;
-    flex: 1;
-}
-
-.currency {
+.select-icon {
     position: absolute;
-    right: 16px;
+    right: 12px;
     top: 50%;
     transform: translateY(-50%);
-    color: #666;
-    font-size: 16px;
+    color: #a1a1aa;
     pointer-events: none;
 }
 
 /* ============================================
-   利用規約（シンプルスタイル - div白なし）
+   Rental Plans
    ============================================ */
-.terms-section {
+.rental-plans-container {
+    background: #fafafa;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #f4f4f5;
+}
+
+.rental-plans-header {
+    display: grid;
+    grid-template-columns: 4fr 7fr 1fr;
+    gap: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #a1a1aa;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-left: 4px;
+    margin-bottom: 12px;
+}
+
+.rental-plan-row {
+    display: grid;
+    grid-template-columns: 4fr 7fr 1fr;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.rental-plan-row:last-child {
+    margin-bottom: 0;
+}
+
+.col-days,
+.col-price {
+    position: relative;
+}
+
+.plan-input {
+    width: 100%;
+    border-radius: 6px;
+    border: 1px solid #e4e4e7;
+    background: white;
+    padding: 8px 12px;
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s;
+}
+
+.plan-input:focus {
+    border-color: #18181b;
+    box-shadow: 0 0 0 1px #18181b;
+}
+
+.days-input {
+    text-align: right;
+    padding-right: 28px;
+}
+
+.price-input {
+    text-align: right;
+    padding-left: 24px;
+}
+
+.input-suffix {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #a1a1aa;
+    pointer-events: none;
+}
+
+.input-prefix {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: #a1a1aa;
+    pointer-events: none;
+}
+
+.col-action {
+    display: flex;
+    justify-content: center;
+}
+
+.delete-plan-btn {
+    background: none;
+    border: none;
+    color: #d4d4d8;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-plan-btn:hover:not(:disabled) {
+    color: #ef4444;
+}
+
+.delete-plan-btn:disabled {
+    cursor: not-allowed;
+}
+
+.add-plan-wrapper {
+    margin-top: 12px;
+}
+
+.add-plan-btn {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px dashed #d4d4d8;
+    background: none;
+    font-size: 12px;
+    font-weight: 600;
+    color: #52525b;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.add-plan-btn:hover {
+    background: #fafafa;
+    border-color: #a1a1aa;
+    color: #18181b;
+}
+
+/* ============================================
+   Address Form
+   ============================================ */
+.address-form {
+    margin-top: 24px;
+}
+
+.address-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.address-hint {
+    font-size: 10px;
+    color: #71717a;
+    background: #f4f4f5;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.postal-row {
+    display: flex;
+    gap: 8px;
+}
+
+.postal-input {
+    width: 128px;
+}
+
+.auto-fill-btn {
+    padding: 8px 12px;
+    background: #18181b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.auto-fill-btn:hover {
+    background: #27272a;
+}
+
+/* ============================================
+   Submit Section
+   ============================================ */
+.submit-section {
+    padding-top: 16px;
+    padding-bottom: 48px;
+}
+
+.terms-box {
     display: flex;
     align-items: flex-start;
-    gap: 10px;
-    padding: 16px 0;
+    gap: 12px;
+    padding: 16px;
+    background: #f4f4f5;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+.terms-checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    height: 20px;
 }
 
 .terms-checkbox {
-    width: 18px;
-    height: 18px;
-    margin-top: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1px solid #d4d4d8;
+    background: white;
     cursor: pointer;
-    accent-color: #ec4899;
-    flex-shrink: 0;
+    accent-color: #18181b;
 }
 
 .terms-label {
-    font-size: 13px;
-    color: #666;
+    font-size: 12px;
+    color: #52525b;
     line-height: 1.5;
     cursor: pointer;
 }
 
 .terms-link {
-    color: #ec4899;
+    color: #18181b;
+    font-weight: 600;
     text-decoration: none;
+    border-bottom: 1px solid #d4d4d8;
+    transition: border-color 0.2s;
 }
 
-    .terms-link:hover {
-        text-decoration: underline;
-    }
-
-/* ============================================
-   送信ボタンセクション
-   ============================================ */
-.submit-section {
-    padding: 24px;
-    background: white;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    margin-top: 16px;
+.terms-link:hover {
+    border-color: #18181b;
 }
 
-/* 下書き保存ボタン */
-.draft-btn {
-    flex: 1;
-    max-width: 200px;
-    padding: 14px 24px;
-    background: white;
-    color: #666;
-    border: 2px solid #ddd;
-    border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-}
-
-    .draft-btn:hover {
-        border-color: #999;
-        color: #333;
-        background: #f9f9f9;
-    }
-
-    .draft-btn:disabled {
-        background: #f5f5f5;
-        color: #ccc;
-        border-color: #eee;
-        cursor: not-allowed;
-    }
-
-/* 出品ボタン */
 .submit-btn {
-    flex: 1;
-    max-width: 200px;
-    padding: 14px 24px;
-    background: #ec4899;
-    color: white;
-    border: none;
+    width: 100%;
+    padding: 14px;
     border-radius: 8px;
-    font-size: 15px;
-    font-weight: 600;
+    background: #18181b;
+    color: white;
+    font-weight: 700;
+    font-size: 14px;
+    border: none;
     cursor: pointer;
-    transition: background 0.3s ease;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
 }
 
-    .submit-btn:hover {
-        background: #db2777;
-    }
+.submit-btn:hover {
+    background: #27272a;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
 
-    .submit-btn:disabled {
-        background: #ccc;
-        cursor: not-allowed;
-    }
+.submit-btn:active {
+    transform: scale(0.99);
+}
+
+.submit-btn:disabled {
+    background: #a1a1aa;
+    cursor: not-allowed;
+    box-shadow: none;
+}
 
 /* ============================================
-   エラーメッセージ（全て統一スタイル）
+   Error Styles
    ============================================ */
+.error-container {
+    margin-top: 8px;
+}
+
 .error-message {
-    color: #d63031;
+    color: #dc2626;
     font-size: 12px;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 .input-error {
-    border-color: #d63031 !important;
+    border-color: #dc2626 !important;
+}
+
+.input-error:focus {
+    box-shadow: 0 0 0 1px #dc2626 !important;
 }
 
 /* ============================================
-   レスポンシブ対応
+   Responsive
    ============================================ */
-@media (max-width: 768px) {
-    .container {
+@media (max-width: 480px) {
+    .sell-main {
         padding: 12px;
     }
 
-    .section {
-        padding: 20px 16px;
+    .form-section {
+        padding: 16px;
     }
 
-    /* モバイルでは画像を4列に */
-    .image-preview {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+    .page-title {
+        font-size: 20px;
     }
 
-    /* レンタル期間ボタンを2列に */
-    .rental-periods-grid {
+    .image-grid {
         grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
     }
 
-    .submit-section {
-        padding: 20px 16px;
+    .rental-plans-header {
+        display: none;
+    }
+
+    .rental-plan-row {
+        grid-template-columns: 1fr 1fr auto;
+    }
+
+    .postal-row {
         flex-direction: column;
     }
 
-    .draft-btn,
-    .submit-btn {
-        max-width: 100%;
-        padding: 12px 16px;
-        font-size: 14px;
-    }
-}
-
-@media (max-width: 480px) {
-    /* 小さい画面では画像を3列に */
-    .image-preview {
-        grid-template-columns: repeat(3, 1fr);
-    }
-
-    .preview-item .main-badge {
-        font-size: 8px;
-        padding: 1px 4px;
+    .postal-input {
+        width: 100%;
     }
 }

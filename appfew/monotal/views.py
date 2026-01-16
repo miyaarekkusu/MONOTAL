@@ -460,18 +460,56 @@ PRODUCT_STATUS_PAUSED = 4     # 出品停止
 PRODUCT_STATUS_COMPLETED = 5  # 取引完了
 PRODUCT_STATUS_DELETED = 6    # 削除済み
 
+# ユーザーステータス定数
+USER_STATUS_UNVERIFIED = 1    # 未認証（本人確認未完了）
+USER_STATUS_VERIFIED = 2      # 承認済み（本人確認完了）
+
+
+class VerificationRequiredView(View):
+    """本人確認が必要なページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'verification_required.html')
+
 
 class CreateSellView(View):
+    """
+    商品出品ページ
 
-#    login_url = '/monotal/login/'
+    アクセス条件:
+    - ログイン必須
+    - 本人確認完了（user_status_id = 2）必須
+    """
 
     def get(self, request, *args, **kwargs):
-        return render(request, 'create_sell.html')
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return redirect('/monotal/login/')
+
+        # 本人確認チェック
+        if request.user.user_status_id != USER_STATUS_VERIFIED:
+            return redirect('verification_required')
+
+        # マスターデータを取得
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).prefetch_related('subcategories')
+        conditions = ProductCondition.objects.all()
+        prefectures = Prefecture.objects.all()
+        shipping_days_list = ShippingDays.objects.all()
+
+        context = {
+            'categories': categories,
+            'conditions': conditions,
+            'prefectures': prefectures,
+            'shipping_days_list': shipping_days_list,
+        }
+
+        return render(request, 'create_sell.html', context)
 
     def post(self, request, *args, **kwargs):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        # ログインチェック(確認用ー後で削除)
+        # ログインチェック
         if not request.user.is_authenticated:
             if is_ajax:
                 return JsonResponse({
@@ -481,26 +519,39 @@ class CreateSellView(View):
                 }, status=401)
             return redirect('/monotal/login/')
 
+        # 本人確認チェック
+        if request.user.user_status_id != USER_STATUS_VERIFIED:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '本人確認が完了していません。本人確認を行ってください。',
+                    'redirect_url': '/monotal/sell/verification-required/'
+                }, status=403)
+            return redirect('verification_required')
+
         try:
             # FormDataから取得
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
-            brand = request.POST.get('brand', '').strip()
             product_description = request.POST.get('product_description', '').strip()
             product_condition_id = request.POST.get('product_condition', '')
-            shipping_method_id = request.POST.get('shipping_method', '')
-            shipping_area = request.POST.get('shipping_area', '')
-            shipping_days = request.POST.get('shipping_days', '')
-            rental_periods_json = request.POST.get('rental_periods', '[]')
-            images = request.FILES.getlist('images')
-            is_draft = request.POST.get('is_draft', 'false') == 'true'
+            shipping_days_id = request.POST.get('shipping_days', '')
 
-            # rental_periodsをパース
-            import json
+            # 住所情報
+            postal_code = request.POST.get('postal_code', '').strip()
+            prefecture_id = request.POST.get('prefecture', '')
+            city = request.POST.get('city', '').strip()
+            street_address = request.POST.get('street_address', '').strip()
+
+            # レンタルプラン
+            rental_plans_json = request.POST.get('rental_plans', '[]')
+            images = request.FILES.getlist('images')
+
+            # rental_plansをパース
             try:
-                rental_periods = json.loads(rental_periods_json)
+                rental_plans = json.loads(rental_plans_json)
             except json.JSONDecodeError:
-                rental_periods = []
+                rental_plans = []
 
             errors = {}
 
@@ -508,62 +559,68 @@ class CreateSellView(View):
             # バリデーション
             # ========================================
 
-            if not is_draft:
-                # 出品時は全て必須
-                if not images:
-                    errors['images'] = '商品画像を1枚以上アップロードしてください'
-                elif len(images) > 10:
-                    errors['images'] = '画像は最大10枚までです'
+            # 画像
+            if not images:
+                errors['images'] = '商品画像を1枚以上アップロードしてください'
+            elif len(images) > 10:
+                errors['images'] = '画像は最大10枚までです'
 
-                if not product_name:
-                    errors['product_name'] = '商品名は必須です'
-                elif len(product_name) > 40:
-                    errors['product_name'] = '商品名は40文字以内で入力してください'
+            # 商品名
+            if not product_name:
+                errors['product_name'] = '商品名は必須です'
+            elif len(product_name) > 40:
+                errors['product_name'] = '商品名は40文字以内で入力してください'
 
-                if not product_category_id:
-                    errors['product_category'] = 'カテゴリーを選択してください'
+            # カテゴリー
+            if not product_category_id:
+                errors['product_category'] = 'カテゴリーを選択してください'
 
-                if not product_description:
-                    errors['product_description'] = '商品の説明は必須です'
-                elif len(product_description) > 1000:
-                    errors['product_description'] = '商品の説明は1000文字以内で入力してください'
+            # 商品の説明
+            if not product_description:
+                errors['product_description'] = '商品の説明は必須です'
+            elif len(product_description) > 1000:
+                errors['product_description'] = '商品の説明は1000文字以内で入力してください'
 
-                if not product_condition_id:
-                    errors['product_condition'] = '商品の状態を選択してください'
+            # 商品の状態
+            if not product_condition_id:
+                errors['product_condition'] = '商品の状態を選択してください'
 
-                if not shipping_method_id:
-                    errors['shipping_method'] = '配送方法を選択してください'
+            # 発送までの日数
+            if not shipping_days_id:
+                errors['shipping_days'] = '発送までの日数を選択してください'
 
-                if not shipping_area:
-                    errors['shipping_area'] = '発送元地域を選択してください'
-
-                if not shipping_days:
-                    errors['shipping_days'] = '発送までの日数を選択してください'
-
-                # レンタル期間と価格のバリデーション
-                if not rental_periods or len(rental_periods) == 0:
-                    errors['rental_periods'] = '少なくとも1つのレンタル期間を選択してください'
-                else:
-                    has_valid_price = False
-                    for period in rental_periods:
-                        days = period.get('days', 0)
-                        price = period.get('price', '')
-
-                        if price and str(price).isdigit():
-                            price_int = int(price)
-                            if price_int > 0:
-                                has_valid_price = True
-                                if price_int < 100 or price_int > 9999999:
-                                    errors[f'price_{days}'] = '料金は100円〜9,999,999円で設定してください'
-
-                    if not has_valid_price:
-                        errors['rental_periods'] = '少なくとも1つの期間に料金を設定してください'
+            # レンタルプランのバリデーション
+            if not rental_plans or len(rental_plans) == 0:
+                errors['rental_plans'] = '少なくとも1つのレンタルプランを設定してください'
             else:
-                # 下書きの場合は商品名のみ必須
-                if not product_name:
-                    errors['product_name'] = '商品名は必須です'
-                elif len(product_name) > 40:
-                    errors['product_name'] = '商品名は40文字以内で入力してください'
+                has_valid_plan = False
+                for plan in rental_plans:
+                    days = plan.get('days', 0)
+                    price = plan.get('price', 0)
+
+                    if days > 0 and price >= 100:
+                        has_valid_plan = True
+                    elif days > 0 and 0 < price < 100:
+                        errors['rental_plans'] = '金額は100円以上で設定してください'
+                        break
+
+                if not has_valid_plan and 'rental_plans' not in errors:
+                    errors['rental_plans'] = '日数と金額を正しく入力してください'
+
+            # 住所バリデーション
+            if not postal_code:
+                errors['postal_code'] = '郵便番号は必須です'
+            elif len(postal_code.replace('-', '')) != 7:
+                errors['postal_code'] = '郵便番号は7桁で入力してください'
+
+            if not prefecture_id:
+                errors['prefecture'] = '都道府県を選択してください'
+
+            if not city:
+                errors['city'] = '市区町村・町域は必須です'
+
+            if not street_address:
+                errors['street_address'] = '番地・建物名は必須です'
 
             if errors:
                 if is_ajax:
@@ -573,7 +630,7 @@ class CreateSellView(View):
                 })
 
             # ========================================
-            # マスターデータ取得（registerと同じパターン）
+            # マスターデータ取得
             # ========================================
 
             # カテゴリー
@@ -592,46 +649,64 @@ class CreateSellView(View):
                 except ProductCondition.DoesNotExist:
                     pass
 
-            # 配送方法
-            shipping_obj = None
-            if shipping_method_id:
+            # 都道府県
+            prefecture_obj = None
+            if prefecture_id:
                 try:
-                    shipping_obj = ShippingMethod.objects.get(shipping_method_id=shipping_method_id)
-                except ShippingMethod.DoesNotExist:
+                    prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+                except Prefecture.DoesNotExist:
                     pass
 
-            # 商品ステータス
-            status_id = PRODUCT_STATUS_DRAFT if is_draft else PRODUCT_STATUS_LISTED
+            # 発送日数
+            shipping_days_obj = None
+            if shipping_days_id:
+                try:
+                    shipping_days_obj = ShippingDays.objects.get(shipping_days_id=shipping_days_id)
+                except ShippingDays.DoesNotExist:
+                    pass
+
+            # 配送方法（デフォルト: モノタル便）
             try:
-                status_obj = ProductStatus.objects.get(product_status_id=status_id)
+                shipping_obj = ShippingMethod.objects.first()
+                if not shipping_obj:
+                    shipping_obj = ShippingMethod.objects.create(
+                        shipping_method_name='モノタル便'
+                    )
+            except ShippingMethod.DoesNotExist:
+                shipping_obj = ShippingMethod.objects.create(
+                    shipping_method_name='モノタル便'
+                )
+
+            # 商品ステータス（出品中）
+            try:
+                status_obj = ProductStatus.objects.get(product_status_id=PRODUCT_STATUS_LISTED)
             except ProductStatus.DoesNotExist:
                 status_obj = ProductStatus.objects.create(
-                    product_status_id=status_id,
-                    status_name='下書き' if is_draft else '出品中'
+                    product_status_id=PRODUCT_STATUS_LISTED,
+                    status_name='出品中'
                 )
 
             # ========================================
             # 商品作成（トランザクション使用）
             # ========================================
-            # rental_periodsから最初の有効な期間と価格を取得
+
+            # 最初のレンタルプランを取得（Productテーブル用）
             rental_days_value = 0
             rental_fee_value = 0
+            for plan in rental_plans:
+                if plan.get('days', 0) > 0 and plan.get('price', 0) >= 100:
+                    rental_days_value = plan['days']
+                    rental_fee_value = plan['price']
+                    break
 
-            if rental_periods:
-                for period in rental_periods:
-                    days = period.get('days', 0)
-                    price = period.get('price', '')
-                    if price and str(price).isdigit() and int(price) > 0:
-                        rental_days_value = days
-                        rental_fee_value = int(price)
-                        break
-
-            # トランザクション開始：エラーが発生したらすべてロールバック
+            # トランザクション開始
             with transaction.atomic():
+                # 商品作成
                 product = Product.objects.create(
                     product_name=product_name,
                     product_description=product_description or '',
                     shipping_method=shipping_obj,
+                    shipping_days=shipping_days_obj,
                     product_condition=condition_obj,
                     product_status=status_obj,
                     product_category=category_obj,
@@ -641,29 +716,43 @@ class CreateSellView(View):
                 )
 
                 # 画像保存
-                if images:
-                    for index, image in enumerate(images):
-                        ProductImage.objects.create(
+                for index, image in enumerate(images):
+                    ProductImage.objects.create(
+                        product=product,
+                        image=image,
+                        display_order=index
+                    )
+
+                # レンタルプラン保存
+                for plan in rental_plans:
+                    days = plan.get('days', 0)
+                    price = plan.get('price', 0)
+                    if days > 0 and price >= 100:
+                        ProductRentalPlan.objects.create(
                             product=product,
-                            image=image,
-                            display_order=index
+                            rental_days=days,
+                            rental_fee=price
                         )
 
-            if is_ajax:
-                if is_draft:
-                    return JsonResponse({
-                        'success': True,
-                        'message': '下書きを保存しました',
-#                        'redirect_url': f'/monotal/sell/edit/{product.product_id}/'
-                    })
-                else:
-                    return JsonResponse({
-                        'success': True,
-                        'message': '商品を出品しました',
-                        'redirect_url': '/monotal/'
-                    })
+                # ユーザー住所保存（既存の住所を更新または新規作成）
+                user_address, created = UserAddress.objects.update_or_create(
+                    user=request.user,
+                    defaults={
+                        'postal_code': postal_code.replace('-', ''),
+                        'prefecture': prefecture_obj,
+                        'city': city,
+                        'street_address': street_address,
+                    }
+                )
 
-            messages.success(request, '下書きを保存しました' if is_draft else '商品を出品しました')
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '商品を出品しました',
+                    'redirect_url': '/monotal/'
+                })
+
+            messages.success(request, '商品を出品しました')
             return redirect('index')
 
         except Exception as e:
@@ -1173,6 +1262,7 @@ email_verify = EmailVerifyView.as_view()
 profile = ProfileView.as_view()
 profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()
+verification_required = VerificationRequiredView.as_view()
 product_list = ProductListView.as_view()
 product_detail = ProductDetailView.as_view()
 interest_selection = InterestSelectionView.as_view()

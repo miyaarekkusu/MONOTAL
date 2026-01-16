@@ -197,36 +197,79 @@ class EmailVerificationToken(models.Model):
         return f"{self.email} - {self.token}"
 
 
+class Prefecture(models.Model):
+    """
+    都道府県マスターテーブル
+    日本の47都道府県を管理
+    """
+    prefecture_id = models.AutoField(primary_key=True)
+    prefecture_name = models.CharField(max_length=10, unique=True)
+    prefecture_code = models.CharField(max_length=2, unique=True)  # 01-47のコード
+
+    class Meta:
+        db_table = 'M_Prefecture'
+        verbose_name = '都道府県'
+        verbose_name_plural = '都道府県'
+        ordering = ['prefecture_id']
+
+    def __str__(self):
+        return self.prefecture_name
+
+
 class UserAddress(models.Model):
     """
     ユーザー住所テーブル
-    
+
     【on_deleteの説明】
     CASCADE = ユーザーが削除されたら、その住所も自動的に削除される
+
+    【住所構成】
+    - 郵便番号: postal_code
+    - 都道府県: prefecture（外部キー）
+    - 市区町村・町域: city（渋谷区神南など）
+    - 番地・建物名・部屋番号: street_address
     """
     user_address_id = models.AutoField(primary_key=True)
-    
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='addresses',
         db_column='user_id'
     )
-    
+
     postal_code = models.CharField(max_length=10, null=True, blank=True)
-    municipality = models.CharField(max_length=100, null=True, blank=True)
-    street_address = models.CharField(max_length=200, null=True, blank=True)
-    building_name = models.CharField(max_length=100, null=True, blank=True)
+    prefecture = models.ForeignKey(
+        Prefecture,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='prefecture_id'
+    )
+    city = models.CharField(max_length=100, null=True, blank=True)  # 市区町村・町域
+    street_address = models.CharField(max_length=200, null=True, blank=True)  # 番地・建物名・部屋番号
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        db_table = 'UserAddress'
+        db_table = 'T_UserAddress'
         verbose_name = 'ユーザー住所'
         verbose_name_plural = 'ユーザー住所'
-    
+
     def __str__(self):
         return f"{self.user.display_name} - {self.postal_code}"
+
+    @property
+    def full_address(self):
+        """完全な住所を返す"""
+        parts = []
+        if self.prefecture:
+            parts.append(self.prefecture.prefecture_name)
+        if self.city:
+            parts.append(self.city)
+        if self.street_address:
+            parts.append(self.street_address)
+        return ''.join(parts)
 
 
 class UserHobby(models.Model):
@@ -522,14 +565,35 @@ class ShippingMethod(models.Model):
     """
     shipping_method_id = models.AutoField(primary_key=True)
     shipping_method_name = models.CharField(max_length=100, unique=True)
-    
+
     class Meta:
         db_table = 'M_ShippingMethod'
         verbose_name = '配送方法'
         verbose_name_plural = '配送方法'
-    
+
     def __str__(self):
         return self.shipping_method_name
+
+
+class ShippingDays(models.Model):
+    """
+    発送日数マスター
+    例: 1〜2日で発送、2〜3日で発送、4〜7日で発送
+    """
+    shipping_days_id = models.AutoField(primary_key=True)
+    days_label = models.CharField(max_length=50, unique=True)  # 表示名: "1〜2日で発送"
+    days_min = models.IntegerField()  # 最小日数
+    days_max = models.IntegerField()  # 最大日数
+    display_order = models.IntegerField(default=0)  # 表示順序
+
+    class Meta:
+        db_table = 'M_ShippingDays'
+        verbose_name = '発送日数'
+        verbose_name_plural = '発送日数'
+        ordering = ['display_order', 'days_min']
+
+    def __str__(self):
+        return self.days_label
 
 
 class Product(models.Model):
@@ -550,6 +614,13 @@ class Product(models.Model):
         ShippingMethod,
         on_delete=models.PROTECT,
         db_column='shipping_method_id'
+    )
+    shipping_days = models.ForeignKey(
+        ShippingDays,
+        on_delete=models.PROTECT,
+        db_column='shipping_days_id',
+        null=True,
+        blank=True
     )
     product_condition = models.ForeignKey(
         ProductCondition,
@@ -623,6 +694,34 @@ class ProductImage(models.Model):
 
     def __str__(self):
         return f"{self.product.product_name} - 画像 {self.display_order + 1}"
+
+
+class ProductRentalPlan(models.Model):
+    """
+    商品レンタルプランテーブル
+    1つの商品に対して複数のレンタル日数・金額を設定可能（1対多）
+    """
+    product_rental_plan_id = models.AutoField(primary_key=True)
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='rental_plans',
+        db_column='product_id'
+    )
+
+    rental_days = models.IntegerField()  # レンタル日数
+    rental_fee = models.DecimalField(max_digits=10, decimal_places=0)  # レンタル金額
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_ProductRentalPlan'
+        verbose_name = '商品レンタルプラン'
+        verbose_name_plural = '商品レンタルプラン'
+        ordering = ['rental_days']
+
+    def __str__(self):
+        return f"{self.product.product_name} - {self.rental_days}日 ¥{self.rental_fee}"
 
 
 class Bookmark(models.Model):
