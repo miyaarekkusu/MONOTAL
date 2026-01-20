@@ -363,10 +363,56 @@ class ProfileView(View):
             'images'
         ).order_by('-register_datetime')
 
+        # ブックマーク商品を取得（本人のみ表示）
+        bookmarked_products = []
+        bookmarks_count = 0
+        if request.user.is_authenticated and request.user == user:
+            bookmarked_products = Product.objects.filter(
+                bookmark__user=user,
+                delete_datetime__isnull=True
+            ).select_related(
+                'product_status',
+                'product_category',
+                'user'
+            ).prefetch_related(
+                'images'
+            ).order_by('-bookmark__register_datetime')
+            bookmarks_count = bookmarked_products.count()
+
+        # 本人確認ステータスを取得
+        # user_status_id=2 は承認済みユーザー
+        identity_status = None  # None: 未申請, 0: 審査中, 1: 承認, 2: 却下
+        if user.user_status_id == 2:
+            identity_status = 1  # 承認済み
+        else:
+            # IdentityVerificationから最新の申請を確認
+            latest_verification = IdentityVerification.objects.filter(
+                user=user
+            ).order_by('-register_datetime').first()
+            if latest_verification:
+                identity_status = latest_verification.identity_verification_status_id
+
+        # フォロー関連データ
+        follower_count = Follow.objects.filter(followed_user=user).count()  # フォロワー数
+        following_count = Follow.objects.filter(follower_user=user).count()  # フォロー中
+        is_following = False
+        if request.user.is_authenticated and request.user != user:
+            is_following = Follow.objects.filter(
+                follower_user=request.user,
+                followed_user=user
+            ).exists()
+
         context = {
             'profile_user': user,
             'user_products': user_products,
             'user_products_count': user_products.count(),
+            'bookmarked_products': bookmarked_products,
+            'bookmarks_count': bookmarks_count,
+            'identity_status': identity_status,
+            'is_own_profile': request.user.is_authenticated and request.user == user,
+            'follower_count': follower_count,
+            'following_count': following_count,
+            'is_following': is_following,
         }
 
         return render(request, 'profile.html', context)
@@ -1554,6 +1600,234 @@ class VerificationImageView(LoginRequiredMixin, View):
             return HttpResponseNotFound()
 
 
+class FollowToggleView(View):
+    """
+    フォローのトグルAPI
+    POST: フォローを追加/解除
+    """
+    def post(self, request, user_id, *args, **kwargs):
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        # 対象ユーザーの存在確認
+        try:
+            target_user = User.objects.get(user_id=user_id, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'ユーザーが見つかりません'
+            }, status=404)
+
+        # 自分自身はフォローできない
+        if request.user == target_user:
+            return JsonResponse({
+                'success': False,
+                'error': '自分自身をフォローすることはできません'
+            }, status=400)
+
+        # フォロー状態をトグル
+        existing_follow = Follow.objects.filter(
+            follower_user=request.user,
+            followed_user=target_user
+        ).first()
+
+        if existing_follow:
+            # フォロー解除
+            existing_follow.delete()
+            is_following = False
+        else:
+            # フォロー追加
+            Follow.objects.create(
+                follower_user=request.user,
+                followed_user=target_user
+            )
+            is_following = True
+
+        # フォロワー数を取得
+        follower_count = Follow.objects.filter(followed_user=target_user).count()
+
+        return JsonResponse({
+            'success': True,
+            'is_following': is_following,
+            'follower_count': follower_count
+        })
+
+
+class MyPageFollowListView(LoginRequiredMixin, View):
+    """
+    マイページ - フォローリスト
+    ログインユーザーがフォローしているユーザー一覧を表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # フォローしているユーザーを取得
+        following_users = User.objects.filter(
+            followers__follower_user=request.user,
+            user_status_id__in=[1, 2, 3]
+        ).select_related('user_status').prefetch_related(
+            'following',  # フォロワー数取得用
+        ).order_by('-followers__register_datetime')
+
+        # 各ユーザーの追加情報を取得
+        following_list = []
+        for user in following_users:
+            # 出品数
+            product_count = Product.objects.filter(
+                user=user,
+                delete_datetime__isnull=True
+            ).count()
+            # フォロワー数
+            follower_count = Follow.objects.filter(followed_user=user).count()
+            # 本人確認ステータス
+            identity_status = None
+            if user.user_status_id == 2:
+                identity_status = 1
+            else:
+                latest_verification = IdentityVerification.objects.filter(
+                    user=user
+                ).order_by('-register_datetime').first()
+                if latest_verification:
+                    identity_status = latest_verification.identity_verification_status_id
+
+            following_list.append({
+                'user': user,
+                'product_count': product_count,
+                'follower_count': follower_count,
+                'identity_status': identity_status,
+            })
+
+        # フォロー中の人数
+        following_count = len(following_list)
+
+        # ページネーション
+        paginator = Paginator(following_list, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'following_list': page_obj,
+            'following_count': following_count,
+            'page_obj': page_obj,
+            'current_page': 'follow_list',
+        }
+
+        return render(request, 'mypage/follow_list.html', context)
+
+
+class MyPageBookmarkListView(LoginRequiredMixin, View):
+    """
+    マイページ - ブックマーク一覧
+    ログインユーザーがブックマークした商品一覧を表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # ブックマークした商品を取得
+        bookmarked_products = Product.objects.filter(
+            bookmark__user=request.user,
+            delete_datetime__isnull=True
+        ).select_related(
+            'product_status',
+            'product_category',
+            'user'
+        ).prefetch_related(
+            'images'
+        ).order_by('-bookmark__register_datetime')
+
+        # ブックマーク数
+        bookmark_count = bookmarked_products.count()
+
+        # ページネーション
+        paginator = Paginator(bookmarked_products, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'bookmarked_products': page_obj,
+            'bookmark_count': bookmark_count,
+            'page_obj': page_obj,
+            'current_page': 'bookmark_list',
+        }
+
+        return render(request, 'mypage/bookmark_list.html', context)
+
+
+class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
+    """
+    マイページ - 閲覧履歴
+    ログインユーザーの商品閲覧履歴を表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 閲覧履歴を取得（最新順）
+        browsing_history = BrowsingHistory.objects.filter(
+            user=request.user,
+            product__delete_datetime__isnull=True
+        ).select_related(
+            'product__product_status',
+            'product__product_category',
+            'product__user'
+        ).prefetch_related(
+            'product__images'
+        ).order_by('-register_datetime')
+
+        # 履歴数
+        history_count = browsing_history.count()
+
+        # ページネーション
+        paginator = Paginator(browsing_history, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'browsing_history': page_obj,
+            'history_count': history_count,
+            'page_obj': page_obj,
+            'current_page': 'browsing_history',
+        }
+
+        return render(request, 'mypage/browsing_history.html', context)
+
+
+class MyPageListingView(LoginRequiredMixin, View):
+    """
+    マイページ - 出品一覧
+    ログインユーザーが出品した商品一覧を表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 出品した商品を取得（最新順）
+        listing_products = Product.objects.filter(
+            user=request.user,
+            delete_datetime__isnull=True
+        ).select_related(
+            'product_status',
+            'product_category'
+        ).prefetch_related(
+            'images'
+        ).order_by('-register_datetime')
+
+        # 出品数
+        listing_count = listing_products.count()
+
+        # ページネーション
+        paginator = Paginator(listing_products, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'listing_products': page_obj,
+            'listing_count': listing_count,
+            'page_obj': page_obj,
+            'current_page': 'listing',
+        }
+
+        return render(request, 'mypage/listing.html', context)
+
+
 index = IndexView.as_view()
 login_view = LoginView.as_view()
 logout_view = LogoutView.as_view()
@@ -1578,3 +1852,12 @@ identity_verification = IdentityVerificationView.as_view()
 admin_verification_list = AdminVerificationListView.as_view()
 admin_verification_detail = AdminVerificationDetailView.as_view()
 verification_image = VerificationImageView.as_view()
+
+# フォロー関連
+follow_toggle = FollowToggleView.as_view()
+mypage_follow_list = MyPageFollowListView.as_view()
+
+# マイページ関連
+mypage_bookmark_list = MyPageBookmarkListView.as_view()
+mypage_browsing_history = MyPageBrowsingHistoryView.as_view()
+mypage_listing = MyPageListingView.as_view()

@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 出品一覧 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        <!-- Sidebar Navigation -->
+        <aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
+
+            <!-- Group: Product Management -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">商品管理</h3>
+                <nav class="space-y-0.5">
+                    <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:history" data-width="20"></span>
+                        閲覧履歴
+                    </a>
+                    <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:heart" data-width="20"></span>
+                        ブックマーク一覧
+                    </a>
+                    <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:users" data-width="20"></span>
+                        フォローリスト
+                    </a>
+                    <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                        <span class="iconify text-pink-600" data-icon="lucide:store" data-width="20"></span>
+                        出品一覧
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:shopping-bag" data-width="20"></span>
+                        レンタル一覧
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Group: Help -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">ヘルプ</h3>
+                <nav class="space-y-0.5">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
+                        ヘルプセンター
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:mail" data-width="20"></span>
+                        お問い合わせ
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Group: Settings -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">設定</h3>
+                <nav class="space-y-0.5">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:user-cog" data-width="20"></span>
+                        個人情報設定
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
+                        支払い方法
+                    </a>
+                </nav>
+            </div>
+
+        </aside>
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">出品一覧</h1>
+                <div class="flex items-center gap-3">
+                    <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ listing_count }}件</span>
+                    <a href="{% url 'create_sell' %}" class="flex items-center gap-2 rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-pink-700 shadow-sm">
+                        <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                        新規出品
+                    </a>
+                </div>
+            </div>
+
+            <!-- Product Grid -->
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
+                {% for product in listing_products %}
+                <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 3 %}opacity-90{% endif %}">
+                    <div class="aspect-square w-full bg-zinc-100 relative overflow-hidden">
+                        {% if product.images.all %}
+                        <img src="{{ product.images.all.0.image.url }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ product.product_name }}">
+                        {% else %}
+                        <div class="h-full w-full flex items-center justify-center text-zinc-400">
+                            <span class="iconify" data-icon="lucide:image" data-width="48" data-height="48"></span>
+                        </div>
+                        {% endif %}
+
+                        {% if product.product_status.product_status_id == 3 %}
+                        <!-- Renting Badge -->
+                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
+                            <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                        </div>
+                        {% endif %}
+
+                        <div class="absolute bottom-0 left-0 bg-black/60 backdrop-blur-sm px-2 py-1 text-white rounded-tr-lg">
+                            <span class="text-xs font-semibold">¥{{ product.rental_fee|floatformat:0 }}</span>
+                            <span class="text-[10px] font-normal opacity-80">/日</span>
+                        </div>
+
+                        <!-- Status Badge -->
+                        <div class="absolute top-2 right-2">
+                            {% if product.product_status.product_status_id == 2 %}
+                            <span class="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">公開中</span>
+                            {% elif product.product_status.product_status_id == 3 %}
+                            <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">レンタル中</span>
+                            {% elif product.product_status.product_status_id == 1 %}
+                            <span class="bg-zinc-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">下書き</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
+                        <div class="mt-2 flex items-center justify-between">
+                            <span class="text-[10px] text-zinc-400">
+                                {{ product.register_datetime|date:"Y/m/d" }}
+                            </span>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="col-span-full text-center py-16 text-zinc-400">
+                    <span class="iconify mx-auto mb-4" data-icon="lucide:store" data-width="48" data-height="48"></span>
+                    <p class="text-sm">出品した商品はありません</p>
+                    <a href="{% url 'create_sell' %}" class="mt-4 inline-flex items-center gap-2 text-pink-600 hover:text-pink-700 text-sm font-medium">
+                        商品を出品する
+                        <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-1">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </span>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                        <span class="h-8 w-8 rounded-md bg-zinc-900 text-white text-xs font-bold flex items-center justify-center">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}" class="h-8 w-8 rounded-md text-zinc-600 text-xs font-medium hover:bg-zinc-100 flex items-center justify-center transition-colors">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </span>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mypage.js' %}"></script>
+{% endblock %}

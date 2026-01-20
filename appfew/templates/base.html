@@ -40,20 +40,41 @@
             <!-- Header Actions -->
             <div class="flex items-center gap-3 lg:gap-4">
                 {% if user.is_authenticated %}
-                    <a href="{% url 'logout' %}" class="text-xs font-bold lg:text-sm lg:font-medium text-zinc-500 hover:text-zinc-900 transition-colors px-1">ログアウト</a>
                     <!-- Notification -->
                     <a href="#" class="relative text-zinc-500 hover:text-zinc-900 transition-colors">
                         <span class="iconify" data-icon="lucide:bell" data-width="20" data-height="20"></span>
                         <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-600 text-[9px] font-bold text-white flex items-center justify-center">3</span>
                     </a>
-                    <!-- Profile -->
-                    <a href="{% url 'profile' username=user.user_name %}" class="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-pink-600 transition-all">
-                        {% if user.user_image %}
-                            <img src="{{ user.user_image.url }}" alt="{{ user.display_name }}" class="h-full w-full object-cover">
-                        {% else %}
-                            <span class="iconify text-zinc-500" data-icon="lucide:user" data-width="16" data-height="16"></span>
-                        {% endif %}
-                    </a>
+                    <!-- Profile Dropdown -->
+                    <div class="relative" id="profile-dropdown-container">
+                        <button id="profile-dropdown-btn" class="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-pink-600 transition-all">
+                            {% if user.user_image %}
+                                <img src="{{ user.user_image.url }}" alt="{{ user.display_name }}" class="h-full w-full object-cover">
+                            {% else %}
+                                <span class="iconify text-zinc-500" data-icon="lucide:user" data-width="16" data-height="16"></span>
+                            {% endif %}
+                        </button>
+                        <!-- Dropdown Menu -->
+                        <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
+                            <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
+                                <span class="iconify text-zinc-400" data-icon="lucide:layout-dashboard" data-width="16"></span>
+                                マイページ
+                            </a>
+                            <a href="{% url 'profile' username=user.user_name %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
+                                <span class="iconify text-zinc-400" data-icon="lucide:user" data-width="16"></span>
+                                プロフィール
+                            </a>
+                            <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
+                                <span class="iconify text-zinc-400" data-icon="lucide:users" data-width="16"></span>
+                                フォローリスト
+                            </a>
+                            <div class="border-t border-zinc-100 my-1"></div>
+                            <a href="{% url 'logout' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                <span class="iconify" data-icon="lucide:log-out" data-width="16"></span>
+                                ログアウト
+                            </a>
+                        </div>
+                    </div>
                     <a href="{% url 'create_sell' %}" class="rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-pink-700 shadow-sm flex items-center gap-2">
                         <span class="iconify lg:hidden" data-icon="lucide:camera" data-width="16"></span>
                         <span>出品<span class="hidden lg:inline">する</span></span>
@@ -155,14 +176,51 @@
                 <span class="iconify" data-icon="lucide:message-square" data-width="24"></span>
                 <span class="text-[10px] font-medium">メッセージ</span>
             </a>
-            <a href="#" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+            {% if user.is_authenticated %}
+            <a href="{% url 'mypage_browsing_history' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
                 <span class="iconify" data-icon="lucide:user" data-width="24"></span>
                 <span class="text-[10px] font-medium">マイページ</span>
             </a>
+            {% else %}
+            <a href="{% url 'login' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+                <span class="text-[10px] font-medium">ログイン</span>
+            </a>
+            {% endif %}
         </div>
     </div>
 
     {% block extra_js %}{% endblock %}
+
+    <!-- Profile Dropdown Script -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dropdownBtn = document.getElementById('profile-dropdown-btn');
+        const dropdownMenu = document.getElementById('profile-dropdown-menu');
+
+        if (dropdownBtn && dropdownMenu) {
+            // Toggle dropdown on button click
+            dropdownBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                dropdownMenu.classList.toggle('hidden');
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
+                    dropdownMenu.classList.add('hidden');
+                }
+            });
+
+            // Close dropdown on escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    dropdownMenu.classList.add('hidden');
+                }
+            });
+        }
+    });
+    </script>
 
 </body>
 </html>

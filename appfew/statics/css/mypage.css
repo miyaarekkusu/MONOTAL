@@ -1,0 +1,52 @@
+/* MyPage Styles */
+
+/* Line clamp utility */
+.line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* Sidebar active state */
+.sidebar-nav a.active {
+    background-color: #fdf2f8;
+    color: #be185d;
+}
+
+.sidebar-nav a.active .iconify {
+    color: #db2777;
+}
+
+/* Follow button hover states */
+.follow-unfollow-btn:hover .follow-text {
+    display: none;
+}
+
+.follow-unfollow-btn:hover .unfollow-text {
+    display: inline;
+}
+
+/* Safe area padding for mobile */
+.pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Sticky sidebar */
+@media (min-width: 1024px) {
+    aside.sticky {
+        position: sticky;
+        top: 6rem;
+    }
+}
+
+/* Card hover effect */
+.user-card:hover {
+    background-color: #fafafa;
+}
+
+/* Pagination active state */
+.pagination-active {
+    background-color: #18181b;
+    color: white;
+}

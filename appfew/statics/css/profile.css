@@ -64,3 +64,61 @@
         position: sticky;
     }
 }
+
+/* Tab Styles */
+.profile-tab {
+    position: relative;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    color: #a1a1aa; /* zinc-400 */
+}
+
+.profile-tab:hover {
+    color: #71717a; /* zinc-500 */
+}
+
+.profile-tab.active {
+    color: #db2777; /* pink-600 */
+}
+
+.profile-tab .tab-indicator {
+    transition: opacity 0.2s ease;
+    opacity: 0;
+}
+
+.profile-tab.active .tab-indicator {
+    opacity: 1;
+}
+
+/* Tab Content */
+.tab-content {
+    animation: fadeIn 0.2s ease;
+}
+
+.tab-content.hidden {
+    display: none;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Tailwind color utilities for tabs */
+.text-pink-600 {
+    color: #db2777;
+}
+
+.text-zinc-400 {
+    color: #a1a1aa;
+}
+
+.text-zinc-600 {
+    color: #52525b;
+}

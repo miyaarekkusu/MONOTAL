@@ -28,4 +28,13 @@ urlpatterns = [
     path('admin/verifications/', views.admin_verification_list, name='admin_verification_list'),
     path('admin/verifications/<int:verification_id>/', views.admin_verification_detail, name='admin_verification_detail'),
     path('admin/verification-image/<int:image_id>/', views.verification_image, name='verification_image'),
+
+    # フォロー関連
+    path('user/<int:user_id>/follow/', views.follow_toggle, name='follow_toggle'),
+
+    # マイページ
+    path('mypage/follow-list/', views.mypage_follow_list, name='mypage_follow_list'),
+    path('mypage/bookmark-list/', views.mypage_bookmark_list, name='mypage_bookmark_list'),
+    path('mypage/browsing-history/', views.mypage_browsing_history, name='mypage_browsing_history'),
+    path('mypage/listing/', views.mypage_listing, name='mypage_listing'),
 ]

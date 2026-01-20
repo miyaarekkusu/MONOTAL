@@ -1,6 +1,9 @@
 // Profile Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    initTabs();
+
     // Follow button functionality
     initFollowButton();
 
@@ -12,34 +15,134 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 /**
+ * Initialize tab switching
+ */
+function initTabs() {
+    const tabs = document.querySelectorAll('.profile-tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    if (tabs.length === 0) return;
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+
+            // Update tab states
+            tabs.forEach(t => {
+                t.classList.remove('active');
+                // Hide indicator
+                const indicator = t.querySelector('.tab-indicator');
+                if (indicator) {
+                    indicator.style.opacity = '0';
+                }
+            });
+
+            // Activate clicked tab
+            this.classList.add('active');
+            const activeIndicator = this.querySelector('.tab-indicator');
+            if (activeIndicator) {
+                activeIndicator.style.opacity = '1';
+            }
+
+            // Update content visibility
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            const targetContent = document.getElementById(`${targetTab}-tab`);
+            if (targetContent) {
+                targetContent.classList.remove('hidden');
+            }
+        });
+    });
+}
+
+/**
  * Initialize follow button
  */
 function initFollowButton() {
-    const followBtn = document.querySelector('button[data-action="follow"]');
+    const followBtn = document.getElementById('follow-btn');
 
     if (!followBtn) return;
 
-    followBtn.addEventListener('click', function(e) {
+    followBtn.addEventListener('click', async function(e) {
         e.preventDefault();
 
-        const icon = this.querySelector('.iconify');
-        const text = this.querySelector('span:not(.iconify)');
+        const userId = this.dataset.userId;
+        const isFollowing = this.dataset.following === 'true';
+        const icon = document.getElementById('follow-icon');
+        const text = document.getElementById('follow-text');
+        const followerCountEl = document.getElementById('follower-count');
 
-        // Toggle follow state (placeholder - would need backend integration)
-        if (this.classList.contains('following')) {
-            // Unfollow
-            this.classList.remove('following', 'bg-zinc-100', 'text-zinc-900');
-            this.classList.add('bg-zinc-900', 'text-white');
-            icon.setAttribute('data-icon', 'lucide:user-plus');
-            if (text) text.textContent = 'フォローする';
-        } else {
-            // Follow
-            this.classList.add('following', 'bg-zinc-100', 'text-zinc-900');
-            this.classList.remove('bg-zinc-900', 'text-white');
-            icon.setAttribute('data-icon', 'lucide:user-check');
-            if (text) text.textContent = 'フォロー中';
+        // Disable button during request
+        this.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                              document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                              getCookie('csrftoken');
+
+            const response = await fetch(`/monotal/user/${userId}/follow/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Update button state
+                this.dataset.following = data.is_following ? 'true' : 'false';
+
+                if (data.is_following) {
+                    // Now following
+                    this.classList.remove('bg-pink-600', 'text-white', 'hover:bg-pink-700');
+                    this.classList.add('bg-zinc-100', 'text-zinc-700', 'border', 'border-zinc-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+                    icon.setAttribute('data-icon', 'lucide:user-check');
+                    text.textContent = 'フォロー中';
+                } else {
+                    // Unfollowed
+                    this.classList.remove('bg-zinc-100', 'text-zinc-700', 'border', 'border-zinc-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+                    this.classList.add('bg-pink-600', 'text-white', 'hover:bg-pink-700');
+                    icon.setAttribute('data-icon', 'lucide:user-plus');
+                    text.textContent = 'フォローする';
+                }
+
+                // Update follower count
+                if (followerCountEl) {
+                    followerCountEl.textContent = data.follower_count;
+                }
+            } else {
+                alert(data.error || 'エラーが発生しました');
+            }
+        } catch (error) {
+            console.error('Follow error:', error);
+            alert('エラーが発生しました');
+        } finally {
+            this.disabled = false;
         }
     });
+}
+
+/**
+ * Get cookie value by name
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 /**

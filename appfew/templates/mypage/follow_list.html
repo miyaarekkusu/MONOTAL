@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - フォローリスト | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        <!-- Sidebar Navigation -->
+        <aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
+
+            <!-- Group: Product Management -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">商品管理</h3>
+                <nav class="space-y-0.5">
+                    <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:history" data-width="20"></span>
+                        閲覧履歴
+                    </a>
+                    <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:heart" data-width="20"></span>
+                        ブックマーク一覧
+                    </a>
+                    <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                        <span class="iconify text-pink-600" data-icon="lucide:users" data-width="20"></span>
+                        フォローリスト
+                    </a>
+                    <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:store" data-width="20"></span>
+                        出品一覧
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:shopping-bag" data-width="20"></span>
+                        レンタル一覧
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Group: Help -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">ヘルプ</h3>
+                <nav class="space-y-0.5">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
+                        ヘルプセンター
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:mail" data-width="20"></span>
+                        お問い合わせ
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Group: Settings -->
+            <div>
+                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">設定</h3>
+                <nav class="space-y-0.5">
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:user-cog" data-width="20"></span>
+                        個人情報設定
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
+                        支払い方法
+                    </a>
+                </nav>
+            </div>
+
+        </aside>
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">フォローリスト</h1>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ following_count }}人をフォロー中</span>
+            </div>
+
+            <!-- User List -->
+            <div class="bg-white rounded-xl border border-zinc-200 shadow-sm overflow-hidden divide-y divide-zinc-100">
+
+                {% for item in following_list %}
+                <div class="p-4 sm:p-5 flex items-center gap-4 hover:bg-zinc-50 transition-colors group">
+                    <a href="{% url 'profile' username=item.user.user_name %}" class="flex-shrink-0 relative">
+                        {% if item.user.user_image %}
+                        <img src="{{ item.user.user_image.url }}" class="h-12 w-12 sm:h-14 sm:w-14 rounded-full object-cover border border-zinc-100" alt="{{ item.user.display_name }}">
+                        {% else %}
+                        <div class="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-zinc-200 text-zinc-500 flex items-center justify-center border border-zinc-100">
+                            <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+                        </div>
+                        {% endif %}
+                        {% if item.identity_status == 1 %}
+                        <div class="absolute -bottom-0.5 -right-0.5 bg-green-500 h-3.5 w-3.5 rounded-full border-2 border-white" title="本人確認済"></div>
+                        {% endif %}
+                    </a>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-2 mb-1">
+                            <a href="{% url 'profile' username=item.user.user_name %}" class="text-sm sm:text-base font-bold text-zinc-900 hover:underline truncate">{{ item.user.display_name }}</a>
+                        </div>
+                        {% if item.user.bio %}
+                        <p class="text-xs text-zinc-500 line-clamp-1 mb-1.5">{{ item.user.bio }}</p>
+                        {% endif %}
+                        <div class="flex items-center gap-3 text-[10px] text-zinc-400">
+                            <span class="flex items-center gap-1">
+                                <span class="iconify" data-icon="lucide:package" data-width="12"></span>
+                                出品数 {{ item.product_count }}
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="iconify" data-icon="lucide:users" data-width="12"></span>
+                                フォロワー {{ item.follower_count }}
+                            </span>
+                        </div>
+                    </div>
+                    <button class="follow-unfollow-btn flex-shrink-0 rounded-lg border border-zinc-300 bg-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold text-zinc-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all flex items-center gap-1.5 active:scale-95"
+                            data-user-id="{{ item.user.user_id }}">
+                        <span class="follow-text">フォロー中</span>
+                        <span class="unfollow-text hidden text-red-600">解除する</span>
+                    </button>
+                </div>
+                {% empty %}
+                <div class="p-8 text-center text-zinc-400">
+                    <span class="iconify mx-auto mb-4" data-icon="lucide:users" data-width="48"></span>
+                    <p class="text-sm">フォローしているユーザーがいません</p>
+                    <a href="{% url 'product_list' %}" class="mt-4 inline-flex items-center gap-2 text-pink-600 hover:text-pink-700 text-sm font-medium">
+                        商品を探す
+                        <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
+                    </a>
+                </div>
+                {% endfor %}
+
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="mt-6 flex justify-center">
+                <nav class="flex items-center gap-1">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </span>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                        <span class="h-8 w-8 rounded-md bg-zinc-900 text-white text-xs font-bold flex items-center justify-center">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}" class="h-8 w-8 rounded-md text-zinc-600 text-xs font-medium hover:bg-zinc-100 flex items-center justify-center transition-colors">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </span>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mypage.js' %}"></script>
+{% endblock %}
