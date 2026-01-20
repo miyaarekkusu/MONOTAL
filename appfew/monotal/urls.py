@@ -16,6 +16,9 @@ urlpatterns = [
     path('sell/verification-required/', views.verification_required, name='verification_required'),
     path('shop/', views.product_list, name='product_list'),
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
+    path('product/<int:product_id>/bookmark/', views.bookmark_toggle, name='bookmark_toggle'),
+    path('product/<int:product_id>/messages/', views.product_messages, name='product_messages'),
+    path('product/<int:product_id>/messages/<int:message_id>/delete/', views.product_message_delete, name='product_message_delete'),
     path('interest/', views.interest_selection, name='interest_selection'),
 
     # 本人確認（ユーザー向け）

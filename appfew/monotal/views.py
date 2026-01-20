@@ -734,6 +734,16 @@ class CreateSellView(View):
                             rental_fee=price
                         )
 
+                # 商品用チャットルーム作成
+                chat_room_type, _ = ChatRoomType.objects.get_or_create(
+                    chat_room_type_id=3,
+                    defaults={'type_name': '商品チャット'}
+                )
+                ChatRoom.objects.create(
+                    chat_room_type=chat_room_type,
+                    product=product
+                )
+
                 # ユーザー住所保存（既存の住所を更新または新規作成）
                 user_address, created = UserAddress.objects.update_or_create(
                     user=request.user,
@@ -904,6 +914,7 @@ class ProductDetailView(View):
                 'product_status',
                 'product_category',
                 'shipping_method',
+                'shipping_days',
                 'user'
             ).prefetch_related(
                 'images'  # 商品画像も一緒に取得
@@ -918,12 +929,304 @@ class ProductDetailView(View):
         # 商品画像を取得
         product_images = list(product.images.all())
 
+        # レンタルプランを取得（日数順）
+        rental_plans = ProductRentalPlan.objects.filter(
+            product=product
+        ).order_by('rental_days')
+
+        # 出品者の住所（都道府県）を取得
+        seller_address = None
+        if product.user:
+            seller_address = UserAddress.objects.filter(
+                user=product.user
+            ).select_related('prefecture').first()
+
+        # 閲覧履歴を保存（ログインユーザーのみ、自分の商品は除外）
+        if request.user.is_authenticated and product.user != request.user:
+            # 既存の同一商品の閲覧履歴を削除して新規作成（最新日時に更新）
+            BrowsingHistory.objects.filter(
+                user=request.user,
+                product=product
+            ).delete()
+            BrowsingHistory.objects.create(
+                user=request.user,
+                product=product
+            )
+
+        # ブックマーク情報を取得
+        is_bookmarked = False
+        if request.user.is_authenticated:
+            is_bookmarked = Bookmark.objects.filter(
+                user=request.user,
+                product=product
+            ).exists()
+
+        # ブックマーク数を取得
+        bookmark_count = Bookmark.objects.filter(product=product).count()
+
+        # メッセージ数を取得
+        message_count = 0
+        try:
+            chat_room = ChatRoom.objects.get(product=product)
+            message_count = Message.objects.filter(chat_room=chat_room).count()
+        except ChatRoom.DoesNotExist:
+            pass
+
+        # 現在のユーザーが出品者かどうか
+        is_seller = request.user.is_authenticated and request.user == product.user
+
         context = {
             'product': product,
             'product_images': product_images,
+            'rental_plans': rental_plans,
+            'seller_address': seller_address,
+            'is_bookmarked': is_bookmarked,
+            'bookmark_count': bookmark_count,
+            'message_count': message_count,
+            'is_seller': is_seller,
         }
 
         return render(request, self.template_name, context)
+
+
+class BookmarkToggleView(View):
+    """
+    ブックマーク（お気に入り）のトグルAPI
+    POST: ブックマークを追加/削除
+    """
+    def post(self, request, product_id, *args, **kwargs):
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        # 商品の存在確認
+        try:
+            product = Product.objects.get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '商品が見つかりません'
+            }, status=404)
+
+        # 自分の商品はブックマークできない
+        if product.user == request.user:
+            return JsonResponse({
+                'success': False,
+                'error': '自分の商品はブックマークできません'
+            }, status=400)
+
+        # ブックマークのトグル
+        bookmark, created = Bookmark.objects.get_or_create(
+            user=request.user,
+            product=product
+        )
+
+        if not created:
+            # 既に存在していた場合は削除
+            bookmark.delete()
+            is_bookmarked = False
+        else:
+            is_bookmarked = True
+
+        # 最新のブックマーク数を取得
+        bookmark_count = Bookmark.objects.filter(product=product).count()
+
+        return JsonResponse({
+            'success': True,
+            'is_bookmarked': is_bookmarked,
+            'bookmark_count': bookmark_count
+        })
+
+
+class ProductMessagesView(View):
+    """
+    商品のメッセージ一覧取得・送信API
+    GET: メッセージ一覧を取得
+    POST: 新規メッセージを送信
+    """
+    def get(self, request, product_id, *args, **kwargs):
+        # 商品の存在確認
+        try:
+            product = Product.objects.get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '商品が見つかりません'
+            }, status=404)
+
+        # チャットルームを取得
+        try:
+            chat_room = ChatRoom.objects.get(product=product)
+        except ChatRoom.DoesNotExist:
+            # チャットルームがない場合は空のリストを返す
+            return JsonResponse({
+                'success': True,
+                'messages': [],
+                'total_count': 0
+            })
+
+        # メッセージを取得（古い順）
+        messages_qs = Message.objects.filter(
+            chat_room=chat_room
+        ).select_related('user').order_by('register_datetime')
+
+        # メッセージをシリアライズ
+        messages_list = []
+        for msg in messages_qs:
+            messages_list.append({
+                'message_id': msg.message_id,
+                'user_id': msg.user.user_id,
+                'user_name': msg.user.display_name or msg.user.user_name,
+                'user_image': msg.user.user_image.url if msg.user.user_image else None,
+                'content': msg.message_content,
+                'created_at': msg.register_datetime.strftime('%Y-%m-%d %H:%M'),
+                'is_owner': msg.user == product.user,
+            })
+
+        return JsonResponse({
+            'success': True,
+            'messages': messages_list,
+            'total_count': len(messages_list)
+        })
+
+    def post(self, request, product_id, *args, **kwargs):
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        # 商品の存在確認
+        try:
+            product = Product.objects.get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '商品が見つかりません'
+            }, status=404)
+
+        # チャットルームを取得または作成
+        try:
+            chat_room = ChatRoom.objects.get(product=product)
+        except ChatRoom.DoesNotExist:
+            # チャットルームがない場合は作成
+            chat_room_type, _ = ChatRoomType.objects.get_or_create(
+                chat_room_type_id=3,
+                defaults={'type_name': '商品チャット'}
+            )
+            chat_room = ChatRoom.objects.create(
+                chat_room_type=chat_room_type,
+                product=product
+            )
+
+        # メッセージ内容を取得
+        try:
+            data = json.loads(request.body)
+            content = data.get('content', '').strip()
+        except json.JSONDecodeError:
+            content = request.POST.get('content', '').strip()
+
+        if not content:
+            return JsonResponse({
+                'success': False,
+                'error': 'メッセージ内容を入力してください'
+            }, status=400)
+
+        if len(content) > 2000:
+            return JsonResponse({
+                'success': False,
+                'error': 'メッセージは2000文字以内で入力してください'
+            }, status=400)
+
+        # メッセージを作成
+        message = Message.objects.create(
+            chat_room=chat_room,
+            user=request.user,
+            message_content=content
+        )
+
+        return JsonResponse({
+            'success': True,
+            'message': {
+                'message_id': message.message_id,
+                'user_id': request.user.user_id,
+                'user_name': request.user.display_name or request.user.user_name,
+                'user_image': request.user.user_image.url if request.user.user_image else None,
+                'content': message.message_content,
+                'created_at': message.register_datetime.strftime('%Y-%m-%d %H:%M'),
+                'is_owner': request.user == product.user,
+            }
+        })
+
+
+class ProductMessageDeleteView(LoginRequiredMixin, View):
+    """
+    商品コメント削除API（出品者のみ）
+    DELETE: コメントを削除
+    """
+    login_url = '/monotal/login/'
+
+    def delete(self, request, product_id, message_id, *args, **kwargs):
+        # 商品の存在確認
+        try:
+            product = Product.objects.get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '商品が見つかりません'
+            }, status=404)
+
+        # 出品者かどうか確認
+        if request.user != product.user:
+            return JsonResponse({
+                'success': False,
+                'error': 'コメントを削除する権限がありません'
+            }, status=403)
+
+        # メッセージの存在確認
+        try:
+            chat_room = ChatRoom.objects.get(product=product)
+            message = Message.objects.get(
+                message_id=message_id,
+                chat_room=chat_room
+            )
+        except (ChatRoom.DoesNotExist, Message.DoesNotExist):
+            return JsonResponse({
+                'success': False,
+                'error': 'コメントが見つかりません'
+            }, status=404)
+
+        # メッセージを削除
+        message.delete()
+
+        # 残りのメッセージ数を取得
+        remaining_count = Message.objects.filter(chat_room=chat_room).count()
+
+        return JsonResponse({
+            'success': True,
+            'message_id': message_id,
+            'remaining_count': remaining_count
+        })
+
+    def post(self, request, product_id, message_id, *args, **kwargs):
+        # POSTでも削除を受け付ける（DELETEメソッドが使えない環境向け）
+        return self.delete(request, product_id, message_id, *args, **kwargs)
 
 
 class InterestSelectionView(View):
@@ -1265,6 +1568,9 @@ create_sell = CreateSellView.as_view()
 verification_required = VerificationRequiredView.as_view()
 product_list = ProductListView.as_view()
 product_detail = ProductDetailView.as_view()
+bookmark_toggle = BookmarkToggleView.as_view()
+product_messages = ProductMessagesView.as_view()
+product_message_delete = ProductMessageDeleteView.as_view()
 interest_selection = InterestSelectionView.as_view()
 
 # 本人確認関連

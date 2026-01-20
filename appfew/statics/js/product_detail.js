@@ -1,14 +1,14 @@
-// Product Detail Page JavaScript
+﻿// Product Detail Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Image gallery functionality
     initImageGallery();
 
-    // Rental period selection and calculation
-    initRentalPeriodSelector();
+    // Rental plan selector
+    initRentalPlanSelector();
 
-    // Like button functionality
-    initLikeButton();
+    // Bookmark button functionality
+    initBookmarkButton();
 
     // Comment functionality
     initCommentSection();
@@ -23,185 +23,439 @@ function initImageGallery() {
 
     if (!mainImage || !thumbnails.length) return;
 
-    thumbnails.forEach((thumbnail, index) => {
+    thumbnails.forEach((thumbnail) => {
         thumbnail.addEventListener('click', function() {
             // Remove active class from all thumbnails
-            thumbnails.forEach(t => {
-                t.classList.remove('ring-2', 'ring-pink-600', 'ring-offset-2');
-                t.classList.add('bg-zinc-100', 'border', 'border-zinc-200');
-            });
+            thumbnails.forEach(t => t.classList.remove('active'));
 
             // Add active class to clicked thumbnail
-            this.classList.remove('bg-zinc-100', 'border', 'border-zinc-200');
-            this.classList.add('ring-2', 'ring-pink-600', 'ring-offset-2');
+            this.classList.add('active');
 
             // Update main image
-            const newImageSrc = this.querySelector('img').src;
-            if (newImageSrc) {
-                mainImage.src = newImageSrc;
+            const newImageUrl = this.dataset.imageUrl;
+            if (newImageUrl) {
+                mainImage.src = newImageUrl;
             }
         });
     });
 }
 
 /**
- * Initialize rental period selector with buttons
+ * Initialize rental plan selector
  */
-function initRentalPeriodSelector() {
-    const periodBtns = document.querySelectorAll('.period-select-btn');
-    const startDateInput = document.getElementById('startDate');
-    const returnDateText = document.getElementById('returnDateText');
+function initRentalPlanSelector() {
+    const planBtns = document.querySelectorAll('.rental-plan-btn');
     const rentalDaysDisplay = document.getElementById('rentalDays');
     const totalPriceValue = document.getElementById('totalPriceValue');
-    const dailyRate = parseInt(document.getElementById('dailyRate')?.dataset.rate || '0');
+    const mobileTotalPrice = document.getElementById('mobileTotalPrice');
+    const mobileDays = document.getElementById('mobileDays');
 
     let selectedDays = null;
+    let selectedPrice = null;
 
-    // Set today as default start date
-    const today = new Date();
-    startDateInput.value = formatDateForInput(today);
-    startDateInput.min = formatDateForInput(today); // Prevent past dates
+    // Initialize with first plan if exists
+    if (planBtns.length > 0) {
+        const firstBtn = planBtns[0];
+        selectedDays = parseInt(firstBtn.dataset.days);
+        selectedPrice = parseInt(firstBtn.dataset.price);
+        updateDisplay();
+    }
 
-    // Period button selection
-    periodBtns.forEach(btn => {
+    // Plan button selection
+    planBtns.forEach(btn => {
         btn.addEventListener('click', function() {
             // Remove active class from all buttons
-            periodBtns.forEach(b => {
-                b.classList.remove('bg-pink-600', 'text-white', 'border-pink-600');
-                b.classList.add('bg-white', 'text-zinc-700', 'border-zinc-200');
-            });
+            planBtns.forEach(b => b.classList.remove('active'));
 
             // Add active class to selected button
-            this.classList.remove('bg-white', 'text-zinc-700', 'border-zinc-200');
-            this.classList.add('bg-pink-600', 'text-white', 'border-pink-600');
+            this.classList.add('active');
 
-            // Store selected days
+            // Store selected values
             selectedDays = parseInt(this.dataset.days);
+            selectedPrice = parseInt(this.dataset.price);
 
-            // Calculate return date
-            calculateReturnDate();
+            // Update display
+            updateDisplay();
         });
     });
 
-    // Start date change
-    startDateInput.addEventListener('change', function() {
-        if (selectedDays) {
-            calculateReturnDate();
-        }
-    });
-
-    function calculateReturnDate() {
-        if (!selectedDays || !startDateInput.value) {
-            returnDateText.textContent = '期間を選択してください';
-            rentalDaysDisplay.textContent = '--';
-            totalPriceValue.textContent = dailyRate.toLocaleString();
+    function updateDisplay() {
+        if (!selectedDays || !selectedPrice) {
+            if (rentalDaysDisplay) rentalDaysDisplay.textContent = '--';
+            if (totalPriceValue) totalPriceValue.textContent = '0';
+            if (mobileTotalPrice) mobileTotalPrice.textContent = '¥0';
+            if (mobileDays) mobileDays.textContent = '-';
             return;
         }
 
-        const startDate = new Date(startDateInput.value);
-        const returnDate = new Date(startDate);
-        returnDate.setDate(returnDate.getDate() + selectedDays);
-
-        // Update return date display
-        returnDateText.textContent = formatDateForDisplay(returnDate);
-
         // Update rental days display
-        rentalDaysDisplay.textContent = `${selectedDays}日間`;
+        if (rentalDaysDisplay) {
+            rentalDaysDisplay.textContent = `${selectedDays}日間`;
+        }
 
-        // Update total price
-        const totalPrice = dailyRate * selectedDays;
-        totalPriceValue.textContent = totalPrice.toLocaleString();
-    }
+        // Update total price (using the plan price directly)
+        if (totalPriceValue) {
+            totalPriceValue.textContent = selectedPrice.toLocaleString();
+        }
 
-    function formatDateForInput(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function formatDateForDisplay(date) {
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        return `${year}/${month}/${day}`;
+        // Update mobile display
+        if (mobileTotalPrice) {
+            mobileTotalPrice.textContent = `¥${selectedPrice.toLocaleString()}`;
+        }
+        if (mobileDays) {
+            mobileDays.textContent = selectedDays;
+        }
     }
 }
 
 /**
- * Initialize like/favorite button
+ * Initialize bookmark button
  */
-function initLikeButton() {
-    const likeBtn = document.getElementById('likeBtn');
+function initBookmarkButton() {
+    const bookmarkBtn = document.getElementById('bookmarkBtn');
 
-    if (!likeBtn) return;
+    if (!bookmarkBtn) return;
 
-    likeBtn.addEventListener('click', function(e) {
+    // Get initial state from data attribute
+    let isBookmarked = bookmarkBtn.dataset.bookmarked === 'true';
+    const productId = bookmarkBtn.dataset.productId;
+
+    // Set initial visual state
+    updateBookmarkVisual(isBookmarked);
+
+    bookmarkBtn.addEventListener('click', async function(e) {
         e.preventDefault();
 
-        const icon = this.querySelector('.iconify');
-        const count = this.querySelector('.like-count');
+        // Disable button during request
+        this.disabled = true;
 
-        if (icon.classList.contains('text-zinc-400')) {
-            // Like
-            icon.classList.remove('text-zinc-400');
-            icon.classList.add('text-pink-600');
-            icon.setAttribute('data-icon', 'lucide:heart-filled');
+        try {
+            const response = await fetch(`/monotal/product/${productId}/bookmark/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                }
+            });
 
-            if (count) {
-                const currentCount = parseInt(count.textContent);
-                count.textContent = currentCount + 1;
+            const data = await response.json();
+
+            if (data.success) {
+                isBookmarked = data.is_bookmarked;
+                updateBookmarkVisual(isBookmarked);
+
+                // Update count
+                const countEl = document.getElementById('bookmarkCount');
+                if (countEl) {
+                    countEl.textContent = data.bookmark_count;
+                }
+            } else {
+                // Show error message
+                if (response.status === 401) {
+                    alert('ブックマークするにはログインが必要です');
+                } else {
+                    alert(data.error || 'エラーが発生しました');
+                }
             }
-        } else {
-            // Unlike
-            icon.classList.remove('text-pink-600');
-            icon.classList.add('text-zinc-400');
-            icon.setAttribute('data-icon', 'lucide:heart');
-
-            if (count) {
-                const currentCount = parseInt(count.textContent);
-                count.textContent = Math.max(0, currentCount - 1);
-            }
+        } catch (error) {
+            console.error('Bookmark error:', error);
+            alert('通信エラーが発生しました');
+        } finally {
+            this.disabled = false;
         }
     });
+
+    function updateBookmarkVisual(bookmarked) {
+        const icon = bookmarkBtn.querySelector('.iconify');
+
+        if (bookmarked) {
+            bookmarkBtn.classList.add('liked');
+            icon.style.fill = '#db2777';
+            icon.style.color = '#db2777';
+        } else {
+            bookmarkBtn.classList.remove('liked');
+            icon.style.fill = 'none';
+            icon.style.color = '';
+        }
+    }
+}
+
+/**
+ * Get CSRF token from cookie
+ */
+function getCSRFToken() {
+    const name = 'csrftoken';
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
 }
 
 /**
  * Initialize comment section
  */
 function initCommentSection() {
+    const commentsSection = document.querySelector('.comments-section');
     const commentInput = document.getElementById('commentInput');
     const commentBtn = document.getElementById('commentBtn');
+    const commentList = document.getElementById('commentList');
+    const commentLoading = document.getElementById('commentLoading');
+    const commentCount = document.getElementById('commentCount');
+    const commentCountMobile = document.getElementById('commentCountMobile');
+    const mobileCommentBtn = document.getElementById('mobileCommentBtn');
 
-    if (!commentInput || !commentBtn) return;
+    if (!commentsSection) return;
+
+    const productId = commentsSection.dataset.productId;
+    if (!productId) return;
+
+    // 出品者かどうかを取得
+    const isSeller = commentsSection.dataset.isSeller === 'true';
+
+    // Load comments on page load
+    loadComments();
 
     // Enable/disable comment button based on input
-    commentInput.addEventListener('input', function() {
-        if (this.value.trim().length > 0) {
-            commentBtn.classList.remove('bg-zinc-300', 'text-zinc-500', 'cursor-not-allowed');
-            commentBtn.classList.add('bg-pink-600', 'text-white', 'hover:bg-pink-700', 'cursor-pointer');
-            commentBtn.disabled = false;
-        } else {
-            commentBtn.classList.add('bg-zinc-300', 'text-zinc-500', 'cursor-not-allowed');
-            commentBtn.classList.remove('bg-pink-600', 'text-white', 'hover:bg-pink-700', 'cursor-pointer');
-            commentBtn.disabled = true;
+    if (commentInput && commentBtn) {
+        commentInput.addEventListener('input', function() {
+            commentBtn.disabled = this.value.trim().length === 0;
+        });
+
+        // Submit comment
+        commentBtn.addEventListener('click', async function(e) {
+            e.preventDefault();
+            await submitComment();
+        });
+
+        // Enter key to submit (Shift+Enter for new line)
+        commentInput.addEventListener('keydown', async function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if (this.value.trim().length > 0) {
+                    await submitComment();
+                }
+            }
+        });
+    }
+
+    // Mobile comment button - scroll to comment section
+    if (mobileCommentBtn) {
+        mobileCommentBtn.addEventListener('click', function() {
+            commentsSection.scrollIntoView({ behavior: 'smooth' });
+            if (commentInput) {
+                setTimeout(() => commentInput.focus(), 500);
+            }
+        });
+    }
+
+    // 削除ボタンのイベント委譲（出品者のみ）
+    if (isSeller && commentList) {
+        commentList.addEventListener('click', async function(e) {
+            const deleteBtn = e.target.closest('.comment-delete-btn');
+            if (!deleteBtn) return;
+
+            const messageId = deleteBtn.dataset.messageId;
+            if (!messageId) return;
+
+            if (!confirm('このコメントを削除しますか？')) return;
+
+            await deleteComment(messageId);
+        });
+    }
+
+    async function deleteComment(messageId) {
+        try {
+            const response = await fetch(`/monotal/product/${productId}/messages/${messageId}/delete/`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // コメントをDOMから削除
+                const commentItem = commentList.querySelector(`.comment-item[data-message-id="${messageId}"]`);
+                if (commentItem) {
+                    commentItem.remove();
+                }
+
+                // コメント数を更新
+                updateCommentCount(data.remaining_count);
+
+                // コメントがなくなった場合
+                if (data.remaining_count === 0) {
+                    commentList.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
+                }
+            } else {
+                alert(data.error || 'コメントの削除に失敗しました');
+            }
+        } catch (error) {
+            console.error('Delete comment error:', error);
+            alert('通信エラーが発生しました');
         }
-    });
+    }
 
-    // Submit comment (placeholder - would need backend integration)
-    commentBtn.addEventListener('click', function(e) {
-        e.preventDefault();
+    async function loadComments() {
+        try {
+            const response = await fetch(`/monotal/product/${productId}/messages/`, {
+                method: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
-        if (commentInput.value.trim().length > 0) {
-            // Here you would send the comment to the backend
-            console.log('Comment submitted:', commentInput.value);
+            const data = await response.json();
 
-            // Clear input
-            commentInput.value = '';
-            commentInput.dispatchEvent(new Event('input'));
+            if (commentLoading) {
+                commentLoading.style.display = 'none';
+            }
 
-            // Show success message (placeholder)
-            alert('コメントを送信しました');
+            if (data.success) {
+                renderComments(data.messages);
+                updateCommentCount(data.total_count);
+            }
+        } catch (error) {
+            console.error('Load comments error:', error);
+            if (commentLoading) {
+                commentLoading.innerHTML = '<span class="comment-empty">コメントを読み込めませんでした</span>';
+            }
         }
-    });
+    }
+
+    async function submitComment() {
+        const content = commentInput.value.trim();
+        if (!content) return;
+
+        commentBtn.disabled = true;
+        commentBtn.textContent = '送信中...';
+
+        try {
+            const response = await fetch(`/monotal/product/${productId}/messages/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCSRFToken(),
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ content: content })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Clear input
+                commentInput.value = '';
+                commentInput.dispatchEvent(new Event('input'));
+
+                // Add new comment to list
+                appendComment(data.message);
+
+                // Update count
+                const currentCount = parseInt(commentCount?.textContent || '0');
+                updateCommentCount(currentCount + 1);
+            } else {
+                if (response.status === 401) {
+                    alert('コメントするにはログインが必要です');
+                } else {
+                    alert(data.error || 'エラーが発生しました');
+                }
+            }
+        } catch (error) {
+            console.error('Submit comment error:', error);
+            alert('通信エラーが発生しました');
+        } finally {
+            commentBtn.disabled = commentInput.value.trim().length === 0;
+            commentBtn.textContent = 'コメントする';
+        }
+    }
+
+    function renderComments(messages) {
+        if (!commentList) return;
+
+        if (messages.length === 0) {
+            commentList.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
+            return;
+        }
+
+        commentList.innerHTML = messages.map(msg => createCommentHTML(msg)).join('');
+    }
+
+    function appendComment(message) {
+        if (!commentList) return;
+
+        // Remove empty message if exists
+        const emptyMsg = commentList.querySelector('.comment-empty');
+        if (emptyMsg) {
+            emptyMsg.remove();
+        }
+
+        commentList.insertAdjacentHTML('beforeend', createCommentHTML(message));
+
+        // Scroll to new comment
+        const newComment = commentList.lastElementChild;
+        if (newComment) {
+            newComment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    function createCommentHTML(msg) {
+        const avatarHTML = msg.user_image
+            ? `<img src="${msg.user_image}" alt="${escapeHtml(msg.user_name)}">`
+            : `<span class="iconify" data-icon="lucide:user" data-width="18"></span>`;
+
+        const ownerBadge = msg.is_owner
+            ? '<span class="comment-owner-badge">出品者</span>'
+            : '';
+
+        // 出品者のみ削除ボタンを表示
+        const deleteBtn = isSeller
+            ? `<button type="button" class="comment-delete-btn" data-message-id="${msg.message_id}" title="コメントを削除">
+                   <span class="iconify" data-icon="lucide:trash-2" data-width="14"></span>
+               </button>`
+            : '';
+
+        return `
+            <div class="comment-item" data-message-id="${msg.message_id}">
+                <div class="comment-avatar">
+                    ${avatarHTML}
+                </div>
+                <div class="comment-body">
+                    <div class="comment-header">
+                        <span class="comment-author">${escapeHtml(msg.user_name)}</span>
+                        ${ownerBadge}
+                        <span class="comment-time">${msg.created_at}</span>
+                        ${deleteBtn}
+                    </div>
+                    <div class="comment-content">${escapeHtml(msg.content)}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function updateCommentCount(count) {
+        if (commentCount) {
+            commentCount.textContent = count;
+        }
+        if (commentCountMobile) {
+            commentCountMobile.textContent = count;
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 }
