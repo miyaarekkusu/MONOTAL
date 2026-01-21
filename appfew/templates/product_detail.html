@@ -41,7 +41,11 @@
                         <p>画像なし</p>
                     </div>
                 {% endif %}
-                <div class="rental-badge">レンタル可</div>
+                {% if product.product_status %}
+                <div class="rental-badge status-{{ product.product_status.product_status_id }}">
+                    {{ product.product_status.status_name }}
+                </div>
+                {% endif %}
             </div>
 
             <!-- Thumbnails -->
@@ -89,22 +93,16 @@
                         </div>
                         {% endif %}
                         <div class="spec-row">
-                            <span class="spec-label">配送料の負担</span>
-                            <span class="spec-value">送料込み (出品者負担)</span>
-                        </div>
-                        {% if product.shipping_method %}
-                        <div class="spec-row">
-                            <span class="spec-label">配送の方法</span>
-                            <span class="spec-value">{{ product.shipping_method.shipping_method_name }}</span>
-                        </div>
-                        {% endif %}
-                        <div class="spec-row">
                             <span class="spec-label">発送元の地域</span>
                             <span class="spec-value">{% if seller_address and seller_address.prefecture %}{{ seller_address.prefecture.prefecture_name }}{% else %}-{% endif %}</span>
                         </div>
                         <div class="spec-row">
                             <span class="spec-label">発送までの日数</span>
                             <span class="spec-value">{% if product.shipping_days %}{{ product.shipping_days.days_label }}{% else %}-{% endif %}</span>
+                        </div>
+                        <div class="spec-row">
+                            <span class="spec-label">配送料の負担</span>
+                            <span class="spec-value">{% if product.shipping_burden %}{{ product.shipping_burden.burden_name }}{% else %}-{% endif %}</span>
                         </div>
                     </div>
                 </section>
@@ -184,9 +182,16 @@
                 </section>
 
                 <!-- Actions -->
+                {% if is_seller %}
+                <a href="{% url 'product_edit' product_id=product.product_id %}" class="edit-product-btn">
+                    <span class="iconify" data-icon="lucide:edit" data-width="16"></span>
+                    商品を編集する
+                </a>
+                {% else %}
                 <button class="rental-cta-btn">
                     レンタル手続きへ
                 </button>
+                {% endif %}
 
                 <!-- Seller Profile -->
                 {% if product.user %}
@@ -257,6 +262,10 @@
                     <div class="spec-row">
                         <span class="spec-label">発送までの日数</span>
                         <span class="spec-value">{% if product.shipping_days %}{{ product.shipping_days.days_label }}{% else %}-{% endif %}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="spec-label">配送料の負担</span>
+                        <span class="spec-value">{% if product.shipping_burden %}{{ product.shipping_burden.burden_name }}{% else %}-{% endif %}</span>
                     </div>
                 </div>
             </section>

@@ -1,0 +1,105 @@
+<!-- Sidebar Navigation -->
+<aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
+
+    <!-- Group: Product Management -->
+    <div>
+        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">商品管理</h3>
+        <nav class="space-y-0.5">
+            {% if current_page == 'browsing_history' %}
+            <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:history" data-width="20"></span>
+                閲覧履歴
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:history" data-width="20"></span>
+                閲覧履歴
+            </a>
+            {% endif %}
+
+            {% if current_page == 'bookmark_list' %}
+            <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:heart" data-width="20"></span>
+                ブックマーク一覧
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:heart" data-width="20"></span>
+                ブックマーク一覧
+            </a>
+            {% endif %}
+
+            {% if current_page == 'follow_list' %}
+            <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:users" data-width="20"></span>
+                フォローリスト
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:users" data-width="20"></span>
+                フォローリスト
+            </a>
+            {% endif %}
+
+            {% if current_page == 'listing' %}
+            <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:store" data-width="20"></span>
+                出品一覧
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:store" data-width="20"></span>
+                出品一覧
+            </a>
+            {% endif %}
+
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:shopping-bag" data-width="20"></span>
+                レンタル一覧
+            </a>
+        </nav>
+    </div>
+
+    <!-- Group: Help -->
+    <div>
+        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">ヘルプ</h3>
+        <nav class="space-y-0.5">
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
+                ヘルプセンター
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:mail" data-width="20"></span>
+                お問い合わせ
+            </a>
+        </nav>
+    </div>
+
+    <!-- Group: Settings -->
+    <div>
+        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">設定</h3>
+        <nav class="space-y-0.5">
+            {% if current_page == 'address_list' %}
+            <a href="{% url 'mypage_address_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:map-pin" data-width="20"></span>
+                住所管理
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_address_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:map-pin" data-width="20"></span>
+                住所管理
+            </a>
+            {% endif %}
+
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:user-cog" data-width="20"></span>
+                個人情報設定
+            </a>
+            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
+                支払い方法
+            </a>
+        </nav>
+    </div>
+
+</aside>

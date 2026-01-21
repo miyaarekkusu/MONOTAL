@@ -960,3 +960,47 @@ body {
         padding-bottom: 100px;
     }
 }
+
+/* ============================================
+   Status Badge Colors
+   ============================================ */
+.rental-badge.status-1 {  /* 貸出可能 */
+    color: #059669;
+    background-color: rgba(5, 150, 105, 0.1);
+    border-color: rgba(5, 150, 105, 0.2);
+}
+
+.rental-badge.status-2 {  /* レンタル中 */
+    color: #d97706;
+    background-color: rgba(217, 119, 6, 0.1);
+    border-color: rgba(217, 119, 6, 0.2);
+}
+
+.rental-badge.status-3 {  /* 非公開 */
+    color: #71717a;
+    background-color: rgba(113, 113, 122, 0.1);
+    border-color: rgba(113, 113, 122, 0.2);
+}
+
+/* ============================================
+   Edit Product Button
+   ============================================ */
+.edit-product-btn {
+    width: 100%;
+    border-radius: 8px;
+    background: #18181b;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+}
+
+.edit-product-btn:hover {
+    background: #27272a;
+}

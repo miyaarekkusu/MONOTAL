@@ -166,10 +166,10 @@
 
             {% for product in products %}
             <!-- 商品カード -->
-            <div class="product-card{% if product.product_status.product_status_id == 3 %} sold{% endif %}">
+            <div class="product-card{% if product.product_status.product_status_id == 2 %} sold{% endif %}">
                 <a href="{% url 'product_detail' product_id=product.product_id %}" style="text-decoration: none; color: inherit;">
                     <div class="product-image-wrapper">
-                        {% if product.product_status.product_status_id == 3 %}
+                        {% if product.product_status.product_status_id == 2 %}
                         <div class="sold-badge"></div>
                         <span class="sold-text">売切</span>
                         {% endif %}
@@ -183,16 +183,14 @@
                             </div>
                         </div>
                         {% endif %}
+                        {% if product.min_rental_plan %}
                         <div class="price-pill">
-                            <span>¥{{ product.rental_fee|floatformat:0 }}</span>
+                            <span>¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}/{{ product.min_rental_plan.rental_days }}日〜</span>
                         </div>
+                        {% endif %}
                     </div>
                     <div class="product-info">
                         <h3 class="product-title">{{ product.product_name }}</h3>
-                        <div class="rental-duration">
-                            <span class="iconify" data-icon="lucide:clock" data-width="14" data-height="14"></span>
-                            <span>{{ product.rental_days }}日〜</span>
-                        </div>
                     </div>
                 </a>
             </div>

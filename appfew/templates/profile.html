@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}{{ profile_user.display_name }} - プロフィール | MONOTAL{% endblock %}
@@ -154,7 +154,7 @@
         <div id="products-tab" class="tab-content">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {% for product in user_products %}
-                <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 3 %}opacity-90{% endif %}">
+                <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 2 %}opacity-90{% endif %}">
                     <div class="aspect-square w-full bg-zinc-100 relative overflow-hidden">
                         {% if product.images.all %}
                         <img src="{{ product.images.all.0.image.url }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ product.product_name }}">
@@ -164,27 +164,29 @@
                         </div>
                         {% endif %}
 
-                        {% if product.product_status.product_status_id == 3 %}
+                        {% if product.product_status.product_status_id == 2 %}
                         <!-- Renting Badge -->
                         <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
                         </div>
                         {% endif %}
 
+                        {% if product.min_rental_plan %}
                         <div class="absolute bottom-0 left-0 bg-black/60 backdrop-blur-sm px-2 py-1 text-white rounded-tr-lg">
-                            <span class="text-xs font-semibold">¥{{ product.rental_fee|floatformat:0 }}</span>
-                            <span class="text-[10px] font-normal opacity-80">/日</span>
+                            <span class="text-xs font-semibold">¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}</span>
+                            <span class="text-[10px] font-normal opacity-80">/{{ product.min_rental_plan.rental_days }}日〜</span>
                         </div>
+                        {% endif %}
                     </div>
                     <div class="p-3">
                         <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
                         <div class="mt-2 flex items-center gap-1.5">
-                            {% if product.product_status.product_status_id == 2 %}
+                            {% if product.product_status.product_status_id == 1 %}
                             <span class="inline-flex items-center rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-600 border border-zinc-200">
                                 レンタル可
                             </span>
-                            {% elif product.product_status.product_status_id == 3 %}
-                            <span class="text-[10px] text-zinc-400">返却予定 --</span>
+                            {% elif product.product_status.product_status_id == 2 %}
+                            <span class="text-[10px] text-zinc-400">レンタル中</span>
                             {% endif %}
                         </div>
                     </div>
@@ -213,7 +215,7 @@
         <div id="bookmarks-tab" class="tab-content hidden">
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {% for product in bookmarked_products %}
-                <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 3 %}opacity-90{% endif %}">
+                <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 2 %}opacity-90{% endif %}">
                     <div class="aspect-square w-full bg-zinc-100 relative overflow-hidden">
                         {% if product.images.all %}
                         <img src="{{ product.images.all.0.image.url }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ product.product_name }}">
@@ -223,17 +225,19 @@
                         </div>
                         {% endif %}
 
-                        {% if product.product_status.product_status_id == 3 %}
+                        {% if product.product_status.product_status_id == 2 %}
                         <!-- Renting Badge -->
                         <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
                             <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
                         </div>
                         {% endif %}
 
+                        {% if product.min_rental_plan %}
                         <div class="absolute bottom-0 left-0 bg-black/60 backdrop-blur-sm px-2 py-1 text-white rounded-tr-lg">
-                            <span class="text-xs font-semibold">¥{{ product.rental_fee|floatformat:0 }}</span>
-                            <span class="text-[10px] font-normal opacity-80">/日</span>
+                            <span class="text-xs font-semibold">¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}</span>
+                            <span class="text-[10px] font-normal opacity-80">/{{ product.min_rental_plan.rental_days }}日〜</span>
                         </div>
+                        {% endif %}
                     </div>
                     <div class="p-3">
                         <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>

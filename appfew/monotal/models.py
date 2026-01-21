@@ -248,6 +248,7 @@ class UserAddress(models.Model):
     )
     city = models.CharField(max_length=100, null=True, blank=True)  # 市区町村・町域
     street_address = models.CharField(max_length=200, null=True, blank=True)  # 番地・建物名・部屋番号
+    is_default = models.BooleanField(default=False)  # デフォルト住所フラグ
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
 
@@ -258,6 +259,12 @@ class UserAddress(models.Model):
 
     def __str__(self):
         return f"{self.user.display_name} - {self.postal_code}"
+
+    def save(self, *args, **kwargs):
+        # デフォルト住所として保存する場合、他の住所のデフォルトを解除
+        if self.is_default:
+            UserAddress.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
 
     @property
     def full_address(self):
@@ -558,23 +565,6 @@ class ProductStatus(models.Model):
         return self.status_name
 
 
-class ShippingMethod(models.Model):
-    """
-    配送方法マスター
-    例: 宅配便、郵便、直接手渡し
-    """
-    shipping_method_id = models.AutoField(primary_key=True)
-    shipping_method_name = models.CharField(max_length=100, unique=True)
-
-    class Meta:
-        db_table = 'M_ShippingMethod'
-        verbose_name = '配送方法'
-        verbose_name_plural = '配送方法'
-
-    def __str__(self):
-        return self.shipping_method_name
-
-
 class ShippingDays(models.Model):
     """
     発送日数マスター
@@ -596,6 +586,23 @@ class ShippingDays(models.Model):
         return self.days_label
 
 
+class ShippingBurden(models.Model):
+    """
+    発送料負担マスター
+    例: 出品者負担、レンタル者負担
+    """
+    shipping_burden_id = models.AutoField(primary_key=True)
+    burden_name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'M_ShippingBurden'
+        verbose_name = '発送料負担'
+        verbose_name_plural = '発送料負担'
+
+    def __str__(self):
+        return self.burden_name
+
+
 class Product(models.Model):
     """
     商品テーブル
@@ -610,15 +617,17 @@ class Product(models.Model):
     product_description = models.CharField(max_length=2000, null=True, blank=True)
     
     # 外部キー: マスターデータ（全てPROTECT）
-    shipping_method = models.ForeignKey(
-        ShippingMethod,
-        on_delete=models.PROTECT,
-        db_column='shipping_method_id'
-    )
     shipping_days = models.ForeignKey(
         ShippingDays,
         on_delete=models.PROTECT,
         db_column='shipping_days_id',
+        null=True,
+        blank=True
+    )
+    shipping_burden = models.ForeignKey(
+        ShippingBurden,
+        on_delete=models.PROTECT,
+        db_column='shipping_burden_id',
         null=True,
         blank=True
     )
@@ -660,9 +669,14 @@ class Product(models.Model):
         db_table = 'T_Product'
         verbose_name = '商品'
         verbose_name_plural = '商品'
-    
+
     def __str__(self):
         return self.product_name
+
+    @property
+    def min_rental_plan(self):
+        """最短日数のレンタルプランを取得"""
+        return self.rental_plans.order_by('rental_days').first()
 
 
 class ProductImage(models.Model):

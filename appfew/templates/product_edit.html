@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}商品を編集 - {{ product.product_name }} | MONOTAL{% endblock %}
@@ -9,14 +9,17 @@
 
 {% block content %}
 <!-- Main Content -->
-<main class="sell-main">
+<main class="sell-main edit-page-layout">
     <div class="page-header">
         <h1 class="page-title">商品の編集</h1>
         <p class="page-subtitle">商品情報を編集してください。</p>
     </div>
 
-    <form id="editForm" enctype="multipart/form-data" data-product-id="{{ product.product_id }}">
-        {% csrf_token %}
+    <div class="edit-page-grid">
+        <!-- Left: Main Form -->
+        <div class="edit-main-content">
+            <form id="editForm" enctype="multipart/form-data" data-product-id="{{ product.product_id }}">
+                {% csrf_token %}
 
         <!-- 1. Image Upload -->
         <section class="form-section">
@@ -77,18 +80,7 @@
                 </div>
             </div>
 
-            <div class="form-group">
-                <label class="input-label">公開ステータス</label>
-                <div class="select-wrapper">
-                    <select id="productStatus" class="form-select">
-                        {% for status in product_statuses %}
-                        <option value="{{ status.product_status_id }}" {% if product.product_status and product.product_status.product_status_id == status.product_status_id %}selected{% endif %}>{{ status.status_name }}</option>
-                        {% endfor %}
-                    </select>
-                    <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
-                </div>
-                <p class="field-hint">※「削除」を選択すると商品は誰からも見えなくなります</p>
-            </div>
+            <input type="hidden" id="productStatus" value="{{ product.product_status.product_status_id }}">
 
             <div class="form-group">
                 <label class="input-label">商品の説明</label>
@@ -191,60 +183,105 @@
                 </div>
             </div>
 
-            <!-- Address Form -->
-            <div class="address-form">
+            <!-- Address Selection -->
+            <div class="address-selection">
                 <div class="address-header">
                     <label class="input-label-bold">発送元住所</label>
-                    <span class="address-hint">※ユーザー住所として登録されます</span>
                 </div>
 
-                <!-- Postal Code -->
-                <div class="form-group">
-                    <label class="input-label-small">郵便番号 (ハイフンなし)</label>
-                    <div class="postal-row">
-                        <input type="text" id="postalCode" class="form-input postal-input" placeholder="1234567" maxlength="7" value="{% if user_address %}{{ user_address.postal_code }}{% endif %}">
-                        <button type="button" id="autoFillBtn" class="auto-fill-btn">
-                            住所を自動入力
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Pref & City -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="input-label-small">都道府県</label>
-                        <div class="select-wrapper">
-                            <select id="prefecture" class="form-select">
-                                <option value="" disabled>選択...</option>
-                                {% for pref in prefectures %}
-                                <option value="{{ pref.prefecture_id }}" {% if user_address and user_address.prefecture and user_address.prefecture.prefecture_id == pref.prefecture_id %}selected{% endif %}>{{ pref.prefecture_name }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="14"></span>
+                {% if user_addresses %}
+                <!-- Address List -->
+                <div class="address-list" id="addressList">
+                    {% for address in user_addresses %}
+                    <div class="address-card {% if address.is_default %}selected{% endif %}" data-address-id="{{ address.user_address_id }}">
+                        <div class="address-radio">
+                            <input type="radio" name="address_id" value="{{ address.user_address_id }}" {% if address.is_default %}checked{% endif %}>
+                        </div>
+                        <div class="address-content">
+                            <span class="address-postal">〒{{ address.postal_code|slice:":3" }}-{{ address.postal_code|slice:"3:" }}</span>
+                            {% if address.is_default %}
+                            <span class="default-badge">デフォルト</span>
+                            {% endif %}
+                            <p class="address-text">{{ address.prefecture.prefecture_name }}{{ address.city }} {{ address.street_address }}</p>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="input-label-small">市区町村・町域</label>
-                        <input type="text" id="city" class="form-input" placeholder="渋谷区神南" value="{% if user_address %}{{ user_address.city }}{% endif %}">
+                    {% endfor %}
+                </div>
+                <a href="{% url 'edit_address_manage' product_id=product.product_id %}" class="address-manage-link">
+                    <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                    住所を追加・編集する
+                </a>
+                {% else %}
+                <!-- No Address Warning -->
+                <div class="no-address-notice">
+                    <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
+                    <div class="notice-content">
+                        <p class="notice-title">発送元住所が登録されていません</p>
+                        <p class="notice-text">商品を編集するには住所の登録が必要です</p>
                     </div>
+                    <a href="{% url 'edit_address_manage' product_id=product.product_id %}" class="register-address-btn">
+                        住所を登録する
+                    </a>
                 </div>
-
-                <!-- Street Address -->
-                <div class="form-group">
-                    <label class="input-label-small">番地・建物名・部屋番号</label>
-                    <input type="text" id="streetAddress" class="form-input" placeholder="1-1-1 モノタルビル 301" value="{% if user_address %}{{ user_address.street_address }}{% endif %}">
-                </div>
+                {% endif %}
+                <div id="addressError" class="error-container"></div>
             </div>
         </section>
 
-        <!-- Submit Action -->
-        <div class="submit-section">
-            <button type="submit" id="submitBtn" class="submit-btn">
-                <span class="iconify" data-icon="lucide:save" data-width="18"></span>
-                変更を保存する
-            </button>
+            <!-- Submit Action -->
+            <div class="submit-section">
+                <button type="submit" id="submitBtn" class="submit-btn">
+                    <span class="iconify" data-icon="lucide:save" data-width="18"></span>
+                    変更を保存する
+                </button>
+            </div>
+            </form>
         </div>
-    </form>
+
+        <!-- Right: Status Panel -->
+        <aside class="edit-sidebar">
+            <div class="status-panel">
+                <h3 class="status-panel-title">公開設定</h3>
+
+                <div class="current-status">
+                    <span class="status-label">現在のステータス</span>
+                    {% if product.product_status.product_status_id == 1 %}
+                    <span class="status-badge status-badge-public">公開中</span>
+                    {% elif product.product_status.product_status_id == 2 %}
+                    <span class="status-badge status-badge-renting">レンタル中</span>
+                    {% elif product.product_status.product_status_id == 4 %}
+                    <span class="status-badge status-badge-private">非公開</span>
+                    {% else %}
+                    <span class="status-badge status-badge-other">{{ product.product_status.status_name }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="status-actions-vertical">
+                    {% if product.product_status.product_status_id == 4 %}
+                    <button type="button" id="publishBtn" class="status-btn status-btn-publish">
+                        <span class="iconify" data-icon="lucide:eye" data-width="18"></span>
+                        公開する
+                    </button>
+                    {% elif product.product_status.product_status_id != 2 %}
+                    <button type="button" id="unpublishBtn" class="status-btn status-btn-unpublish">
+                        <span class="iconify" data-icon="lucide:eye-off" data-width="18"></span>
+                        非公開にする
+                    </button>
+                    {% endif %}
+                </div>
+
+                <hr class="status-divider">
+
+                <div class="danger-zone">
+                    <button type="button" id="deleteProductBtn" class="status-btn status-btn-delete">
+                        <span class="iconify" data-icon="lucide:trash-2" data-width="18"></span>
+                        商品を削除
+                    </button>
+                    <p class="danger-zone-hint">削除すると復元できません</p>
+                </div>
+            </div>
+        </aside>
+    </div>
 </main>
 {% endblock %}
 

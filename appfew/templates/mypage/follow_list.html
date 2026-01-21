@@ -10,6 +10,22 @@
 {% block content %}
 <main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
 
+    <!-- 本人確認バナー -->
+    {% if request.user.user_status_id != 2 %}
+    <div class="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+        <div class="flex items-center gap-3">
+            <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品機能を利用するには本人確認が必要です。</p>
+            </div>
+            <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
+                本人確認する
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- Breadcrumbs -->
     <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
         <ol class="flex items-center space-x-2">
@@ -21,67 +37,7 @@
 
     <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
 
-        <!-- Sidebar Navigation -->
-        <aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
-
-            <!-- Group: Product Management -->
-            <div>
-                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">商品管理</h3>
-                <nav class="space-y-0.5">
-                    <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:history" data-width="20"></span>
-                        閲覧履歴
-                    </a>
-                    <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:heart" data-width="20"></span>
-                        ブックマーク一覧
-                    </a>
-                    <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
-                        <span class="iconify text-pink-600" data-icon="lucide:users" data-width="20"></span>
-                        フォローリスト
-                    </a>
-                    <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:store" data-width="20"></span>
-                        出品一覧
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:shopping-bag" data-width="20"></span>
-                        レンタル一覧
-                    </a>
-                </nav>
-            </div>
-
-            <!-- Group: Help -->
-            <div>
-                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">ヘルプ</h3>
-                <nav class="space-y-0.5">
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
-                        ヘルプセンター
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:mail" data-width="20"></span>
-                        お問い合わせ
-                    </a>
-                </nav>
-            </div>
-
-            <!-- Group: Settings -->
-            <div>
-                <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">設定</h3>
-                <nav class="space-y-0.5">
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:user-cog" data-width="20"></span>
-                        個人情報設定
-                    </a>
-                    <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                        <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
-                        支払い方法
-                    </a>
-                </nav>
-            </div>
-
-        </aside>
+        {% include 'mypage/_sidebar.html' %}
 
         <!-- Main Area -->
         <div class="lg:col-span-9">

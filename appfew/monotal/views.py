@@ -2,7 +2,8 @@
 import re
 from datetime import timedelta
 from django.views import View
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.hashers import make_password
@@ -542,12 +543,24 @@ class CreateSellView(View):
         conditions = ProductCondition.objects.all()
         prefectures = Prefecture.objects.all()
         shipping_days_list = ShippingDays.objects.all()
+        shipping_burdens = ShippingBurden.objects.all()
+
+        # ユーザーの登録住所を取得
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        # デフォルト住所を取得
+        default_address = user_addresses.filter(is_default=True).first()
 
         context = {
             'categories': categories,
             'conditions': conditions,
             'prefectures': prefectures,
             'shipping_days_list': shipping_days_list,
+            'shipping_burdens': shipping_burdens,
+            'user_addresses': user_addresses,
+            'default_address': default_address,
         }
 
         return render(request, 'create_sell.html', context)
@@ -582,12 +595,10 @@ class CreateSellView(View):
             product_description = request.POST.get('product_description', '').strip()
             product_condition_id = request.POST.get('product_condition', '')
             shipping_days_id = request.POST.get('shipping_days', '')
+            shipping_burden_id = request.POST.get('shipping_burden', '')
 
-            # 住所情報
-            postal_code = request.POST.get('postal_code', '').strip()
-            prefecture_id = request.POST.get('prefecture', '')
-            city = request.POST.get('city', '').strip()
-            street_address = request.POST.get('street_address', '').strip()
+            # 住所情報（既存住所IDを使用）
+            address_id = request.POST.get('address_id', '')
 
             # レンタルプラン
             rental_plans_json = request.POST.get('rental_plans', '[]')
@@ -654,19 +665,17 @@ class CreateSellView(View):
                     errors['rental_plans'] = '日数と金額を正しく入力してください'
 
             # 住所バリデーション
-            if not postal_code:
-                errors['postal_code'] = '郵便番号は必須です'
-            elif len(postal_code.replace('-', '')) != 7:
-                errors['postal_code'] = '郵便番号は7桁で入力してください'
-
-            if not prefecture_id:
-                errors['prefecture'] = '都道府県を選択してください'
-
-            if not city:
-                errors['city'] = '市区町村・町域は必須です'
-
-            if not street_address:
-                errors['street_address'] = '番地・建物名は必須です'
+            selected_address = None
+            if address_id:
+                try:
+                    selected_address = UserAddress.objects.get(
+                        user_address_id=address_id,
+                        user=request.user
+                    )
+                except UserAddress.DoesNotExist:
+                    errors['address'] = '選択された住所が見つかりません'
+            else:
+                errors['address'] = '発送元住所を選択してください'
 
             if errors:
                 if is_ajax:
@@ -695,14 +704,6 @@ class CreateSellView(View):
                 except ProductCondition.DoesNotExist:
                     pass
 
-            # 都道府県
-            prefecture_obj = None
-            if prefecture_id:
-                try:
-                    prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
-                except Prefecture.DoesNotExist:
-                    pass
-
             # 発送日数
             shipping_days_obj = None
             if shipping_days_id:
@@ -711,17 +712,13 @@ class CreateSellView(View):
                 except ShippingDays.DoesNotExist:
                     pass
 
-            # 配送方法（デフォルト: モノタル便）
-            try:
-                shipping_obj = ShippingMethod.objects.first()
-                if not shipping_obj:
-                    shipping_obj = ShippingMethod.objects.create(
-                        shipping_method_name='モノタル便'
-                    )
-            except ShippingMethod.DoesNotExist:
-                shipping_obj = ShippingMethod.objects.create(
-                    shipping_method_name='モノタル便'
-                )
+            # 発送料負担
+            shipping_burden_obj = None
+            if shipping_burden_id:
+                try:
+                    shipping_burden_obj = ShippingBurden.objects.get(shipping_burden_id=shipping_burden_id)
+                except ShippingBurden.DoesNotExist:
+                    pass
 
             # 商品ステータス（出品中）
             try:
@@ -751,8 +748,8 @@ class CreateSellView(View):
                 product = Product.objects.create(
                     product_name=product_name,
                     product_description=product_description or '',
-                    shipping_method=shipping_obj,
                     shipping_days=shipping_days_obj,
+                    shipping_burden=shipping_burden_obj,
                     product_condition=condition_obj,
                     product_status=status_obj,
                     product_category=category_obj,
@@ -790,16 +787,10 @@ class CreateSellView(View):
                     product=product
                 )
 
-                # ユーザー住所保存（既存の住所を更新または新規作成）
-                user_address, created = UserAddress.objects.update_or_create(
-                    user=request.user,
-                    defaults={
-                        'postal_code': postal_code.replace('-', ''),
-                        'prefecture': prefecture_obj,
-                        'city': city,
-                        'street_address': street_address,
-                    }
-                )
+                # 選択された住所をデフォルトに設定
+                if selected_address and not selected_address.is_default:
+                    selected_address.is_default = True
+                    selected_address.save()
 
             if is_ajax:
                 return JsonResponse({
@@ -826,9 +817,11 @@ class ProductListView(View):
     items_per_page = 20
 
     def get(self, request, *args, **kwargs):
-        # 公開中の商品のみ取得（delete_datetimeがnullのもの）
+        # 公開中の商品のみ取得（delete_datetimeがnullのもの、非公開・削除商品を除外）
         products = Product.objects.filter(
             delete_datetime__isnull=True
+        ).exclude(
+            product_status_id__in=[3, 4]  # メンテナンス中(3)、非公開(4)を除外
         ).select_related(
             'product_condition',
             'product_status',
@@ -954,13 +947,13 @@ class ProductDetailView(View):
 
     def get(self, request, product_id, *args, **kwargs):
         try:
-            # 商品を取得（削除されていない、公開中のもの）
+            # 商品を取得（削除されていないもの）
             product = Product.objects.select_related(
                 'product_condition',
                 'product_status',
                 'product_category',
-                'shipping_method',
                 'shipping_days',
+                'shipping_burden',
                 'user'
             ).prefetch_related(
                 'images'  # 商品画像も一緒に取得
@@ -971,6 +964,12 @@ class ProductDetailView(View):
         except Product.DoesNotExist:
             messages.error(request, '商品が見つかりません。')
             return redirect('product_list')
+
+        # 非公開商品（status_id=4）は出品者のみアクセス可能
+        if product.product_status_id == 4:
+            if not request.user.is_authenticated or request.user != product.user:
+                messages.error(request, 'この商品は非公開です。')
+                return redirect('product_list')
 
         # 商品画像を取得
         product_images = list(product.images.all())
@@ -1828,6 +1827,311 @@ class MyPageListingView(LoginRequiredMixin, View):
         return render(request, 'mypage/listing.html', context)
 
 
+class ProductEditView(LoginRequiredMixin, View):
+    """
+    商品編集ページ
+
+    アクセス条件:
+    - ログイン必須
+    - 出品者本人のみアクセス可能
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, product_id, *args, **kwargs):
+        # 商品を取得
+        try:
+            product = Product.objects.select_related(
+                'product_condition',
+                'product_status',
+                'product_category',
+                'shipping_days',
+                'shipping_burden',
+                'user'
+            ).prefetch_related(
+                'images',
+                'rental_plans'
+            ).get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            messages.error(request, '商品が見つかりません。')
+            return redirect('product_list')
+
+        # 出品者以外はアクセス拒否
+        if request.user != product.user:
+            messages.error(request, 'この商品を編集する権限がありません。')
+            return redirect('product_detail', product_id=product_id)
+
+        # マスターデータを取得
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).prefetch_related('subcategories')
+        conditions = ProductCondition.objects.all()
+        prefectures = Prefecture.objects.all()
+        shipping_days_list = ShippingDays.objects.all()
+        shipping_burdens = ShippingBurden.objects.all()
+        product_statuses = ProductStatus.objects.all()
+
+        # レンタルプランを取得
+        rental_plans = ProductRentalPlan.objects.filter(
+            product=product
+        ).order_by('rental_days')
+
+        # ユーザーの登録住所を取得
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        # デフォルト住所を取得
+        default_address = user_addresses.filter(is_default=True).first()
+
+        context = {
+            'product': product,
+            'product_images': list(product.images.all()),
+            'rental_plans': list(rental_plans),
+            'categories': categories,
+            'conditions': conditions,
+            'prefectures': prefectures,
+            'shipping_days_list': shipping_days_list,
+            'shipping_burdens': shipping_burdens,
+            'product_statuses': product_statuses,
+            'user_addresses': user_addresses,
+            'default_address': default_address,
+        }
+
+        return render(request, 'product_edit.html', context)
+
+    def post(self, request, product_id, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # 商品を取得
+        try:
+            product = Product.objects.select_related('user').get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '商品が見つかりません'
+                }, status=404)
+            messages.error(request, '商品が見つかりません。')
+            return redirect('product_list')
+
+        # 出品者以外はアクセス拒否
+        if request.user != product.user:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'この商品を編集する権限がありません'
+                }, status=403)
+            messages.error(request, 'この商品を編集する権限がありません。')
+            return redirect('product_detail', product_id=product_id)
+
+        try:
+            # FormDataから取得
+            product_name = request.POST.get('product_name', '').strip()
+            product_category_id = request.POST.get('product_category', '')
+            product_description = request.POST.get('product_description', '').strip()
+            product_condition_id = request.POST.get('product_condition', '')
+            product_status_id = request.POST.get('product_status', '')
+            shipping_days_id = request.POST.get('shipping_days', '')
+            shipping_burden_id = request.POST.get('shipping_burden', '')
+
+            # 住所情報（既存住所IDを使用）
+            address_id = request.POST.get('address_id', '')
+
+            # レンタルプラン
+            rental_plans_json = request.POST.get('rental_plans', '[]')
+            new_images = request.FILES.getlist('images')
+            delete_image_ids_json = request.POST.get('delete_image_ids', '[]')
+
+            # JSONをパース
+            try:
+                rental_plans = json.loads(rental_plans_json)
+            except json.JSONDecodeError:
+                rental_plans = []
+
+            try:
+                delete_image_ids = json.loads(delete_image_ids_json)
+            except json.JSONDecodeError:
+                delete_image_ids = []
+
+            errors = {}
+
+            # ========================================
+            # バリデーション
+            # ========================================
+
+            # 商品名
+            if not product_name:
+                errors['product_name'] = '商品名は必須です'
+            elif len(product_name) > 40:
+                errors['product_name'] = '商品名は40文字以内で入力してください'
+
+            # カテゴリー
+            if not product_category_id:
+                errors['product_category'] = 'カテゴリーを選択してください'
+
+            # 商品の説明
+            if not product_description:
+                errors['product_description'] = '商品の説明は必須です'
+            elif len(product_description) > 1000:
+                errors['product_description'] = '商品の説明は1000文字以内で入力してください'
+
+            # 商品の状態
+            if not product_condition_id:
+                errors['product_condition'] = '商品の状態を選択してください'
+
+            # 発送までの日数
+            if not shipping_days_id:
+                errors['shipping_days'] = '発送までの日数を選択してください'
+
+            # レンタルプランのバリデーション
+            if not rental_plans or len(rental_plans) == 0:
+                errors['rental_plans'] = '少なくとも1つのレンタルプランを設定してください'
+            else:
+                has_valid_plan = False
+                for plan in rental_plans:
+                    days = plan.get('days', 0)
+                    price = plan.get('price', 0)
+
+                    if days > 0 and price >= 100:
+                        has_valid_plan = True
+                    elif days > 0 and 0 < price < 100:
+                        errors['rental_plans'] = '金額は100円以上で設定してください'
+                        break
+
+                if not has_valid_plan and 'rental_plans' not in errors:
+                    errors['rental_plans'] = '日数と金額を正しく入力してください'
+
+            # 住所バリデーション
+            selected_address = None
+            if address_id:
+                try:
+                    selected_address = UserAddress.objects.get(
+                        user_address_id=address_id,
+                        user=request.user
+                    )
+                except UserAddress.DoesNotExist:
+                    errors['address'] = '選択された住所が見つかりません'
+            else:
+                errors['address'] = '発送元住所を選択してください'
+
+            # 画像チェック（既存 - 削除 + 新規 >= 1）
+            current_image_count = ProductImage.objects.filter(product=product).count()
+            remaining_count = current_image_count - len(delete_image_ids) + len(new_images)
+            if remaining_count < 1:
+                errors['images'] = '商品画像は1枚以上必要です'
+            elif remaining_count > 10:
+                errors['images'] = '商品画像は10枚までです'
+
+            if errors:
+                if is_ajax:
+                    return JsonResponse({'success': False, 'errors': errors}, status=400)
+                messages.error(request, 'エラーがあります。入力内容を確認してください。')
+                return redirect('product_edit', product_id=product_id)
+
+            # ========================================
+            # マスターデータ取得
+            # ========================================
+
+            category_obj = ProductCategory.objects.get(product_category_id=product_category_id)
+            condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
+            shipping_days_obj = ShippingDays.objects.get(shipping_days_id=shipping_days_id)
+
+            status_obj = None
+            if product_status_id:
+                status_obj = ProductStatus.objects.get(product_status_id=product_status_id)
+
+            shipping_burden_obj = None
+            if shipping_burden_id:
+                try:
+                    shipping_burden_obj = ShippingBurden.objects.get(shipping_burden_id=shipping_burden_id)
+                except ShippingBurden.DoesNotExist:
+                    pass
+
+            # ========================================
+            # 更新（トランザクション使用）
+            # ========================================
+
+            with transaction.atomic():
+                # 商品を更新
+                product.product_name = product_name
+                product.product_description = product_description
+                product.product_category = category_obj
+                product.product_condition = condition_obj
+                product.shipping_days = shipping_days_obj
+                product.shipping_burden = shipping_burden_obj
+
+                if status_obj:
+                    product.product_status = status_obj
+
+                # 最初のレンタルプランを取得（Productテーブル用）
+                rental_days_value = 0
+                rental_fee_value = 0
+                for plan in rental_plans:
+                    if plan.get('days', 0) > 0 and plan.get('price', 0) >= 100:
+                        rental_days_value = plan['days']
+                        rental_fee_value = plan['price']
+                        break
+
+                product.rental_days = rental_days_value
+                product.rental_fee = rental_fee_value
+                product.save()
+
+                # 削除対象の画像を削除
+                if delete_image_ids:
+                    ProductImage.objects.filter(
+                        product_image_id__in=delete_image_ids,
+                        product=product
+                    ).delete()
+
+                # 新しい画像を追加
+                max_order = ProductImage.objects.filter(product=product).count()
+                for index, image in enumerate(new_images):
+                    ProductImage.objects.create(
+                        product=product,
+                        image=image,
+                        display_order=max_order + index
+                    )
+
+                # レンタルプラン更新（全削除→再作成）
+                ProductRentalPlan.objects.filter(product=product).delete()
+                for plan in rental_plans:
+                    days = plan.get('days', 0)
+                    price = plan.get('price', 0)
+                    if days > 0 and price >= 100:
+                        ProductRentalPlan.objects.create(
+                            product=product,
+                            rental_days=days,
+                            rental_fee=price
+                        )
+
+                # 選択された住所をデフォルトに設定
+                if selected_address and not selected_address.is_default:
+                    selected_address.is_default = True
+                    selected_address.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '商品を更新しました',
+                    'redirect_url': f'/monotal/product/{product_id}/'
+                })
+
+            messages.success(request, '商品を更新しました')
+            return redirect('product_detail', product_id=product_id)
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({'success': False, 'message': f'エラーが発生しました: {str(e)}'}, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('product_edit', product_id=product_id)
+
+
 index = IndexView.as_view()
 login_view = LoginView.as_view()
 logout_view = LogoutView.as_view()
@@ -1861,3 +2165,555 @@ mypage_follow_list = MyPageFollowListView.as_view()
 mypage_bookmark_list = MyPageBookmarkListView.as_view()
 mypage_browsing_history = MyPageBrowsingHistoryView.as_view()
 mypage_listing = MyPageListingView.as_view()
+
+# 商品編集
+product_edit = ProductEditView.as_view()
+
+
+# 住所管理定数
+MAX_USER_ADDRESSES = 3
+
+
+class MyPageAddressListView(LoginRequiredMixin, View):
+    """
+    マイページ - 住所管理
+    住所一覧表示、新規登録（POST、最大3件制限）
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # ユーザーの住所を取得
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        # 都道府県リスト
+        prefectures = Prefecture.objects.all()
+
+        context = {
+            'user_addresses': user_addresses,
+            'address_count': user_addresses.count(),
+            'max_addresses': MAX_USER_ADDRESSES,
+            'can_add_address': user_addresses.count() < MAX_USER_ADDRESSES,
+            'prefectures': prefectures,
+            'current_page': 'address_list',
+        }
+
+        return render(request, 'mypage/address_list.html', context)
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # 住所数チェック
+        current_count = UserAddress.objects.filter(user=request.user).count()
+        if current_count >= MAX_USER_ADDRESSES:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'住所は最大{MAX_USER_ADDRESSES}件までです'
+                }, status=400)
+            messages.error(request, f'住所は最大{MAX_USER_ADDRESSES}件までです')
+            return redirect('mypage_address_list')
+
+        # フォームデータ取得
+        postal_code = request.POST.get('postal_code', '').strip().replace('-', '')
+        prefecture_id = request.POST.get('prefecture', '')
+        city = request.POST.get('city', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not postal_code or len(postal_code) != 7:
+            errors['postal_code'] = '郵便番号は7桁で入力してください'
+        if not prefecture_id:
+            errors['prefecture'] = '都道府県を選択してください'
+        if not city:
+            errors['city'] = '市区町村・町域は必須です'
+        if not street_address:
+            errors['street_address'] = '番地・建物名は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_address_list')
+
+        try:
+            prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+
+            # 最初の住所の場合はデフォルトに設定
+            is_first_address = current_count == 0
+
+            address = UserAddress.objects.create(
+                user=request.user,
+                postal_code=postal_code,
+                prefecture=prefecture_obj,
+                city=city,
+                street_address=street_address,
+                is_default=is_first_address
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '住所を追加しました',
+                    'address': {
+                        'id': address.user_address_id,
+                        'postal_code': address.postal_code,
+                        'prefecture': prefecture_obj.prefecture_name,
+                        'city': address.city,
+                        'street_address': address.street_address,
+                        'is_default': address.is_default,
+                        'full_address': address.full_address,
+                    }
+                })
+
+            messages.success(request, '住所を追加しました')
+            return redirect('mypage_address_list')
+
+        except Prefecture.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '都道府県が無効です'
+                }, status=400)
+            messages.error(request, '都道府県が無効です')
+            return redirect('mypage_address_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_address_list')
+
+
+class AddressDeleteView(LoginRequiredMixin, View):
+    """
+    住所削除API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, address_id, *args, **kwargs):
+        try:
+            address = UserAddress.objects.get(
+                user_address_id=address_id,
+                user=request.user
+            )
+
+            was_default = address.is_default
+            address.delete()
+
+            # デフォルト住所を削除した場合、残りの最初の住所をデフォルトに
+            if was_default:
+                remaining = UserAddress.objects.filter(user=request.user).first()
+                if remaining:
+                    remaining.is_default = True
+                    remaining.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': '住所を削除しました'
+            })
+
+        except UserAddress.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': '住所が見つかりません'
+            }, status=404)
+
+
+class AddressEditView(LoginRequiredMixin, View):
+    """
+    住所編集API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, address_id, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        try:
+            address = UserAddress.objects.get(
+                user_address_id=address_id,
+                user=request.user
+            )
+        except UserAddress.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '住所が見つかりません'
+                }, status=404)
+            messages.error(request, '住所が見つかりません')
+            return redirect('mypage_address_list')
+
+        # フォームデータ取得
+        postal_code = request.POST.get('postal_code', '').strip().replace('-', '')
+        prefecture_id = request.POST.get('prefecture', '')
+        city = request.POST.get('city', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not postal_code or len(postal_code) != 7:
+            errors['postal_code'] = '郵便番号は7桁で入力してください'
+        if not prefecture_id:
+            errors['prefecture'] = '都道府県を選択してください'
+        if not city:
+            errors['city'] = '市区町村・町域は必須です'
+        if not street_address:
+            errors['street_address'] = '番地・建物名は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_address_list')
+
+        try:
+            prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+
+            # 住所を更新
+            address.postal_code = postal_code
+            address.prefecture = prefecture_obj
+            address.city = city
+            address.street_address = street_address
+            address.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '住所を更新しました',
+                    'address': {
+                        'id': address.user_address_id,
+                        'postal_code': address.postal_code,
+                        'prefecture_id': prefecture_obj.prefecture_id,
+                        'prefecture': prefecture_obj.prefecture_name,
+                        'city': address.city,
+                        'street_address': address.street_address,
+                        'is_default': address.is_default,
+                    }
+                })
+
+            messages.success(request, '住所を更新しました')
+            return redirect('mypage_address_list')
+
+        except Prefecture.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '都道府県が見つかりません'
+                }, status=400)
+            messages.error(request, '都道府県が見つかりません')
+            return redirect('mypage_address_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_address_list')
+
+
+# 住所管理関連
+mypage_address_list = MyPageAddressListView.as_view()
+address_edit = AddressEditView.as_view()
+address_delete = AddressDeleteView.as_view()
+
+
+class SellAddressManageView(LoginRequiredMixin, View):
+    """
+    出品ページ用 - 住所管理
+    戻るボタンで出品ページに戻る
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        prefectures = Prefecture.objects.all()
+
+        context = {
+            'user_addresses': user_addresses,
+            'address_count': user_addresses.count(),
+            'max_addresses': MAX_USER_ADDRESSES,
+            'can_add_address': user_addresses.count() < MAX_USER_ADDRESSES,
+            'prefectures': prefectures,
+            'back_url': reverse('create_sell'),
+            'page_title': '発送元住所の管理',
+        }
+
+        return render(request, 'sell_address_manage.html', context)
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        current_count = UserAddress.objects.filter(user=request.user).count()
+        if current_count >= MAX_USER_ADDRESSES:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'住所は最大{MAX_USER_ADDRESSES}件までです'
+                }, status=400)
+            return redirect('sell_address_manage')
+
+        postal_code = request.POST.get('postal_code', '').strip().replace('-', '')
+        prefecture_id = request.POST.get('prefecture', '')
+        city = request.POST.get('city', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+
+        errors = {}
+
+        if not postal_code or len(postal_code) != 7:
+            errors['postal_code'] = '郵便番号は7桁で入力してください'
+        if not prefecture_id:
+            errors['prefecture'] = '都道府県を選択してください'
+        if not city:
+            errors['city'] = '市区町村・町域は必須です'
+        if not street_address:
+            errors['street_address'] = '番地・建物名は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return redirect('sell_address_manage')
+
+        try:
+            prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+            is_first_address = current_count == 0
+
+            address = UserAddress.objects.create(
+                user=request.user,
+                postal_code=postal_code,
+                prefecture=prefecture_obj,
+                city=city,
+                street_address=street_address,
+                is_default=is_first_address
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '住所を追加しました',
+                    'address': {
+                        'id': address.user_address_id,
+                        'postal_code': address.postal_code,
+                        'prefecture': prefecture_obj.prefecture_name,
+                        'city': address.city,
+                        'street_address': address.street_address,
+                        'is_default': address.is_default,
+                    }
+                })
+
+            return redirect('sell_address_manage')
+
+        except Prefecture.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '都道府県が無効です'
+                }, status=400)
+            return redirect('sell_address_manage')
+
+
+class EditAddressManageView(LoginRequiredMixin, View):
+    """
+    商品編集ページ用 - 住所管理
+    戻るボタンで編集ページに戻る
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, product_id, *args, **kwargs):
+        # 商品が存在し、所有者であることを確認
+        product = get_object_or_404(Product, product_id=product_id, user=request.user)
+
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        prefectures = Prefecture.objects.all()
+
+        context = {
+            'user_addresses': user_addresses,
+            'address_count': user_addresses.count(),
+            'max_addresses': MAX_USER_ADDRESSES,
+            'can_add_address': user_addresses.count() < MAX_USER_ADDRESSES,
+            'prefectures': prefectures,
+            'back_url': reverse('product_edit', kwargs={'product_id': product_id}),
+            'page_title': '発送元住所の管理',
+            'product_id': product_id,
+        }
+
+        return render(request, 'sell_address_manage.html', context)
+
+    def post(self, request, product_id, *args, **kwargs):
+        # 商品が存在し、所有者であることを確認
+        product = get_object_or_404(Product, product_id=product_id, user=request.user)
+
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        current_count = UserAddress.objects.filter(user=request.user).count()
+        if current_count >= MAX_USER_ADDRESSES:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'住所は最大{MAX_USER_ADDRESSES}件までです'
+                }, status=400)
+            return redirect('edit_address_manage', product_id=product_id)
+
+        postal_code = request.POST.get('postal_code', '').strip().replace('-', '')
+        prefecture_id = request.POST.get('prefecture', '')
+        city = request.POST.get('city', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+
+        errors = {}
+
+        if not postal_code or len(postal_code) != 7:
+            errors['postal_code'] = '郵便番号は7桁で入力してください'
+        if not prefecture_id:
+            errors['prefecture'] = '都道府県を選択してください'
+        if not city:
+            errors['city'] = '市区町村・町域は必須です'
+        if not street_address:
+            errors['street_address'] = '番地・建物名は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return redirect('edit_address_manage', product_id=product_id)
+
+        try:
+            prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+            is_first_address = current_count == 0
+
+            address = UserAddress.objects.create(
+                user=request.user,
+                postal_code=postal_code,
+                prefecture=prefecture_obj,
+                city=city,
+                street_address=street_address,
+                is_default=is_first_address
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '住所を追加しました',
+                    'address': {
+                        'id': address.user_address_id,
+                        'postal_code': address.postal_code,
+                        'prefecture': prefecture_obj.prefecture_name,
+                        'city': address.city,
+                        'street_address': address.street_address,
+                        'is_default': address.is_default,
+                    }
+                })
+
+            return redirect('edit_address_manage', product_id=product_id)
+
+        except Prefecture.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '都道府県が無効です'
+                }, status=400)
+            return redirect('edit_address_manage', product_id=product_id)
+
+
+# 出品・編集用住所管理
+sell_address_manage = SellAddressManageView.as_view()
+edit_address_manage = EditAddressManageView.as_view()
+
+
+class ProductStatusUpdateView(LoginRequiredMixin, View):
+    """
+    商品ステータス更新API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, product_id, *args, **kwargs):
+        try:
+            product = Product.objects.get(product_id=product_id, user=request.user)
+
+            data = json.loads(request.body)
+            status_id = data.get('status_id')
+
+            if status_id not in [1, 4]:  # 貸出可能(1) または 非公開(4) のみ許可
+                return JsonResponse({
+                    'success': False,
+                    'message': '無効なステータスです'
+                }, status=400)
+
+            status_obj = ProductStatus.objects.get(product_status_id=status_id)
+            product.product_status = status_obj
+            product.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'ステータスを更新しました'
+            })
+
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': '商品が見つかりません'
+            }, status=404)
+
+        except ProductStatus.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'ステータスが無効です'
+            }, status=400)
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'エラーが発生しました: {str(e)}'
+            }, status=500)
+
+
+class ProductDeleteView(LoginRequiredMixin, View):
+    """
+    商品削除API（論理削除）
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, product_id, *args, **kwargs):
+        try:
+            product = Product.objects.get(product_id=product_id, user=request.user)
+
+            # 論理削除（delete_datetimeを設定）
+            product.delete_datetime = timezone.now()
+            product.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': '商品を削除しました',
+                'redirect_url': reverse('mypage_listing')
+            })
+
+        except Product.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': '商品が見つかりません'
+            }, status=404)
+
+        except Exception as e:
+            return JsonResponse({
+                'success': False,
+                'message': f'エラーが発生しました: {str(e)}'
+            }, status=500)
+
+
+# 商品ステータス・削除
+product_status_update = ProductStatusUpdateView.as_view()
+product_delete = ProductDeleteView.as_view()

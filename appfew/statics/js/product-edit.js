@@ -18,6 +18,82 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ========================================
+    // 公開ステータスボタン
+    // ========================================
+    const publishBtn = document.getElementById('publishBtn');
+    const unpublishBtn = document.getElementById('unpublishBtn');
+    const deleteProductBtn = document.getElementById('deleteProductBtn');
+
+    if (publishBtn) {
+        publishBtn.addEventListener('click', async function() {
+            if (!confirm('この商品を公開しますか？')) return;
+            await updateProductStatus(1); // 貸出可能（公開）
+        });
+    }
+
+    if (unpublishBtn) {
+        unpublishBtn.addEventListener('click', async function() {
+            if (!confirm('この商品を非公開にしますか？')) return;
+            await updateProductStatus(4); // 非公開
+        });
+    }
+
+    if (deleteProductBtn) {
+        deleteProductBtn.addEventListener('click', async function() {
+            if (!confirm('この商品を削除しますか？\n削除すると復元できません。')) return;
+            await deleteProduct();
+        });
+    }
+
+    async function updateProductStatus(statusId) {
+        try {
+            const response = await fetch(`/monotal/product/${productId}/status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ status_id: statusId })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                window.location.reload();
+            } else {
+                alert(data.message || 'エラーが発生しました');
+            }
+        } catch (error) {
+            console.error('Status update error:', error);
+            alert('エラーが発生しました');
+        }
+    }
+
+    async function deleteProduct() {
+        try {
+            const response = await fetch(`/monotal/product/${productId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCsrfToken(),
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.success) {
+                window.location.href = data.redirect_url || '/monotal/mypage/listing/';
+            } else {
+                alert(data.message || '削除に失敗しました');
+            }
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert('エラーが発生しました');
+        }
+    }
+
+    // ========================================
     // 既存画像の削除
     // ========================================
     document.querySelectorAll('.delete-image-btn').forEach(btn => {
@@ -140,6 +216,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // ========================================
     const addPlanBtn = document.getElementById('addPlanBtn');
     const rentalPlansContainer = document.getElementById('rentalPlansContainer');
+    const MAX_RENTAL_PLANS = 3;
 
     if (addPlanBtn) {
         addPlanBtn.addEventListener('click', addPlanRow);
@@ -152,20 +229,25 @@ document.addEventListener('DOMContentLoaded', function () {
                 const row = deleteBtn.closest('.rental-plan-row');
                 if (row) {
                     row.remove();
-                    updateDeleteButtons();
+                    updatePlanButtons();
                 }
             }
         });
     }
 
     function addPlanRow() {
+        const rows = rentalPlansContainer.querySelectorAll('.rental-plan-row');
+        if (rows.length >= MAX_RENTAL_PLANS) {
+            return;
+        }
+
         planRowId++;
         const newRow = document.createElement('div');
         newRow.className = 'rental-plan-row';
         newRow.dataset.rowId = planRowId;
         newRow.innerHTML = `
             <div class="col-days">
-                <input type="number" class="plan-input days-input" placeholder="日付を入力" min="1">
+                <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1">
                 <span class="input-suffix">日</span>
             </div>
             <div class="col-price">
@@ -179,65 +261,50 @@ document.addEventListener('DOMContentLoaded', function () {
             </div>
         `;
         rentalPlansContainer.appendChild(newRow);
-        updateDeleteButtons();
+        updatePlanButtons();
     }
 
-    function updateDeleteButtons() {
+    function updatePlanButtons() {
         const rows = rentalPlansContainer.querySelectorAll('.rental-plan-row');
+
+        // 削除ボタンの状態更新
         rows.forEach((row) => {
             const deleteBtn = row.querySelector('.delete-plan-btn');
             if (deleteBtn) {
                 deleteBtn.disabled = (rows.length === 1);
             }
         });
-    }
 
-    // ========================================
-    // 郵便番号から住所自動入力
-    // ========================================
-    const autoFillBtn = document.getElementById('autoFillBtn');
-    if (autoFillBtn) {
-        autoFillBtn.addEventListener('click', autoFillAddress);
-    }
-
-    async function autoFillAddress() {
-        const postalCode = document.getElementById('postalCode').value.replace(/[^0-9]/g, '');
-
-        if (postalCode.length !== 7) {
-            showErrorAt('postalCode', '郵便番号は7桁で入力してください');
-            return;
+        // 追加ボタンの状態更新
+        if (addPlanBtn) {
+            addPlanBtn.disabled = (rows.length >= MAX_RENTAL_PLANS);
         }
+    }
 
-        try {
-            autoFillBtn.textContent = '検索中...';
-            autoFillBtn.disabled = true;
+    // ========================================
+    // 住所カード選択
+    // ========================================
+    const addressList = document.getElementById('addressList');
+    if (addressList) {
+        addressList.addEventListener('click', function(e) {
+            const card = e.target.closest('.address-card');
+            if (!card) return;
 
-            const response = await fetch(`https://zipcloud.ibsnet.co.jp/api/search?zipcode=${postalCode}`);
-            const data = await response.json();
+            // Remove selected from all cards
+            document.querySelectorAll('.address-card').forEach(c => c.classList.remove('selected'));
 
-            if (data.status === 200 && data.results && data.results.length > 0) {
-                const result = data.results[0];
+            // Add selected to clicked card
+            card.classList.add('selected');
 
-                const prefectureSelect = document.getElementById('prefecture');
-                const prefectureName = result.address1;
-                for (let option of prefectureSelect.options) {
-                    if (option.text === prefectureName) {
-                        prefectureSelect.value = option.value;
-                        break;
-                    }
-                }
-
-                document.getElementById('city').value = result.address2 + result.address3;
-            } else {
-                showErrorAt('postalCode', '住所が見つかりませんでした');
+            // Check the radio button
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) {
+                radio.checked = true;
             }
-        } catch (error) {
-            console.error('Address lookup error:', error);
-            showErrorAt('postalCode', '住所の取得に失敗しました');
-        } finally {
-            autoFillBtn.textContent = '住所を自動入力';
-            autoFillBtn.disabled = false;
-        }
+
+            // Clear any address error
+            clearError('addressError');
+        });
     }
 
     // ========================================
@@ -301,6 +368,10 @@ document.addEventListener('DOMContentLoaded', function () {
         const existingCount = document.querySelectorAll('.existing-image-item').length;
         const totalImages = existingCount + newImages.length;
 
+        // Get selected address
+        const selectedAddressRadio = document.querySelector('input[name="address_id"]:checked');
+        const addressId = selectedAddressRadio ? selectedAddressRadio.value : '';
+
         const formData = {
             product_name: document.getElementById('productName').value.trim(),
             product_category: document.getElementById('category').value,
@@ -309,10 +380,7 @@ document.addEventListener('DOMContentLoaded', function () {
             product_status: document.getElementById('productStatus').value,
             shipping_days: document.getElementById('shippingDays').value,
             shipping_burden: document.getElementById('shippingBurden').value,
-            postal_code: document.getElementById('postalCode').value.trim(),
-            prefecture: document.getElementById('prefecture').value,
-            city: document.getElementById('city').value.trim(),
-            street_address: document.getElementById('streetAddress').value.trim(),
+            address_id: addressId,
             rental_plans: rentalPlans,
             total_images: totalImages
         };
@@ -334,10 +402,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitData.append('product_status', formData.product_status);
             submitData.append('shipping_days', formData.shipping_days);
             submitData.append('shipping_burden', formData.shipping_burden);
-            submitData.append('postal_code', formData.postal_code);
-            submitData.append('prefecture', formData.prefecture);
-            submitData.append('city', formData.city);
-            submitData.append('street_address', formData.street_address);
+            submitData.append('address_id', formData.address_id);
             submitData.append('rental_plans', JSON.stringify(formData.rental_plans));
 
             // 削除する画像ID
@@ -439,26 +504,9 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         }
 
-        // 住所（郵便番号）
-        if (!formData.postal_code) {
-            errors.postalCode = '郵便番号は必須です';
-        } else if (formData.postal_code.replace(/[^0-9]/g, '').length !== 7) {
-            errors.postalCode = '郵便番号は7桁で入力してください';
-        }
-
-        // 住所（都道府県）
-        if (!formData.prefecture) {
-            errors.prefecture = '都道府県を選択してください';
-        }
-
-        // 住所（市区町村・町域）
-        if (!formData.city) {
-            errors.city = '市区町村・町域は必須です';
-        }
-
-        // 住所（番地・建物名）
-        if (!formData.street_address) {
-            errors.streetAddress = '番地・建物名は必須です';
+        // 住所選択チェック
+        if (!formData.address_id) {
+            errors.address = '発送元住所を選択してください';
         }
 
         return errors;
@@ -473,6 +521,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 showErrorAt('imageError', errors[field]);
             } else if (field === 'rentalPlans') {
                 showErrorAt('rentalPlansError', errors[field]);
+            } else if (field === 'address') {
+                showErrorAt('addressError', errors[field]);
             } else {
                 const input = document.getElementById(field);
                 if (input) {
@@ -530,7 +580,7 @@ document.addEventListener('DOMContentLoaded', function () {
             el.classList.remove('error');
         });
 
-        ['imageError', 'rentalPlansError'].forEach(id => {
+        ['imageError', 'rentalPlansError', 'addressError'].forEach(id => {
             const container = document.getElementById(id);
             if (container) container.innerHTML = '';
         });
@@ -568,5 +618,5 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 初期化
     updateUploadBoxVisibility();
-    updateDeleteButtons();
+    updatePlanButtons();
 });

@@ -95,12 +95,12 @@
                 <!-- Default Row -->
                 <div class="rental-plan-row" data-row-id="1">
                     <div class="col-days">
-                        <input type="number" class="plan-input days-input" placeholder="3" min="1">
+                        <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1">
                         <span class="input-suffix">日</span>
                     </div>
                     <div class="col-price">
                         <span class="input-prefix">¥</span>
-                        <input type="number" class="plan-input price-input" placeholder="1,500" min="100">
+                        <input type="number" class="plan-input price-input" placeholder="金額を入力" min="100">
                     </div>
                     <div class="col-action">
                         <button type="button" class="delete-plan-btn" disabled>
@@ -136,49 +136,62 @@
                 </div>
             </div>
 
-            <!-- Address Form -->
-            <div class="address-form">
+            <!-- Shipping Burden -->
+            <div class="form-group">
+                <label class="input-label">配送料の負担</label>
+                <div class="select-wrapper">
+                    <select id="shippingBurden" class="form-select">
+                        <option value="" disabled selected>選択してください</option>
+                        {% for sb in shipping_burdens %}
+                        <option value="{{ sb.shipping_burden_id }}">{{ sb.burden_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
+                </div>
+            </div>
+
+            <!-- Address Selection -->
+            <div class="address-selection">
                 <div class="address-header">
                     <label class="input-label-bold">発送元住所</label>
-                    <span class="address-hint">※ユーザー住所として登録されます</span>
                 </div>
 
-                <!-- Postal Code -->
-                <div class="form-group">
-                    <label class="input-label-small">郵便番号 (ハイフンなし)</label>
-                    <div class="postal-row">
-                        <input type="text" id="postalCode" class="form-input postal-input" placeholder="1234567" maxlength="7">
-                        <button type="button" id="autoFillBtn" class="auto-fill-btn">
-                            住所を自動入力
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Pref & City -->
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="input-label-small">都道府県</label>
-                        <div class="select-wrapper">
-                            <select id="prefecture" class="form-select">
-                                <option value="" disabled selected>選択...</option>
-                                {% for pref in prefectures %}
-                                <option value="{{ pref.prefecture_id }}">{{ pref.prefecture_name }}</option>
-                                {% endfor %}
-                            </select>
-                            <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="14"></span>
+                {% if user_addresses %}
+                <!-- Address List -->
+                <div class="address-list" id="addressList">
+                    {% for address in user_addresses %}
+                    <div class="address-card {% if address.is_default %}selected{% endif %}" data-address-id="{{ address.user_address_id }}">
+                        <div class="address-radio">
+                            <input type="radio" name="address_id" value="{{ address.user_address_id }}" {% if address.is_default %}checked{% endif %}>
+                        </div>
+                        <div class="address-content">
+                            <span class="address-postal">〒{{ address.postal_code|slice:":3" }}-{{ address.postal_code|slice:"3:" }}</span>
+                            {% if address.is_default %}
+                            <span class="default-badge">デフォルト</span>
+                            {% endif %}
+                            <p class="address-text">{{ address.prefecture.prefecture_name }}{{ address.city }} {{ address.street_address }}</p>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label class="input-label-small">市区町村・町域</label>
-                        <input type="text" id="city" class="form-input" placeholder="渋谷区神南">
+                    {% endfor %}
+                </div>
+                <a href="{% url 'sell_address_manage' %}" class="address-manage-link">
+                    <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                    住所を追加・編集する
+                </a>
+                {% else %}
+                <!-- No Address Warning -->
+                <div class="no-address-notice">
+                    <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
+                    <div class="notice-content">
+                        <p class="notice-title">発送元住所が登録されていません</p>
+                        <p class="notice-text">出品するには住所の登録が必要です</p>
                     </div>
+                    <a href="{% url 'sell_address_manage' %}" class="register-address-btn">
+                        住所を登録する
+                    </a>
                 </div>
-
-                <!-- Street Address -->
-                <div class="form-group">
-                    <label class="input-label-small">番地・建物名・部屋番号</label>
-                    <input type="text" id="streetAddress" class="form-input" placeholder="1-1-1 モノタルビル 301">
-                </div>
+                {% endif %}
+                <div id="addressError" class="error-container"></div>
             </div>
         </section>
 

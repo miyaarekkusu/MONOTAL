@@ -4,6 +4,26 @@ import django.db.models.deletion
 from django.db import migrations, models
 
 
+def populate_shipping_burden(apps, schema_editor):
+    """発送料負担マスターデータを投入"""
+    ShippingBurden = apps.get_model('monotal', 'ShippingBurden')
+    burdens = [
+        {'shipping_burden_id': 1, 'burden_name': '出品者負担'},
+        {'shipping_burden_id': 2, 'burden_name': 'レンタル者負担'},
+    ]
+    for burden in burdens:
+        ShippingBurden.objects.get_or_create(
+            shipping_burden_id=burden['shipping_burden_id'],
+            defaults={'burden_name': burden['burden_name']}
+        )
+
+
+def reverse_populate_shipping_burden(apps, schema_editor):
+    """マスターデータを削除（ロールバック用）"""
+    ShippingBurden = apps.get_model('monotal', 'ShippingBurden')
+    ShippingBurden.objects.filter(shipping_burden_id__in=[1, 2]).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -28,4 +48,5 @@ class Migration(migrations.Migration):
             name='shipping_burden',
             field=models.ForeignKey(blank=True, db_column='shipping_burden_id', null=True, on_delete=django.db.models.deletion.PROTECT, to='monotal.shippingburden'),
         ),
+        migrations.RunPython(populate_shipping_burden, reverse_populate_shipping_burden),
     ]

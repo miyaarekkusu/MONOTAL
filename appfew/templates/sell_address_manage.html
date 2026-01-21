@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ page_title }} | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/create-sell.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-2xl w-full px-4 lg:px-6 py-8">
+
+    <!-- Header with Back Button -->
+    <div class="mb-6">
+        <a href="{{ back_url }}" class="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-pink-600 transition-colors mb-4">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="18"></span>
+            {{ back_text|default:"出品画面に戻る" }}
+        </a>
+        <div class="flex items-center justify-between">
+            <h1 class="text-xl font-bold tracking-tight text-zinc-900">{{ page_title }}</h1>
+            <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ address_count }}/{{ max_addresses }}件</span>
+        </div>
+        <p class="mt-2 text-sm text-zinc-500">商品の発送元として使用する住所を登録・管理できます</p>
+    </div>
+
+    <!-- Address List -->
+    <div class="space-y-3" id="addressList">
+        {% for address in user_addresses %}
+        <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 hover:border-zinc-300 transition-colors" data-address-id="{{ address.user_address_id }}">
+            <div class="flex items-start gap-3">
+                <div class="flex-shrink-0 h-10 w-10 rounded-full bg-pink-50 flex items-center justify-center text-pink-500">
+                    <span class="iconify" data-icon="lucide:map-pin" data-width="20"></span>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-bold text-zinc-900">〒{{ address.postal_code|slice:":3" }}-{{ address.postal_code|slice:"3:" }}</span>
+                        {% if address.is_default %}
+                        <span class="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+                            <span class="iconify" data-icon="lucide:check" data-width="10"></span>
+                            デフォルト
+                        </span>
+                        {% endif %}
+                    </div>
+                    <p class="text-sm text-zinc-700">{{ address.prefecture.prefecture_name }}{{ address.city }}</p>
+                    <p class="text-sm text-zinc-500">{{ address.street_address }}</p>
+                </div>
+                <div class="flex-shrink-0 flex gap-1">
+                    <button type="button" class="edit-address-btn p-2 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                            data-address-id="{{ address.user_address_id }}"
+                            data-postal-code="{{ address.postal_code }}"
+                            data-prefecture-id="{{ address.prefecture.prefecture_id }}"
+                            data-city="{{ address.city }}"
+                            data-street-address="{{ address.street_address }}"
+                            title="編集">
+                        <span class="iconify" data-icon="lucide:pencil" data-width="18"></span>
+                    </button>
+                    <button type="button" class="delete-address-btn p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                            data-address-id="{{ address.user_address_id }}"
+                            title="削除">
+                        <span class="iconify" data-icon="lucide:trash-2" data-width="18"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-8 text-center">
+            <span class="iconify mx-auto mb-4 text-zinc-300" data-icon="lucide:map-pin" data-width="48"></span>
+            <p class="text-sm text-zinc-500 mb-4">登録済みの住所がありません</p>
+            <button type="button" id="openAddModalBtn" class="inline-flex items-center gap-2 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700 transition-colors">
+                <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                住所を登録する
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add Button (when addresses exist but not at max) -->
+    {% if address_count > 0 and can_add_address %}
+    <div class="mt-4">
+        <button type="button" id="openAddModalBtn" class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 py-4 text-sm font-medium text-zinc-500 hover:border-pink-300 hover:text-pink-600 hover:bg-pink-50 transition-all">
+            <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+            新しい住所を追加
+        </button>
+    </div>
+    {% endif %}
+
+    {% if not can_add_address and address_count > 0 %}
+    <div class="mt-4 text-center text-xs text-zinc-400">
+        住所は最大{{ max_addresses }}件まで登録できます
+    </div>
+    {% endif %}
+
+    <!-- Back Button (Bottom) -->
+    <div class="mt-8 pt-6 border-t border-zinc-200">
+        <a href="{{ back_url }}" class="w-full flex items-center justify-center gap-2 rounded-lg border border-zinc-300 bg-white px-4 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 hover:border-zinc-400 transition-colors">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span>
+            {{ back_text|default:"出品画面に戻る" }}
+        </a>
+    </div>
+
+</main>
+
+<!-- Address Modal (Add/Edit) -->
+<div id="addAddressModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="modalBackdrop"></div>
+    <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 border-b border-zinc-100">
+                    <h2 id="modalTitle" class="text-lg font-bold text-zinc-900">住所を追加</h2>
+                    <button type="button" id="closeModalBtn" class="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+                        <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <form id="addAddressForm" class="p-4 sm:p-6 space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" id="editAddressId" name="address_id" value="">
+
+                    <!-- Postal Code -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">郵便番号 <span class="text-red-500">*</span></label>
+                        <div class="flex gap-2">
+                            <input type="text" id="postalCode" name="postal_code"
+                                   class="flex-1 rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                   placeholder="1234567" maxlength="7" inputmode="numeric">
+                            <button type="button" id="autoFillBtn" class="flex-shrink-0 rounded-lg border border-zinc-300 px-3 py-2.5 text-sm font-medium text-zinc-600 hover:bg-zinc-50 hover:border-zinc-400 transition-colors">
+                                自動入力
+                            </button>
+                        </div>
+                        <div id="postalCodeError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Prefecture -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">都道府県 <span class="text-red-500">*</span></label>
+                        <select id="prefecture" name="prefecture"
+                                class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                            <option value="">選択してください</option>
+                            {% for pref in prefectures %}
+                            <option value="{{ pref.prefecture_id }}">{{ pref.prefecture_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <div id="prefectureError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- City -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">市区町村・町域 <span class="text-red-500">*</span></label>
+                        <input type="text" id="city" name="city"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="渋谷区神南">
+                        <div id="cityError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Street Address -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">番地・建物名・部屋番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="streetAddress" name="street_address"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="1-1-1 モノタルビル 301">
+                        <div id="streetAddressError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="submitAddressBtn" class="w-full rounded-lg bg-pink-600 px-4 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors flex items-center justify-center gap-2">
+                            <span id="submitBtnIcon" class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                            <span id="submitBtnText">住所を追加</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/sell-address-manage.js' %}"></script>
+{% endblock %}

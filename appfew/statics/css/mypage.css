@@ -1,4 +1,4 @@
-/* MyPage Styles */
+﻿/* MyPage Styles */
 
 /* Line clamp utility */
 .line-clamp-1 {
@@ -49,4 +49,23 @@
 .pagination-active {
     background-color: #18181b;
     color: white;
+}
+
+/* Address Card Transitions */
+[data-address-id] {
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Animate spin for loading */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }
