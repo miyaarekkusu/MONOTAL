@@ -7,7 +7,19 @@
       "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py makemigrations monotal 2>&1\")",
       "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py makemigrations monotal --noinput 2>&1\")",
       "Bash(powershell -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python manage.py migrate monotal 2>&1\")",
-      "Bash(cd /d C:UsersalexmsourcereposmiyaarekkusuHEWSakuhin)"
+      "Bash(cd /d C:UsersalexmsourcereposmiyaarekkusuHEWSakuhin)",
+      "Bash(python manage.py check:*)",
+      "Bash(python manage.py migrate:*)",
+      "Bash(ls:*)",
+      "Bash(python manage.py showmigrations:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(del db.sqlite3)",
+      "Bash(powershell -Command \"Stop-Process -Name python -Force -ErrorAction SilentlyContinue; Remove-Item ''C:/Users/alexm/source/repos/miyaarekkusu/HEWSakuhin/appfew/db.sqlite3'' -Force\")",
+      "Bash(powershell -Command \"Get-Process | Where-Object {$_Path -like ''*python*'' -or $_Path -like ''*sqlite*'' -or $_Name -like ''*code*''} | Select-Object Id, ProcessName, Path\")",
+      "Bash(python manage.py shell:*)",
+      "Bash(python:*)"
     ]
   }
 }

@@ -95,5 +95,6 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
-# Claude Code temporary files
+# Claude Code
+.claude/
 tmpclaude-*-cwd

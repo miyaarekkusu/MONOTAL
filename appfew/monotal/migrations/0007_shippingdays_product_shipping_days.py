@@ -11,25 +11,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='ShippingDays',
-            fields=[
-                ('shipping_days_id', models.AutoField(primary_key=True, serialize=False)),
-                ('days_label', models.CharField(max_length=50, unique=True)),
-                ('days_min', models.IntegerField()),
-                ('days_max', models.IntegerField()),
-                ('display_order', models.IntegerField(default=0)),
-            ],
-            options={
-                'verbose_name': '発送日数',
-                'verbose_name_plural': '発送日数',
-                'db_table': 'M_ShippingDays',
-                'ordering': ['display_order', 'days_min'],
-            },
-        ),
-        migrations.AddField(
-            model_name='product',
-            name='shipping_days',
-            field=models.ForeignKey(blank=True, db_column='shipping_days_id', null=True, on_delete=django.db.models.deletion.PROTECT, to='monotal.shippingdays'),
-        ),
+        # ShippingDays model and Product.shipping_days field are already in 0001_initial
     ]

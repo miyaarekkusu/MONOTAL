@@ -531,6 +531,27 @@ class ProductCategory(models.Model):
         return self.category_name
 
 
+class ProductCategoryImage(models.Model):
+    """
+    商品カテゴリ画像テーブル
+    カテゴリの代表画像を管理
+    """
+    product_category_image_id = models.AutoField(primary_key=True)
+    product_category = models.OneToOneField(
+        ProductCategory,
+        on_delete=models.CASCADE,
+        related_name='image',
+        db_column='product_category_id'
+    )
+    image = models.ImageField(upload_to='category_images/', null=True, blank=True)
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_ProductCategoryImage'
+        verbose_name = '商品カテゴリ画像'
+        verbose_name_plural = '商品カテゴリ画像'
+
+
 class ProductCondition(models.Model):
     """
     商品状態マスター

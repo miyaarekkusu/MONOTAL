@@ -108,6 +108,18 @@
                 </p>
                 {% endif %}
 
+                <!-- Hobbies / Interests -->
+                {% if user_hobbies %}
+                <div class="flex flex-wrap items-center justify-center md:justify-start gap-1.5">
+                    {% for hobby in user_hobbies %}
+                    <span class="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-medium text-pink-700 ring-1 ring-inset ring-pink-200">
+                        <span class="iconify" data-icon="lucide:sparkles" data-width="12"></span>
+                        {{ hobby.product_category.category_name }}
+                    </span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
                 <!-- Action Buttons -->
                 {% if request.user == profile_user %}
                 <div class="flex items-center justify-center md:justify-start gap-3 pt-2">

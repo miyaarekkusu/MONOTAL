@@ -11,20 +11,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='ProductImage',
-            fields=[
-                ('product_image_id', models.AutoField(primary_key=True, serialize=False)),
-                ('image', models.ImageField(upload_to='product_images/')),
-                ('display_order', models.IntegerField(default=0)),
-                ('register_datetime', models.DateTimeField(auto_now_add=True)),
-                ('product', models.ForeignKey(db_column='product_id', on_delete=django.db.models.deletion.CASCADE, related_name='images', to='monotal.product')),
-            ],
-            options={
-                'verbose_name': '商品画像',
-                'verbose_name_plural': '商品画像',
-                'db_table': 'T_ProductImage',
-                'ordering': ['display_order', 'product_image_id'],
-            },
-        ),
+        # ProductImage is already in 0001_initial
     ]

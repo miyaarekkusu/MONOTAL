@@ -10,9 +10,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='user',
-            name='bio',
-            field=models.CharField(blank=True, default='', max_length=160),
-        ),
+        # bio field is already in 0001_initial
     ]

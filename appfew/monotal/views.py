@@ -335,8 +335,8 @@ class EmailVerifyView(View):
             # ログイン
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
-            messages.success(request, '会員登録が完了しました。プロフィールを設定してください。')
-            return redirect('profile_setting', username=user.user_name)
+            messages.success(request, '会員登録が完了しました。興味のあるジャンルを選んでください。')
+            return redirect('interest_selection')
 
         except EmailVerificationToken.DoesNotExist:
             return render(request, 'verify_failed.html', {
@@ -403,6 +403,11 @@ class ProfileView(View):
                 followed_user=user
             ).exists()
 
+        # ユーザーの趣味（登録済みカテゴリ）を取得
+        user_hobbies = UserHobby.objects.filter(
+            user=user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'profile_user': user,
             'user_products': user_products,
@@ -414,6 +419,7 @@ class ProfileView(View):
             'follower_count': follower_count,
             'following_count': following_count,
             'is_following': is_following,
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'profile.html', context)
@@ -1274,13 +1280,37 @@ class ProductMessageDeleteView(LoginRequiredMixin, View):
         return self.delete(request, product_id, message_id, *args, **kwargs)
 
 
-class InterestSelectionView(View):
+class InterestSelectionView(LoginRequiredMixin, View):
     """
     趣味・興味のあるジャンル選択ページ
-    画面表示のみ（データベース保存は後で実装）
+    GET: 親カテゴリ一覧を表示（既存選択をpre-select）
+    POST: 選択されたカテゴリIDを保存
     """
+    login_url = '/monotal/login/'
+
     def get(self, request, *args, **kwargs):
-        return render(request, 'interest_selection.html')
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).order_by('product_category_id')
+
+        selected_ids = list(
+            UserHobby.objects.filter(user=request.user)
+            .values_list('product_category_id', flat=True)
+        )
+
+        return render(request, 'interest_selection.html', {
+            'categories': categories,
+            'selected_ids': selected_ids,
+        })
+
+    def post(self, request, *args, **kwargs):
+        category_ids = request.POST.getlist('category_ids')
+        UserHobby.objects.filter(user=request.user).delete()
+        for cid in category_ids:
+            UserHobby.objects.create(user=request.user, product_category_id=int(cid))
+
+        next_url = request.GET.get('next', request.POST.get('next', ''))
+        return redirect(next_url or 'index')
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1707,11 +1737,16 @@ class MyPageFollowListView(LoginRequiredMixin, View):
         paginator = Paginator(following_list, 20)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'following_list': page_obj,
             'following_count': following_count,
             'page_obj': page_obj,
             'current_page': 'follow_list',
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/follow_list.html', context)
@@ -1744,11 +1779,16 @@ class MyPageBookmarkListView(LoginRequiredMixin, View):
         paginator = Paginator(bookmarked_products, 20)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'bookmarked_products': page_obj,
             'bookmark_count': bookmark_count,
             'page_obj': page_obj,
             'current_page': 'bookmark_list',
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/bookmark_list.html', context)
@@ -1781,11 +1821,16 @@ class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
         paginator = Paginator(browsing_history, 20)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'browsing_history': page_obj,
             'history_count': history_count,
             'page_obj': page_obj,
             'current_page': 'browsing_history',
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/browsing_history.html', context)
@@ -1817,11 +1862,16 @@ class MyPageListingView(LoginRequiredMixin, View):
         paginator = Paginator(listing_products, 20)
         page_obj = paginator.get_page(request.GET.get('page', 1))
 
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'listing_products': page_obj,
             'listing_count': listing_count,
             'page_obj': page_obj,
             'current_page': 'listing',
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/listing.html', context)
@@ -2190,6 +2240,10 @@ class MyPageAddressListView(LoginRequiredMixin, View):
         # 都道府県リスト
         prefectures = Prefecture.objects.all()
 
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
         context = {
             'user_addresses': user_addresses,
             'address_count': user_addresses.count(),
@@ -2197,6 +2251,7 @@ class MyPageAddressListView(LoginRequiredMixin, View):
             'can_add_address': user_addresses.count() < MAX_USER_ADDRESSES,
             'prefectures': prefectures,
             'current_page': 'address_list',
+            'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/address_list.html', context)

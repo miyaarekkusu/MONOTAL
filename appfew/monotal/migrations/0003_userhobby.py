@@ -12,19 +12,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='UserHobby',
-            fields=[
-                ('user_hobby_id', models.AutoField(primary_key=True, serialize=False)),
-                ('register_datetime', models.DateTimeField(auto_now_add=True)),
-                ('product_category', models.ForeignKey(db_column='product_category_id', on_delete=django.db.models.deletion.CASCADE, to='monotal.productcategory')),
-                ('user', models.ForeignKey(db_column='user_id', on_delete=django.db.models.deletion.CASCADE, related_name='hobbies', to=settings.AUTH_USER_MODEL)),
-            ],
-            options={
-                'verbose_name': 'ユーザー趣味',
-                'verbose_name_plural': 'ユーザー趣味',
-                'db_table': 'T_UserHobby',
-                'unique_together': {('user', 'product_category')},
-            },
-        ),
+        # UserHobby is already in 0001_initial
     ]
