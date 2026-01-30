@@ -1173,6 +1173,65 @@ class PaymentInfo(models.Model):
         verbose_name_plural = '支払い情報'
 
 
+class BankAccount(models.Model):
+    """
+    銀行口座テーブル
+    ユーザーの振込・受取用銀行口座を管理
+
+    【口座種別】
+    - 1: 普通
+    - 2: 当座
+    """
+    ACCOUNT_TYPE_CHOICES = [
+        (1, '普通'),
+        (2, '当座'),
+    ]
+
+    bank_account_id = models.AutoField(primary_key=True)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='bank_accounts',
+        db_column='user_id'
+    )
+
+    bank_name = models.CharField(max_length=100)  # 銀行名
+    branch_name = models.CharField(max_length=100)  # 支店名
+    account_type = models.IntegerField(choices=ACCOUNT_TYPE_CHOICES, default=1)  # 口座種別
+    account_number = models.CharField(max_length=20)  # 口座番号
+    account_holder = models.CharField(max_length=100)  # 口座名義（カナ）
+    is_default = models.BooleanField(default=False)  # デフォルト口座フラグ
+    register_datetime = models.DateTimeField(auto_now_add=True)
+    update_datetime = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'T_BankAccount'
+        verbose_name = '銀行口座'
+        verbose_name_plural = '銀行口座'
+
+    def __str__(self):
+        return f"{self.user.display_name} - {self.bank_name} {self.account_number[-4:]}"
+
+    def save(self, *args, **kwargs):
+        # デフォルト口座として保存する場合、他の口座のデフォルトを解除
+        if self.is_default:
+            BankAccount.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def masked_account_number(self):
+        """口座番号をマスク表示（下4桁のみ表示）"""
+        if len(self.account_number) > 4:
+            return '*' * (len(self.account_number) - 4) + self.account_number[-4:]
+        return self.account_number
+
+    @property
+    def account_type_display(self):
+        """口座種別の表示名"""
+        return dict(self.ACCOUNT_TYPE_CHOICES).get(self.account_type, '')
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # 保険 / Insurance
 # ────────────────────────────────────────────────────────────────────────────────

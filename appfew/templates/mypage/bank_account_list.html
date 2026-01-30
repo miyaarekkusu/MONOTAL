@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 口座管理 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- 本人確認バナー -->
+    {% if request.user.user_status_id != 2 %}
+    <div class="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+        <div class="flex items-center gap-3">
+            <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品機能を利用するには本人確認が必要です。</p>
+            </div>
+            <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
+                本人確認する
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">口座管理</h1>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ account_count }}/{{ max_accounts }}件</span>
+            </div>
+
+            <!-- Account List -->
+            <div class="space-y-4" id="accountList">
+                {% for account in bank_accounts %}
+                <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 sm:p-5 hover:border-zinc-300 transition-colors" data-account-id="{{ account.bank_account_id }}">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500">
+                            <span class="iconify" data-icon="lucide:building-2" data-width="20"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-bold text-zinc-900">{{ account.bank_name }} {{ account.branch_name }}</span>
+                                {% if account.is_default %}
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+                                    <span class="iconify" data-icon="lucide:check" data-width="10"></span>
+                                    デフォルト
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-zinc-700">{{ account.account_type_display }} {{ account.masked_account_number }}</p>
+                            <p class="text-sm text-zinc-500">{{ account.account_holder }}</p>
+                        </div>
+                        <div class="flex-shrink-0 flex gap-1">
+                            <button type="button" class="edit-account-btn p-2 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                    data-account-id="{{ account.bank_account_id }}"
+                                    data-bank-name="{{ account.bank_name }}"
+                                    data-branch-name="{{ account.branch_name }}"
+                                    data-account-type="{{ account.account_type }}"
+                                    data-account-number="{{ account.account_number }}"
+                                    data-account-holder="{{ account.account_holder }}"
+                                    title="編集">
+                                <span class="iconify" data-icon="lucide:pencil" data-width="18"></span>
+                            </button>
+                            <button type="button" class="delete-account-btn p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    data-account-id="{{ account.bank_account_id }}"
+                                    title="削除">
+                                <span class="iconify" data-icon="lucide:trash-2" data-width="18"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-8 text-center">
+                    <span class="iconify mx-auto mb-4 text-zinc-300" data-icon="lucide:building-2" data-width="48"></span>
+                    <p class="text-sm text-zinc-500 mb-4">登録済みの口座がありません</p>
+                    <button type="button" id="openAddModalBtn" class="inline-flex items-center gap-2 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700 transition-colors">
+                        <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                        口座を登録する
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Add Button (when accounts exist but not at max) -->
+            {% if account_count > 0 and can_add_account %}
+            <div class="mt-4">
+                <button type="button" id="openAddModalBtn" class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 py-4 text-sm font-medium text-zinc-500 hover:border-pink-300 hover:text-pink-600 hover:bg-pink-50 transition-all">
+                    <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                    新しい口座を追加
+                </button>
+            </div>
+            {% endif %}
+
+            {% if not can_add_account and account_count > 0 %}
+            <div class="mt-4 text-center text-xs text-zinc-400">
+                口座は最大{{ max_accounts }}件まで登録できます
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</main>
+
+<!-- Account Modal (Add/Edit) -->
+<div id="addAccountModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="modalBackdrop"></div>
+    <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 border-b border-zinc-100">
+                    <h2 id="modalTitle" class="text-lg font-bold text-zinc-900">口座を追加</h2>
+                    <button type="button" id="closeModalBtn" class="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+                        <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <form id="addAccountForm" class="p-4 sm:p-6 space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" id="editAccountId" name="account_id" value="">
+
+                    <!-- Bank Name -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">銀行名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="bankName" name="bank_name"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="○○銀行">
+                        <div id="bankNameError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Branch Name -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">支店名 <span class="text-red-500">*</span></label>
+                        <input type="text" id="branchName" name="branch_name"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="○○支店">
+                        <div id="branchNameError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Account Type -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">口座種別 <span class="text-red-500">*</span></label>
+                        <div class="flex gap-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="account_type" value="1" checked
+                                       class="w-4 h-4 text-pink-600 border-zinc-300 focus:ring-pink-500">
+                                <span class="text-sm text-zinc-700">普通</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="radio" name="account_type" value="2"
+                                       class="w-4 h-4 text-pink-600 border-zinc-300 focus:ring-pink-500">
+                                <span class="text-sm text-zinc-700">当座</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Account Number -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">口座番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="accountNumber" name="account_number"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="1234567" inputmode="numeric" maxlength="8">
+                        <div id="accountNumberError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Account Holder -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">口座名義（カナ） <span class="text-red-500">*</span></label>
+                        <input type="text" id="accountHolder" name="account_holder"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="モノタル タロウ">
+                        <div id="accountHolderError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="submitAccountBtn" class="w-full rounded-lg bg-pink-600 px-4 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors flex items-center justify-center gap-2">
+                            <span id="submitBtnIcon" class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                            <span id="submitBtnText">口座を追加</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/bank-account-manage.js' %}"></script>
+{% endblock %}

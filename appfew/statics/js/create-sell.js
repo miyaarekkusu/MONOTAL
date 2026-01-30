@@ -418,6 +418,12 @@
             errors.address = '発送元住所を選択してください';
         }
 
+        // 受取口座チェック
+        const bankAccountStatus = document.querySelector('.bank-account-status');
+        if (!bankAccountStatus) {
+            errors.bank_account = '受取口座を登録してください';
+        }
+
         // 利用規約
         const agreeTerms = document.getElementById('agreeTerms');
         if (!agreeTerms || !agreeTerms.checked) {
@@ -440,6 +446,8 @@
                 showErrorAt('rentalPlansError', errors[field]);
             } else if (field === 'address') {
                 showErrorAt('addressError', errors[field]);
+            } else if (field === 'bank_account') {
+                showErrorAt('bankAccountError', errors[field]);
             } else {
                 const input = document.getElementById(field);
                 if (input) {
@@ -498,7 +506,7 @@
             el.classList.remove('error');
         });
 
-        ['imageError', 'termsError', 'rentalPlansError', 'addressError'].forEach(id => {
+        ['imageError', 'termsError', 'rentalPlansError', 'addressError', 'bankAccountError'].forEach(id => {
             const container = document.getElementById(id);
             if (container) container.innerHTML = '';
         });

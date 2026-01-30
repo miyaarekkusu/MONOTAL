@@ -1,4 +1,4 @@
-<!-- Sidebar Navigation -->
+﻿<!-- Sidebar Navigation -->
 <aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
 
     <!-- Group: Product Management -->
@@ -107,10 +107,17 @@
                 <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:user-cog" data-width="20"></span>
                 個人情報設定
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
-                支払い方法
+            {% if current_page == 'bank_account_list' %}
+            <a href="{% url 'mypage_bank_account_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:building-2" data-width="20"></span>
+                口座管理
             </a>
+            {% else %}
+            <a href="{% url 'mypage_bank_account_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:building-2" data-width="20"></span>
+                口座管理
+            </a>
+            {% endif %}
         </nav>
     </div>
 

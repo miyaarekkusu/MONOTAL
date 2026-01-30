@@ -559,6 +559,9 @@ class CreateSellView(View):
         # デフォルト住所を取得
         default_address = user_addresses.filter(is_default=True).first()
 
+        # ユーザーの受取口座を取得
+        has_bank_account = BankAccount.objects.filter(user=request.user).exists()
+
         context = {
             'categories': categories,
             'conditions': conditions,
@@ -567,6 +570,7 @@ class CreateSellView(View):
             'shipping_burdens': shipping_burdens,
             'user_addresses': user_addresses,
             'default_address': default_address,
+            'has_bank_account': has_bank_account,
         }
 
         return render(request, 'create_sell.html', context)
@@ -682,6 +686,10 @@ class CreateSellView(View):
                     errors['address'] = '選択された住所が見つかりません'
             else:
                 errors['address'] = '発送元住所を選択してください'
+
+            # 受取口座バリデーション
+            if not BankAccount.objects.filter(user=request.user).exists():
+                errors['bank_account'] = '受取口座を登録してください'
 
             if errors:
                 if is_ajax:
@@ -1936,6 +1944,9 @@ class ProductEditView(LoginRequiredMixin, View):
         # デフォルト住所を取得
         default_address = user_addresses.filter(is_default=True).first()
 
+        # ユーザーの受取口座を取得
+        has_bank_account = BankAccount.objects.filter(user=request.user).exists()
+
         context = {
             'product': product,
             'product_images': list(product.images.all()),
@@ -1948,6 +1959,7 @@ class ProductEditView(LoginRequiredMixin, View):
             'product_statuses': product_statuses,
             'user_addresses': user_addresses,
             'default_address': default_address,
+            'has_bank_account': has_bank_account,
         }
 
         return render(request, 'product_edit.html', context)
@@ -2077,6 +2089,10 @@ class ProductEditView(LoginRequiredMixin, View):
                 errors['images'] = '商品画像は1枚以上必要です'
             elif remaining_count > 10:
                 errors['images'] = '商品画像は10枚までです'
+
+            # 受取口座バリデーション
+            if not BankAccount.objects.filter(user=request.user).exists():
+                errors['bank_account'] = '受取口座を登録してください'
 
             if errors:
                 if is_ajax:
@@ -2222,6 +2238,9 @@ product_edit = ProductEditView.as_view()
 
 # 住所管理定数
 MAX_USER_ADDRESSES = 3
+
+# 銀行口座管理定数
+MAX_BANK_ACCOUNTS = 3
 
 
 class MyPageAddressListView(LoginRequiredMixin, View):
@@ -2481,6 +2500,244 @@ class AddressEditView(LoginRequiredMixin, View):
 mypage_address_list = MyPageAddressListView.as_view()
 address_edit = AddressEditView.as_view()
 address_delete = AddressDeleteView.as_view()
+
+
+class MyPageBankAccountListView(LoginRequiredMixin, View):
+    """
+    マイページ - 銀行口座管理
+    口座一覧表示、新規登録（POST、最大3件制限）
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # ユーザーの銀行口座を取得
+        bank_accounts = BankAccount.objects.filter(
+            user=request.user
+        ).order_by('-is_default', '-register_datetime')
+
+        context = {
+            'bank_accounts': bank_accounts,
+            'account_count': bank_accounts.count(),
+            'max_accounts': MAX_BANK_ACCOUNTS,
+            'can_add_account': bank_accounts.count() < MAX_BANK_ACCOUNTS,
+            'current_page': 'bank_account_list',
+        }
+
+        return render(request, 'mypage/bank_account_list.html', context)
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # 口座数チェック
+        current_count = BankAccount.objects.filter(user=request.user).count()
+        if current_count >= MAX_BANK_ACCOUNTS:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'口座は最大{MAX_BANK_ACCOUNTS}件までです'
+                }, status=400)
+            messages.error(request, f'口座は最大{MAX_BANK_ACCOUNTS}件までです')
+            return redirect('mypage_bank_account_list')
+
+        # フォームデータ取得
+        bank_name = request.POST.get('bank_name', '').strip()
+        branch_name = request.POST.get('branch_name', '').strip()
+        account_type = request.POST.get('account_type', '1')
+        account_number = request.POST.get('account_number', '').strip()
+        account_holder = request.POST.get('account_holder', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not bank_name:
+            errors['bank_name'] = '銀行名は必須です'
+        if not branch_name:
+            errors['branch_name'] = '支店名は必須です'
+        if not account_number:
+            errors['account_number'] = '口座番号は必須です'
+        elif not account_number.isdigit():
+            errors['account_number'] = '口座番号は数字のみ入力してください'
+        if not account_holder:
+            errors['account_holder'] = '口座名義は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_bank_account_list')
+
+        try:
+            # 最初の口座の場合はデフォルトに設定
+            is_first_account = current_count == 0
+
+            account = BankAccount.objects.create(
+                user=request.user,
+                bank_name=bank_name,
+                branch_name=branch_name,
+                account_type=int(account_type),
+                account_number=account_number,
+                account_holder=account_holder,
+                is_default=is_first_account
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '口座を追加しました',
+                    'account': {
+                        'id': account.bank_account_id,
+                        'bank_name': account.bank_name,
+                        'branch_name': account.branch_name,
+                        'account_type': account.account_type,
+                        'account_type_display': account.account_type_display,
+                        'account_number': account.masked_account_number,
+                        'account_holder': account.account_holder,
+                        'is_default': account.is_default,
+                    }
+                })
+
+            messages.success(request, '口座を追加しました')
+            return redirect('mypage_bank_account_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_bank_account_list')
+
+
+class BankAccountEditView(LoginRequiredMixin, View):
+    """
+    銀行口座編集API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, bank_account_id, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        try:
+            account = BankAccount.objects.get(
+                bank_account_id=bank_account_id,
+                user=request.user
+            )
+        except BankAccount.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '口座が見つかりません'
+                }, status=404)
+            messages.error(request, '口座が見つかりません')
+            return redirect('mypage_bank_account_list')
+
+        # フォームデータ取得
+        bank_name = request.POST.get('bank_name', '').strip()
+        branch_name = request.POST.get('branch_name', '').strip()
+        account_type = request.POST.get('account_type', '1')
+        account_number = request.POST.get('account_number', '').strip()
+        account_holder = request.POST.get('account_holder', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not bank_name:
+            errors['bank_name'] = '銀行名は必須です'
+        if not branch_name:
+            errors['branch_name'] = '支店名は必須です'
+        if not account_number:
+            errors['account_number'] = '口座番号は必須です'
+        elif not account_number.isdigit():
+            errors['account_number'] = '口座番号は数字のみ入力してください'
+        if not account_holder:
+            errors['account_holder'] = '口座名義は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_bank_account_list')
+
+        try:
+            # 口座を更新
+            account.bank_name = bank_name
+            account.branch_name = branch_name
+            account.account_type = int(account_type)
+            account.account_number = account_number
+            account.account_holder = account_holder
+            account.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '口座を更新しました',
+                    'account': {
+                        'id': account.bank_account_id,
+                        'bank_name': account.bank_name,
+                        'branch_name': account.branch_name,
+                        'account_type': account.account_type,
+                        'account_type_display': account.account_type_display,
+                        'account_number': account.masked_account_number,
+                        'account_holder': account.account_holder,
+                        'is_default': account.is_default,
+                    }
+                })
+
+            messages.success(request, '口座を更新しました')
+            return redirect('mypage_bank_account_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_bank_account_list')
+
+
+class BankAccountDeleteView(LoginRequiredMixin, View):
+    """
+    銀行口座削除API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, bank_account_id, *args, **kwargs):
+        try:
+            account = BankAccount.objects.get(
+                bank_account_id=bank_account_id,
+                user=request.user
+            )
+
+            was_default = account.is_default
+            account.delete()
+
+            # デフォルト口座を削除した場合、残りの最初の口座をデフォルトに
+            if was_default:
+                remaining = BankAccount.objects.filter(user=request.user).first()
+                if remaining:
+                    remaining.is_default = True
+                    remaining.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': '口座を削除しました'
+            })
+
+        except BankAccount.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': '口座が見つかりません'
+            }, status=404)
+
+
+# 銀行口座管理関連
+mypage_bank_account_list = MyPageBankAccountListView.as_view()
+bank_account_edit = BankAccountEditView.as_view()
+bank_account_delete = BankAccountDeleteView.as_view()
 
 
 class SellAddressManageView(LoginRequiredMixin, View):

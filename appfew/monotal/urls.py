@@ -45,4 +45,7 @@ urlpatterns = [
     path('mypage/addresses/', views.mypage_address_list, name='mypage_address_list'),
     path('mypage/addresses/<int:address_id>/edit/', views.address_edit, name='address_edit'),
     path('mypage/addresses/<int:address_id>/delete/', views.address_delete, name='address_delete'),
+    path('mypage/bank-accounts/', views.mypage_bank_account_list, name='mypage_bank_account_list'),
+    path('mypage/bank-accounts/<int:bank_account_id>/edit/', views.bank_account_edit, name='bank_account_edit'),
+    path('mypage/bank-accounts/<int:bank_account_id>/delete/', views.bank_account_delete, name='bank_account_delete'),
 ]

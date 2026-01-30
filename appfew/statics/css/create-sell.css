@@ -961,6 +961,17 @@ input[type="number"] {
     background: #b45309;
 }
 
+/* Bank Account Status */
+.bank-account-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 16px;
+    background: #f0fdf4;
+    border: 1px solid #86efac;
+    border-radius: 12px;
+}
+
 /* ============================================
    Status Action Buttons (Edit Page)
    ============================================ */

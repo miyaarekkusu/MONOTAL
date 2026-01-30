@@ -195,6 +195,36 @@
             </div>
         </section>
 
+        <!-- Bank Account Section -->
+        <section class="form-section">
+            <div class="form-group">
+                <div class="address-header">
+                    <label class="input-label-bold">受取口座</label>
+                </div>
+
+                {% if has_bank_account %}
+                <div class="bank-account-status">
+                    <span class="iconify text-green-600" data-icon="lucide:check-circle" data-width="18"></span>
+                    <span class="text-sm text-zinc-700">受取口座が登録済みです</span>
+                    <a href="{% url 'mypage_bank_account_list' %}" class="text-sm text-pink-600 hover:underline ml-2">口座を管理</a>
+                </div>
+                {% else %}
+                <!-- No Bank Account Warning -->
+                <div class="no-address-notice">
+                    <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
+                    <div class="notice-content">
+                        <p class="notice-title">受取口座が登録されていません</p>
+                        <p class="notice-text">出品するには受取口座の登録が必要です</p>
+                    </div>
+                    <a href="{% url 'mypage_bank_account_list' %}" class="register-address-btn">
+                        口座を登録する
+                    </a>
+                </div>
+                {% endif %}
+                <div id="bankAccountError" class="error-container"></div>
+            </div>
+        </section>
+
         <!-- Submit Action -->
         <div class="submit-section">
             <div class="terms-box">

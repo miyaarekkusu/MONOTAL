@@ -509,6 +509,12 @@ document.addEventListener('DOMContentLoaded', function () {
             errors.address = '発送元住所を選択してください';
         }
 
+        // 受取口座チェック
+        const bankAccountStatus = document.querySelector('.bank-account-status');
+        if (!bankAccountStatus) {
+            errors.bank_account = '受取口座を登録してください';
+        }
+
         return errors;
     }
 
@@ -523,6 +529,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 showErrorAt('rentalPlansError', errors[field]);
             } else if (field === 'address') {
                 showErrorAt('addressError', errors[field]);
+            } else if (field === 'bank_account') {
+                showErrorAt('bankAccountError', errors[field]);
             } else {
                 const input = document.getElementById(field);
                 if (input) {
@@ -580,7 +588,7 @@ document.addEventListener('DOMContentLoaded', function () {
             el.classList.remove('error');
         });
 
-        ['imageError', 'rentalPlansError', 'addressError'].forEach(id => {
+        ['imageError', 'rentalPlansError', 'addressError', 'bankAccountError'].forEach(id => {
             const container = document.getElementById(id);
             if (container) container.innerHTML = '';
         });
