@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - ブックマーク一覧 | MONOTAL{% endblock %}
@@ -17,7 +17,7 @@
             <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
             <div class="flex-1">
                 <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
-                <p class="text-xs text-amber-600 mt-0.5">出品機能を利用するには本人確認が必要です。</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品・レンタル機能を利用するには本人確認が必要です。</p>
             </div>
             <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
                 本人確認する

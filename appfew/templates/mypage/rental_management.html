@@ -1,0 +1,928 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - レンタル管理 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+<style>
+.tab-container {
+    border-bottom: 1px solid #e4e4e7;
+    margin-bottom: 24px;
+}
+
+.tab-list {
+    display: flex;
+    gap: 0;
+}
+
+.tab-btn {
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #71717a;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    color: #18181b;
+}
+
+.tab-btn.active {
+    color: #ec4899;
+    border-bottom-color: #ec4899;
+}
+
+.tab-btn .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    background: #ec4899;
+    border-radius: 10px;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.request-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    margin-bottom: 12px;
+}
+
+.request-card-inner {
+    flex: 1;
+}
+
+.request-product-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+}
+
+.request-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.request-image-placeholder {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    background: #f4f4f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.request-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.request-product-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.request-user {
+    font-size: 18px;
+    color: #18181b;
+    margin: 0 0 12px 0;
+    font-weight: 600;
+}
+
+.request-image-link {
+    flex-shrink: 0;
+}
+
+.request-product-link {
+    color: #18181b;
+    text-decoration: none;
+    transition: color 0.2s;
+}
+
+.request-product-link:hover {
+    color: #ec4899;
+}
+
+.request-user-link {
+    color: #ec4899;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.request-user-link:hover {
+    text-decoration: underline;
+}
+
+.request-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    border-radius: 12px;
+}
+
+.request-status.pending {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.request-status.approved {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.request-status.rejected {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.request-status.cancelled {
+    background: #f4f4f5;
+    color: #71717a;
+}
+
+.request-status.completed {
+    background: #dbeafe;
+    color: #2563eb;
+}
+
+.request-status.deleted {
+    background: #374151;
+    color: #f9fafb;
+}
+
+.request-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.btn-approve {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    background: #10b981;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-approve:hover {
+    background: #059669;
+}
+
+.btn-reject {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    background: #ef4444;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-reject:hover {
+    background: #dc2626;
+}
+
+.btn-start {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    background: #3b82f6;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-start:hover {
+    background: #2563eb;
+}
+
+.btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #71717a;
+    background: #f4f4f5;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #e4e4e7;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #71717a;
+}
+
+.empty-state .iconify {
+    color: #d4d4d8;
+    margin-bottom: 16px;
+}
+
+.empty-state p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.request-date {
+    font-size: 11px;
+    color: #a1a1aa;
+    margin-top: 4px;
+}
+
+/* Sub Tabs */
+.sub-tab-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.sub-tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #71717a;
+    background: #f4f4f5;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sub-tab-btn:hover {
+    background: #e4e4e7;
+    color: #18181b;
+}
+
+.sub-tab-btn.active {
+    background: #18181b;
+    color: white;
+}
+
+.sub-tab-btn .sub-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    font-size: 10px;
+    font-weight: 700;
+    color: #71717a;
+    background: white;
+    border-radius: 9px;
+}
+
+.sub-tab-btn.active .sub-badge {
+    color: #18181b;
+    background: white;
+}
+
+.sub-tab-content {
+    display: none;
+}
+
+.sub-tab-content.active {
+    display: block;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <a href="{% url 'index' %}" class="hover:text-zinc-900">ホーム</a>
+        <span class="mx-2 text-zinc-300">/</span>
+        <span class="text-zinc-900">レンタル管理</span>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8">
+        <!-- Sidebar -->
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Content -->
+        <div class="lg:col-span-9">
+            <h1 class="text-2xl font-bold text-zinc-900 mb-6">レンタル管理</h1>
+
+            <!-- Main Tabs -->
+            <div class="tab-container">
+                <div class="tab-list">
+                    <button class="tab-btn active" data-tab="received">
+                        受け取った申請
+                        {% if received_pending_count > 0 %}
+                        <span class="badge">{{ received_pending_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button class="tab-btn" data-tab="sent">
+                        送った申請
+                        {% if sent_pending_count > 0 %}
+                        <span class="badge">{{ sent_pending_count }}</span>
+                        {% endif %}
+                    </button>
+                </div>
+            </div>
+
+            <!-- Received Requests (出品者として) -->
+            <div class="tab-content active" id="tab-received">
+                <!-- Sub Tabs -->
+                <div class="sub-tab-container">
+                    <button class="sub-tab-btn active" data-subtab="received-pending">
+                        承認待ち
+                        {% if received_pending_count > 0 %}
+                        <span class="sub-badge">{{ received_pending_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="received-approved">
+                        承認済み/完了
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="received-rejected">
+                        拒否
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="received-cancelled">
+                        キャンセル
+                    </button>
+                </div>
+
+                <!-- 承認待ち -->
+                <div class="sub-tab-content active" id="subtab-received-pending">
+                    {% if received_pending %}
+                        {% for req in received_pending %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">申請者: <a href="{% url 'profile' username=req.requester_user.user_name %}" class="request-user-link">{{ req.requester_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status pending">{{ req.rental_request_status.status_name }}</span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                <button class="btn-approve" onclick="approveRequest({{ req.rental_request_id }})">
+                                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                                    承認
+                                </button>
+                                <button class="btn-reject" onclick="rejectRequest({{ req.rental_request_id }})">
+                                    <span class="iconify" data-icon="lucide:x" data-width="14"></span>
+                                    拒否
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:inbox" data-width="48"></span>
+                        <p>承認待ちの申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 承認済み/完了 -->
+                <div class="sub-tab-content" id="subtab-received-approved">
+                    {% if received_approved %}
+                        {% for req in received_approved %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">申請者: <a href="{% url 'profile' username=req.requester_user.user_name %}" class="request-user-link">{{ req.requester_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status
+                                            {% if req.rental_request_status_id == 2 %}approved
+                                            {% elif req.rental_request_status_id == 5 %}completed
+                                            {% endif %}">
+                                            {{ req.rental_request_status.status_name }}
+                                        </span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                {% if req.rental_request_status_id == 2 %}
+                                <button class="btn-cancel" onclick="cancelRequestSeller({{ req.rental_request_id }})">
+                                    <span class="iconify" data-icon="lucide:x" data-width="14"></span>
+                                    キャンセル
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:inbox" data-width="48"></span>
+                        <p>承認済み/完了の申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 拒否 -->
+                <div class="sub-tab-content" id="subtab-received-rejected">
+                    {% if received_rejected %}
+                        {% for req in received_rejected %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">申請者: <a href="{% url 'profile' username=req.requester_user.user_name %}" class="request-user-link">{{ req.requester_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status rejected">拒否</span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:inbox" data-width="48"></span>
+                        <p>拒否された申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- キャンセル -->
+                <div class="sub-tab-content" id="subtab-received-cancelled">
+                    {% if received_cancelled %}
+                        {% for req in received_cancelled %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">申請者: <a href="{% url 'profile' username=req.requester_user.user_name %}" class="request-user-link">{{ req.requester_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    {% if req.product.product_status_id == 4 %}
+                                    <div class="request-image-placeholder">
+                                        <span class="iconify" data-icon="lucide:trash-2" data-width="24" style="color: #a1a1aa;"></span>
+                                    </div>
+                                    {% else %}
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+                                    <div class="request-info">
+                                        <h3 class="request-product-name"{% if req.product.product_status_id == 4 %} style="color: #a1a1aa;"{% endif %}>
+                                            {% if req.product.product_status_id == 4 %}
+                                            {{ req.product.product_name }}（削除済み）
+                                            {% else %}
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                            {% endif %}
+                                        </h3>
+                                        {% if req.product.product_status_id == 4 %}
+                                        <span class="request-status deleted">削除</span>
+                                        {% else %}
+                                        <span class="request-status cancelled">キャンセル</span>
+                                        {% endif %}
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:inbox" data-width="48"></span>
+                        <p>キャンセルされた申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sent Requests (購入者として) -->
+            <div class="tab-content" id="tab-sent">
+                <!-- Sub Tabs -->
+                <div class="sub-tab-container">
+                    <button class="sub-tab-btn active" data-subtab="sent-pending">
+                        承認待ち
+                        {% if sent_pending_count > 0 %}
+                        <span class="sub-badge">{{ sent_pending_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="sent-approved">
+                        承認済み/完了
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="sent-rejected">
+                        拒否
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="sent-cancelled">
+                        キャンセル
+                    </button>
+                </div>
+
+                <!-- 承認待ち -->
+                <div class="sub-tab-content active" id="subtab-sent-pending">
+                    {% if sent_pending %}
+                        {% for req in sent_pending %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">出品者: <a href="{% url 'profile' username=req.requested_user.user_name %}" class="request-user-link">{{ req.requested_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status pending">{{ req.rental_request_status.status_name }}</span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                <button class="btn-cancel" onclick="cancelRequest({{ req.rental_request_id }})">
+                                    <span class="iconify" data-icon="lucide:x" data-width="14"></span>
+                                    キャンセル
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:send" data-width="48"></span>
+                        <p>承認待ちの申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 承認済み/完了 -->
+                <div class="sub-tab-content" id="subtab-sent-approved">
+                    {% if sent_approved %}
+                        {% for req in sent_approved %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">出品者: <a href="{% url 'profile' username=req.requested_user.user_name %}" class="request-user-link">{{ req.requested_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status
+                                            {% if req.rental_request_status_id == 2 %}approved
+                                            {% elif req.rental_request_status_id == 5 %}completed
+                                            {% endif %}">
+                                            {{ req.rental_request_status.status_name }}
+                                        </span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                {% if req.rental_request_status_id == 2 %}
+                                <a href="{% url 'rental_start_page' request_id=req.rental_request_id %}" class="btn-start">
+                                    <span class="iconify" data-icon="lucide:play" data-width="14"></span>
+                                    開始
+                                </a>
+                                <button class="btn-cancel" onclick="cancelRequest({{ req.rental_request_id }})">
+                                    <span class="iconify" data-icon="lucide:x" data-width="14"></span>
+                                    キャンセル
+                                </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:send" data-width="48"></span>
+                        <p>承認済み/完了の申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 拒否 -->
+                <div class="sub-tab-content" id="subtab-sent-rejected">
+                    {% if sent_rejected %}
+                        {% for req in sent_rejected %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">出品者: <a href="{% url 'profile' username=req.requested_user.user_name %}" class="request-user-link">{{ req.requested_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status rejected">拒否</span>
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:send" data-width="48"></span>
+                        <p>拒否された申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- キャンセル -->
+                <div class="sub-tab-content" id="subtab-sent-cancelled">
+                    {% if sent_cancelled %}
+                        {% for req in sent_cancelled %}
+                        <div class="request-card" data-request-id="{{ req.rental_request_id }}">
+                            <div class="request-card-inner">
+                                <p class="request-user">出品者: <a href="{% url 'profile' username=req.requested_user.user_name %}" class="request-user-link">{{ req.requested_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    {% if req.product.product_status_id == 4 %}
+                                    <div class="request-image-placeholder">
+                                        <span class="iconify" data-icon="lucide:trash-2" data-width="24" style="color: #a1a1aa;"></span>
+                                    </div>
+                                    {% else %}
+                                    <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-image-link">
+                                        {% if req.product.images.all %}
+                                        <img src="{{ req.product.images.all.0.image.url }}" alt="{{ req.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    {% endif %}
+                                    <div class="request-info">
+                                        <h3 class="request-product-name"{% if req.product.product_status_id == 4 %} style="color: #a1a1aa;"{% endif %}>
+                                            {% if req.product.product_status_id == 4 %}
+                                            {{ req.product.product_name }}（削除済み）
+                                            {% else %}
+                                            <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
+                                            {% endif %}
+                                        </h3>
+                                        {% if req.product.product_status_id == 4 %}
+                                        <span class="request-status deleted">削除</span>
+                                        {% else %}
+                                        <span class="request-status cancelled">キャンセル</span>
+                                        {% endif %}
+                                        <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:send" data-width="48"></span>
+                        <p>キャンセルした申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<script>
+// Main Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    });
+});
+
+// Sub Tab switching
+document.querySelectorAll('.sub-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const parent = btn.closest('.tab-content');
+        parent.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+        parent.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('subtab-' + btn.dataset.subtab).classList.add('active');
+    });
+});
+
+// CSRF token
+function getCSRFToken() {
+    return document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+           document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+}
+
+// Approve request
+async function approveRequest(requestId) {
+    if (!confirm('この申請を承認しますか？')) return;
+
+    try {
+        const response = await fetch(`/monotal/rental-request/${requestId}/approve/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert('エラーが発生しました');
+    }
+}
+
+// Reject request
+async function rejectRequest(requestId) {
+    if (!confirm('この申請を拒否しますか？')) return;
+
+    try {
+        const response = await fetch(`/monotal/rental-request/${requestId}/reject/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert('エラーが発生しました');
+    }
+}
+
+// Cancel request (申請者用)
+async function cancelRequest(requestId) {
+    if (!confirm('この申請をキャンセルしますか？')) return;
+
+    try {
+        const response = await fetch(`/monotal/rental-request/${requestId}/cancel/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert('エラーが発生しました');
+    }
+}
+
+// Cancel request (出品者用)
+async function cancelRequestSeller(requestId) {
+    if (!confirm('この申請をキャンセルしますか？')) return;
+
+    try {
+        const response = await fetch(`/monotal/rental-request/${requestId}/cancel-seller/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json'
+            }
+        });
+        const data = await response.json();
+        if (data.success) {
+            location.reload();
+        } else {
+            alert(data.message);
+        }
+    } catch (e) {
+        alert('エラーが発生しました');
+    }
+}
+</script>
+{% endblock %}

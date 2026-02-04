@@ -47,8 +47,8 @@ function initRentalPlanSelector() {
     const planBtns = document.querySelectorAll('.rental-plan-btn');
     const rentalDaysDisplay = document.getElementById('rentalDays');
     const totalPriceValue = document.getElementById('totalPriceValue');
-    const mobileTotalPrice = document.getElementById('mobileTotalPrice');
-    const mobileDays = document.getElementById('mobileDays');
+    const mobilePriceValue = document.getElementById('mobilePriceValue');
+    const mobileDaysValue = document.getElementById('mobileDaysValue');
 
     let selectedDays = null;
     let selectedPrice = null;
@@ -83,8 +83,8 @@ function initRentalPlanSelector() {
         if (!selectedDays || !selectedPrice) {
             if (rentalDaysDisplay) rentalDaysDisplay.textContent = '--';
             if (totalPriceValue) totalPriceValue.textContent = '0';
-            if (mobileTotalPrice) mobileTotalPrice.textContent = '¥0';
-            if (mobileDays) mobileDays.textContent = '-';
+            if (mobilePriceValue) mobilePriceValue.textContent = '¥0';
+            if (mobileDaysValue) mobileDaysValue.textContent = '';
             return;
         }
 
@@ -99,11 +99,11 @@ function initRentalPlanSelector() {
         }
 
         // Update mobile display
-        if (mobileTotalPrice) {
-            mobileTotalPrice.textContent = `¥${selectedPrice.toLocaleString()}`;
+        if (mobilePriceValue) {
+            mobilePriceValue.textContent = `¥${selectedPrice.toLocaleString()}`;
         }
-        if (mobileDays) {
-            mobileDays.textContent = selectedDays;
+        if (mobileDaysValue) {
+            mobileDaysValue.textContent = `（${selectedDays}日）`;
         }
     }
 }

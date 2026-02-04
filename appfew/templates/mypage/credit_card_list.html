@@ -1,0 +1,197 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - カード管理 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">カード管理</h1>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ card_count }}/{{ max_cards }}件</span>
+            </div>
+
+            <!-- Card List -->
+            <div class="space-y-4" id="cardList">
+                {% for card in credit_cards %}
+                <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-4 sm:p-5 hover:border-zinc-300 transition-colors" data-card-id="{{ card.credit_card_id }}">
+                    <div class="flex items-start gap-4">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500">
+                            <span class="iconify" data-icon="lucide:credit-card" data-width="20"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-bold text-zinc-900">{{ card.masked_card_number }}</span>
+                                {% if card.is_default %}
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 px-2 py-0.5 rounded-full">
+                                    <span class="iconify" data-icon="lucide:check" data-width="10"></span>
+                                    デフォルト
+                                </span>
+                                {% endif %}
+                            </div>
+                            <p class="text-sm text-zinc-700">有効期限: {{ card.expiry_display }}</p>
+                            <p class="text-sm text-zinc-500">{{ card.card_holder_name }}</p>
+                        </div>
+                        <div class="flex-shrink-0 flex gap-1">
+                            <button type="button" class="edit-card-btn p-2 text-zinc-400 hover:text-blue-500 hover:bg-blue-50 rounded-lg transition-colors"
+                                    data-card-id="{{ card.credit_card_id }}"
+                                    data-card-number-last4="{{ card.card_number_last4 }}"
+                                    data-expiry-month="{{ card.expiry_month }}"
+                                    data-expiry-year="{{ card.expiry_year }}"
+                                    data-card-holder-name="{{ card.card_holder_name }}"
+                                    title="編集">
+                                <span class="iconify" data-icon="lucide:pencil" data-width="18"></span>
+                            </button>
+                            <button type="button" class="delete-card-btn p-2 text-zinc-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                    data-card-id="{{ card.credit_card_id }}"
+                                    title="削除">
+                                <span class="iconify" data-icon="lucide:trash-2" data-width="18"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="bg-white rounded-xl border border-zinc-200 shadow-sm p-8 text-center">
+                    <span class="iconify mx-auto mb-4 text-zinc-300" data-icon="lucide:credit-card" data-width="48"></span>
+                    <p class="text-sm text-zinc-500 mb-4">登録済みのカードがありません</p>
+                    <button type="button" id="openAddModalBtn" class="inline-flex items-center gap-2 rounded-lg bg-pink-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-pink-700 transition-colors">
+                        <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                        カードを登録する
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Add Button (when cards exist but not at max) -->
+            {% if card_count > 0 and can_add_card %}
+            <div class="mt-4">
+                <button type="button" id="openAddModalBtn" class="w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-zinc-300 py-4 text-sm font-medium text-zinc-500 hover:border-pink-300 hover:text-pink-600 hover:bg-pink-50 transition-all">
+                    <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                    新しいカードを追加
+                </button>
+            </div>
+            {% endif %}
+
+            {% if not can_add_card and card_count > 0 %}
+            <div class="mt-4 text-center text-xs text-zinc-400">
+                カードは最大{{ max_cards }}件まで登録できます
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</main>
+
+<!-- Card Modal (Add/Edit) -->
+<div id="addCardModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" id="modalBackdrop"></div>
+    <div class="fixed inset-0 overflow-y-auto">
+        <div class="flex min-h-full items-center justify-center p-4">
+            <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between p-4 border-b border-zinc-100">
+                    <h2 id="modalTitle" class="text-lg font-bold text-zinc-900">カードを追加</h2>
+                    <button type="button" id="closeModalBtn" class="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+                        <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                    </button>
+                </div>
+
+                <!-- Modal Body -->
+                <form id="addCardForm" class="p-4 sm:p-6 space-y-4">
+                    {% csrf_token %}
+                    <input type="hidden" id="editCardId" name="card_id" value="">
+
+                    <!-- Card Number -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">カード番号 <span class="text-red-500">*</span></label>
+                        <input type="text" id="cardNumber" name="card_number"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="1234 5678 9012 3456" inputmode="numeric" maxlength="19">
+                        <div id="cardNumberError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Expiry Date -->
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-zinc-700">有効期限（月） <span class="text-red-500">*</span></label>
+                            <select id="expiryMonth" name="expiry_month"
+                                    class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                                <option value="">月</option>
+                                <option value="1">01</option>
+                                <option value="2">02</option>
+                                <option value="3">03</option>
+                                <option value="4">04</option>
+                                <option value="5">05</option>
+                                <option value="6">06</option>
+                                <option value="7">07</option>
+                                <option value="8">08</option>
+                                <option value="9">09</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                            </select>
+                            <div id="expiryMonthError" class="text-xs text-red-500 hidden"></div>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-medium text-zinc-700">有効期限（年） <span class="text-red-500">*</span></label>
+                            <input type="text" id="expiryYear" name="expiry_year"
+                                   class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                                   placeholder="2026" inputmode="numeric" maxlength="4">
+                            <div id="expiryYearError" class="text-xs text-red-500 hidden"></div>
+                        </div>
+                    </div>
+
+                    <!-- Card Holder Name -->
+                    <div class="space-y-1.5">
+                        <label class="block text-sm font-medium text-zinc-700">カード名義人 <span class="text-red-500">*</span></label>
+                        <input type="text" id="cardHolderName" name="card_holder_name"
+                               class="w-full rounded-lg border border-zinc-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500"
+                               placeholder="TARO MONOTAL">
+                        <div id="cardHolderNameError" class="text-xs text-red-500 hidden"></div>
+                    </div>
+
+                    <!-- Security Notice -->
+                    <div class="bg-zinc-50 rounded-lg p-3 text-xs text-zinc-500">
+                        <div class="flex items-start gap-2">
+                            <span class="iconify flex-shrink-0 mt-0.5" data-icon="lucide:shield-check" data-width="14"></span>
+                            <span>カード情報は安全に保護されています。下4桁のみを保存し、決済時に利用します。</span>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-2">
+                        <button type="submit" id="submitCardBtn" class="w-full rounded-lg bg-pink-600 px-4 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors flex items-center justify-center gap-2">
+                            <span id="submitBtnIcon" class="iconify" data-icon="lucide:plus" data-width="16"></span>
+                            <span id="submitBtnText">カードを追加</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/credit-card-manage.js' %}"></script>
+{% endblock %}

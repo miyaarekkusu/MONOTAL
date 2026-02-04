@@ -216,6 +216,55 @@ class Prefecture(models.Model):
         return self.prefecture_name
 
 
+class UserPersonalInfo(models.Model):
+    """
+    ユーザー個人情報テーブル
+
+    本人確認時に登録される個人情報
+    - 氏名（姓・名）
+    - 生年月日
+    - 性別
+    """
+    user_personal_info_id = models.AutoField(primary_key=True)
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='personal_info',
+        db_column='user_id'
+    )
+
+    last_name = models.CharField(max_length=50, verbose_name='姓')
+    first_name = models.CharField(max_length=50, verbose_name='名')
+    last_name_kana = models.CharField(max_length=50, null=True, blank=True, verbose_name='姓（カナ）')
+    first_name_kana = models.CharField(max_length=50, null=True, blank=True, verbose_name='名（カナ）')
+    birth_date = models.DateField(verbose_name='生年月日')
+    gender = models.IntegerField(
+        choices=[(1, '男性'), (2, '女性'), (3, 'その他')],
+        verbose_name='性別'
+    )
+    register_datetime = models.DateTimeField(auto_now_add=True)
+    update_datetime = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'T_UserPersonalInfo'
+        verbose_name = 'ユーザー個人情報'
+        verbose_name_plural = 'ユーザー個人情報'
+
+    def __str__(self):
+        return f"{self.last_name} {self.first_name}"
+
+    @property
+    def full_name(self):
+        return f"{self.last_name} {self.first_name}"
+
+    @property
+    def full_name_kana(self):
+        if self.last_name_kana and self.first_name_kana:
+            return f"{self.last_name_kana} {self.first_name_kana}"
+        return None
+
+
 class UserAddress(models.Model):
     """
     ユーザー住所テーブル
@@ -335,9 +384,10 @@ class IdentityVerification(models.Model):
     """
     本人確認テーブル
     ユーザーの本人確認申請と結果を管理
+    申請時に個人情報を一時保存し、承認時にUserPersonalInfoに移行
     """
     identity_verification_id = models.AutoField(primary_key=True)
-    
+
     identity_verification_status = models.ForeignKey(
         IdentityVerificationStatus,
         on_delete=models.PROTECT,
@@ -348,7 +398,19 @@ class IdentityVerification(models.Model):
         on_delete=models.CASCADE,
         db_column='user_id'
     )
-    
+
+    # 申請時の個人情報（一時保存用）
+    last_name = models.CharField(max_length=50, null=True, blank=True, verbose_name='姓')
+    first_name = models.CharField(max_length=50, null=True, blank=True, verbose_name='名')
+    last_name_kana = models.CharField(max_length=50, null=True, blank=True, verbose_name='姓（カナ）')
+    first_name_kana = models.CharField(max_length=50, null=True, blank=True, verbose_name='名（カナ）')
+    birth_date = models.DateField(null=True, blank=True, verbose_name='生年月日')
+    gender = models.IntegerField(
+        choices=[(1, '男性'), (2, '女性'), (3, 'その他')],
+        null=True, blank=True,
+        verbose_name='性別'
+    )
+
     rejection_datetime = models.DateTimeField(null=True, blank=True)
     approval_datetime = models.DateTimeField(null=True, blank=True)
     register_datetime = models.DateTimeField(auto_now_add=True)
@@ -681,11 +743,31 @@ class Product(models.Model):
         related_name='products',
         db_column='user_id'
     )
-    
+
+    # 発送元住所（出品者の住所）
+    shipping_address = models.ForeignKey(
+        UserAddress,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products_as_shipping',
+        db_column='shipping_address_id'
+    )
+
+    # 発送元都道府県（住所から取得）
+    shipping_prefecture = models.ForeignKey(
+        Prefecture,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='products_as_shipping',
+        db_column='shipping_prefecture_id'
+    )
+
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
     delete_datetime = models.DateTimeField(null=True, blank=True)
-    
+
     class Meta:
         db_table = 'T_Product'
         verbose_name = '商品'
@@ -915,6 +997,59 @@ class RentalRequest(models.Model):
         verbose_name_plural = 'レンタルリクエスト'
 
 
+class RentalRequestReadType(models.Model):
+    """
+    レンタル申請既読タイプマスター
+    1: 受け取った申請/承認待ち
+    2: 受け取った申請/承認済み
+    3: 送った申請/承認待ち
+    4: 送った申請/承認済み
+    """
+    rental_request_read_type_id = models.AutoField(primary_key=True)
+    type_name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'M_RentalRequestReadType'
+        verbose_name = 'レンタル申請既読タイプ'
+        verbose_name_plural = 'レンタル申請既読タイプ'
+
+    def __str__(self):
+        return self.type_name
+
+
+class RentalRequestRead(models.Model):
+    """
+    レンタル申請既読テーブル
+    各ユーザーがどのタブでレンタル申請を既読したかを管理
+    """
+    rental_request_read_id = models.AutoField(primary_key=True)
+
+    rental_request = models.ForeignKey(
+        RentalRequest,
+        on_delete=models.CASCADE,
+        related_name='reads',
+        db_column='rental_request_id'
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column='user_id'
+    )
+    rental_request_read_type = models.ForeignKey(
+        RentalRequestReadType,
+        on_delete=models.PROTECT,
+        db_column='rental_request_read_type_id'
+    )
+
+    read_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_RentalRequestRead'
+        verbose_name = 'レンタル申請既読'
+        verbose_name_plural = 'レンタル申請既読'
+        unique_together = [['rental_request', 'user', 'rental_request_read_type']]
+
+
 class RentalHistory(models.Model):
     """
     レンタル履歴テーブル
@@ -949,7 +1084,17 @@ class RentalHistory(models.Model):
         on_delete=models.PROTECT,
         db_column='rental_status_id'
     )
-    
+
+    # 購入者（借り手）の配送先住所
+    renter_address = models.ForeignKey(
+        UserAddress,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='rental_histories_as_renter',
+        db_column='renter_address_id'
+    )
+
     shipping_completed_datetime = models.DateTimeField(null=True, blank=True)
     rental_start_datetime = models.DateTimeField(null=True, blank=True)
     rental_end_datetime = models.DateTimeField(null=True, blank=True)
@@ -1232,6 +1377,54 @@ class BankAccount(models.Model):
         return dict(self.ACCOUNT_TYPE_CHOICES).get(self.account_type, '')
 
 
+class CreditCard(models.Model):
+    """
+    クレジットカードテーブル
+    購入者の支払い用クレジットカードを管理
+    ※実際の決済連携はなし（モック）
+    """
+    credit_card_id = models.AutoField(primary_key=True)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='credit_cards',
+        db_column='user_id'
+    )
+
+    card_number_last4 = models.CharField(max_length=4)  # カード番号下4桁
+    expiry_month = models.IntegerField()  # 有効期限（月）
+    expiry_year = models.IntegerField()  # 有効期限（年）
+    card_holder_name = models.CharField(max_length=100)  # カード名義人
+    is_default = models.BooleanField(default=False)  # デフォルトカードフラグ
+    register_datetime = models.DateTimeField(auto_now_add=True)
+    update_datetime = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'T_CreditCard'
+        verbose_name = 'クレジットカード'
+        verbose_name_plural = 'クレジットカード'
+
+    def __str__(self):
+        return f"{self.user.display_name} - **** {self.card_number_last4}"
+
+    def save(self, *args, **kwargs):
+        # デフォルトカードとして保存する場合、他のカードのデフォルトを解除
+        if self.is_default:
+            CreditCard.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+    @property
+    def masked_card_number(self):
+        """カード番号をマスク表示（**** **** **** 1234）"""
+        return f"**** **** **** {self.card_number_last4}"
+
+    @property
+    def expiry_display(self):
+        """有効期限の表示（MM/YY）"""
+        return f"{self.expiry_month:02d}/{str(self.expiry_year)[-2:]}"
+
+
 # ────────────────────────────────────────────────────────────────────────────────
 # 保険 / Insurance
 # ────────────────────────────────────────────────────────────────────────────────
@@ -1359,13 +1552,21 @@ class ChatRoom(models.Model):
         db_column='product_id'
     )
     community = models.ForeignKey(
-        Community, 
-        on_delete=models.CASCADE, 
-        null=True, 
-        blank=True, 
+        Community,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         db_column='community_id'
     )
-    
+    rental_history = models.ForeignKey(
+        RentalHistory,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='chat_rooms',
+        db_column='rental_history_id'
+    )
+
     class Meta:
         db_table = 'T_ChatRoom'
         verbose_name = 'チャットルーム'

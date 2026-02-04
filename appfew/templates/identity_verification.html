@@ -4,7 +4,7 @@
 {% block title %}本人確認 - MONOTAL{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" type="text/css" href="{% static 'css/identity_verification.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/identity_verification.css' %}?v=3">
 {% endblock %}
 
 {% block content %}
@@ -63,10 +63,87 @@
 
             <div class="general-error" id="generalError"></div>
 
-            <!-- Step 1: 書類画像のアップロード -->
+            <!-- Step 1: 個人情報 -->
             <div class="form-section">
                 <label class="section-label">
                     <span class="step-number">1</span>
+                    個人情報の入力
+                </label>
+
+                <div class="personal-info-grid">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">姓 <span class="required">*</span></label>
+                            <input type="text" name="last_name" id="lastName" class="text-input" placeholder="山田" value="{{ personal_info.last_name|default:'' }}">
+                            <p class="error-message" id="last_name-error"></p>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">名 <span class="required">*</span></label>
+                            <input type="text" name="first_name" id="firstName" class="text-input" placeholder="太郎" value="{{ personal_info.first_name|default:'' }}">
+                            <p class="error-message" id="first_name-error"></p>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">姓（カナ）</label>
+                            <input type="text" name="last_name_kana" id="lastNameKana" class="text-input" placeholder="ヤマダ" value="{{ personal_info.last_name_kana|default:'' }}">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">名（カナ）</label>
+                            <input type="text" name="first_name_kana" id="firstNameKana" class="text-input" placeholder="タロウ" value="{{ personal_info.first_name_kana|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="input-row birthdate-gender-row">
+                        <div class="input-group birthdate-group">
+                            <label class="input-label">生年月日 <span class="required">*</span></label>
+                            <div class="birthdate-selects">
+                                <select name="birth_year" class="select-input birthdate-select year-select">
+                                    <option value="">年</option>
+                                </select>
+                                <select name="birth_month" class="select-input birthdate-select month-select">
+                                    <option value="">月</option>
+                                    <option value="1">1月</option>
+                                    <option value="2">2月</option>
+                                    <option value="3">3月</option>
+                                    <option value="4">4月</option>
+                                    <option value="5">5月</option>
+                                    <option value="6">6月</option>
+                                    <option value="7">7月</option>
+                                    <option value="8">8月</option>
+                                    <option value="9">9月</option>
+                                    <option value="10">10月</option>
+                                    <option value="11">11月</option>
+                                    <option value="12">12月</option>
+                                </select>
+                                <select name="birth_day" class="select-input birthdate-select day-select">
+                                    <option value="">日</option>
+                                </select>
+                            </div>
+                            <input type="hidden" name="birth_date" class="birth-date-hidden" value="{{ personal_info.birth_date|date:'Y-m-d'|default:'' }}">
+                            <p class="error-message" id="birth_date-error"></p>
+                        </div>
+                        <div class="input-group gender-group">
+                            <label class="input-label">性別 <span class="required">*</span></label>
+                            <select name="gender" id="gender" class="select-input">
+                                <option value="">選択してください</option>
+                                <option value="1" {% if personal_info.gender == 1 %}selected{% endif %}>男性</option>
+                                <option value="2" {% if personal_info.gender == 2 %}selected{% endif %}>女性</option>
+                                <option value="3" {% if personal_info.gender == 3 %}selected{% endif %}>その他</option>
+                            </select>
+                            <p class="error-message" id="gender-error"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-notice">
+                    <strong>注意：</strong> 身分証明書に記載されている情報と一致するように入力してください。
+                </div>
+            </div>
+
+            <!-- Step 2: 書類画像のアップロード -->
+            <div class="form-section with-border">
+                <label class="section-label">
+                    <span class="step-number">2</span>
                     書類画像のアップロード
                 </label>
 
@@ -115,10 +192,10 @@
                 </div>
             </div>
 
-            <!-- Step 2: 顔写真 -->
+            <!-- Step 3: 顔写真 -->
             <div class="form-section with-border">
                 <label class="section-label">
-                    <span class="step-number">2</span>
+                    <span class="step-number">3</span>
                     ご自身の顔写真 (セルフィー)
                 </label>
 
@@ -195,10 +272,87 @@
 
             <div class="general-error" id="generalError"></div>
 
-            <!-- Step 1: 書類画像のアップロード -->
+            <!-- Step 1: 個人情報 -->
             <div class="form-section">
                 <label class="section-label">
                     <span class="step-number">1</span>
+                    個人情報の入力
+                </label>
+
+                <div class="personal-info-grid">
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">姓 <span class="required">*</span></label>
+                            <input type="text" name="last_name" id="lastName" class="text-input" placeholder="山田" value="{{ personal_info.last_name|default:'' }}">
+                            <p class="error-message" id="last_name-error"></p>
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">名 <span class="required">*</span></label>
+                            <input type="text" name="first_name" id="firstName" class="text-input" placeholder="太郎" value="{{ personal_info.first_name|default:'' }}">
+                            <p class="error-message" id="first_name-error"></p>
+                        </div>
+                    </div>
+                    <div class="input-row">
+                        <div class="input-group">
+                            <label class="input-label">姓（カナ）</label>
+                            <input type="text" name="last_name_kana" id="lastNameKana" class="text-input" placeholder="ヤマダ" value="{{ personal_info.last_name_kana|default:'' }}">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label">名（カナ）</label>
+                            <input type="text" name="first_name_kana" id="firstNameKana" class="text-input" placeholder="タロウ" value="{{ personal_info.first_name_kana|default:'' }}">
+                        </div>
+                    </div>
+                    <div class="input-row birthdate-gender-row">
+                        <div class="input-group birthdate-group">
+                            <label class="input-label">生年月日 <span class="required">*</span></label>
+                            <div class="birthdate-selects">
+                                <select name="birth_year" class="select-input birthdate-select year-select">
+                                    <option value="">年</option>
+                                </select>
+                                <select name="birth_month" class="select-input birthdate-select month-select">
+                                    <option value="">月</option>
+                                    <option value="1">1月</option>
+                                    <option value="2">2月</option>
+                                    <option value="3">3月</option>
+                                    <option value="4">4月</option>
+                                    <option value="5">5月</option>
+                                    <option value="6">6月</option>
+                                    <option value="7">7月</option>
+                                    <option value="8">8月</option>
+                                    <option value="9">9月</option>
+                                    <option value="10">10月</option>
+                                    <option value="11">11月</option>
+                                    <option value="12">12月</option>
+                                </select>
+                                <select name="birth_day" class="select-input birthdate-select day-select">
+                                    <option value="">日</option>
+                                </select>
+                            </div>
+                            <input type="hidden" name="birth_date" class="birth-date-hidden" value="{{ personal_info.birth_date|date:'Y-m-d'|default:'' }}">
+                            <p class="error-message" id="birth_date-error"></p>
+                        </div>
+                        <div class="input-group gender-group">
+                            <label class="input-label">性別 <span class="required">*</span></label>
+                            <select name="gender" id="gender" class="select-input">
+                                <option value="">選択してください</option>
+                                <option value="1" {% if personal_info.gender == 1 %}selected{% endif %}>男性</option>
+                                <option value="2" {% if personal_info.gender == 2 %}selected{% endif %}>女性</option>
+                                <option value="3" {% if personal_info.gender == 3 %}selected{% endif %}>その他</option>
+                            </select>
+                            <p class="error-message" id="gender-error"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="upload-notice">
+                    <strong>注意：</strong> 身分証明書に記載されている情報と一致するように入力してください。
+                </div>
+            </div>
+
+            <!-- Step 2: 書類画像のアップロード -->
+            <div class="form-section with-border">
+                <label class="section-label">
+                    <span class="step-number">2</span>
                     書類画像のアップロード
                 </label>
 
@@ -247,10 +401,10 @@
                 </div>
             </div>
 
-            <!-- Step 2: 顔写真 -->
+            <!-- Step 3: 顔写真 -->
             <div class="form-section with-border">
                 <label class="section-label">
-                    <span class="step-number">2</span>
+                    <span class="step-number">3</span>
                     ご自身の顔写真 (セルフィー)
                 </label>
 
@@ -319,5 +473,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'js/identity_verification.js' %}"></script>
+<script src="{% static 'js/identity_verification.js' %}?v=2"></script>
 {% endblock %}

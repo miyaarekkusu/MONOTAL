@@ -12,7 +12,7 @@
 <main class="sell-main">
     <div class="page-header">
         <h1 class="page-title">商品の情報を入力</h1>
-        <p class="page-subtitle">必須項目を入力して出品を完了させてください。</p>
+        <p class="page-subtitle">各項目を入力して出品を完了させてください。</p>
     </div>
 
     <form id="sellForm" enctype="multipart/form-data">
@@ -20,7 +20,7 @@
 
         <!-- 1. Image Upload -->
         <section class="form-section">
-            <label class="section-label">商品画像 <span class="required-badge">*必須</span></label>
+            <label class="section-label">商品画像</label>
             <div class="image-grid" id="imageGrid">
                 <!-- Upload Box -->
                 <div class="upload-box" id="uploadBox">
@@ -95,12 +95,12 @@
                 <!-- Default Row -->
                 <div class="rental-plan-row" data-row-id="1">
                     <div class="col-days">
-                        <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1">
+                        <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1" max="3650">
                         <span class="input-suffix">日</span>
                     </div>
                     <div class="col-price">
                         <span class="input-prefix">¥</span>
-                        <input type="number" class="plan-input price-input" placeholder="金額を入力" min="100">
+                        <input type="number" class="plan-input price-input" placeholder="金額を入力" min="100" max="9999999">
                     </div>
                     <div class="col-action">
                         <button type="button" class="delete-plan-btn" disabled>
@@ -192,36 +192,6 @@
                 </div>
                 {% endif %}
                 <div id="addressError" class="error-container"></div>
-            </div>
-        </section>
-
-        <!-- Bank Account Section -->
-        <section class="form-section">
-            <div class="form-group">
-                <div class="address-header">
-                    <label class="input-label-bold">受取口座</label>
-                </div>
-
-                {% if has_bank_account %}
-                <div class="bank-account-status">
-                    <span class="iconify text-green-600" data-icon="lucide:check-circle" data-width="18"></span>
-                    <span class="text-sm text-zinc-700">受取口座が登録済みです</span>
-                    <a href="{% url 'mypage_bank_account_list' %}" class="text-sm text-pink-600 hover:underline ml-2">口座を管理</a>
-                </div>
-                {% else %}
-                <!-- No Bank Account Warning -->
-                <div class="no-address-notice">
-                    <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
-                    <div class="notice-content">
-                        <p class="notice-title">受取口座が登録されていません</p>
-                        <p class="notice-text">出品するには受取口座の登録が必要です</p>
-                    </div>
-                    <a href="{% url 'mypage_bank_account_list' %}" class="register-address-btn">
-                        口座を登録する
-                    </a>
-                </div>
-                {% endif %}
-                <div id="bankAccountError" class="error-container"></div>
             </div>
         </section>
 

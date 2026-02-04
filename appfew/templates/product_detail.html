@@ -94,7 +94,7 @@
                         {% endif %}
                         <div class="spec-row">
                             <span class="spec-label">発送元の地域</span>
-                            <span class="spec-value">{% if seller_address and seller_address.prefecture %}{{ seller_address.prefecture.prefecture_name }}{% else %}-{% endif %}</span>
+                            <span class="spec-value">{% if product.shipping_prefecture %}{{ product.shipping_prefecture.prefecture_name }}{% else %}-{% endif %}</span>
                         </div>
                         <div class="spec-row">
                             <span class="spec-label">発送までの日数</span>
@@ -188,9 +188,19 @@
                     商品を編集する
                 </a>
                 {% else %}
-                <button class="rental-cta-btn">
-                    レンタル手続きへ
+                {% if has_pending_request %}
+                <button class="rental-cta-btn rental-pending" disabled>
+                    <span class="iconify" data-icon="lucide:clock" data-width="18"></span>
+                    申請中です
                 </button>
+                {% else %}
+                <form action="{% url 'rental_request' product_id=product.product_id %}" method="post" style="margin: 0;" onsubmit="return confirm('この商品のレンタルを申請しますか？');">
+                    {% csrf_token %}
+                    <button type="submit" class="rental-cta-btn">
+                        レンタル申請
+                    </button>
+                </form>
+                {% endif %}
                 {% endif %}
 
                 <!-- Seller Profile -->
@@ -286,12 +296,17 @@
     <div class="mobile-cta-content">
         <div class="mobile-cta-price">
             {% if rental_plans %}
-            <span class="mobile-price-value">¥{{ rental_plans.0.rental_fee|floatformat:0 }}〜</span>
+            <span class="mobile-price-value" id="mobilePriceValue">¥{{ rental_plans.0.rental_fee|floatformat:0 }}</span>
+            <span class="mobile-days-value" id="mobileDaysValue">（{{ rental_plans.0.rental_days }}日）</span>
             {% else %}
             <span class="mobile-price-value">価格未設定</span>
             {% endif %}
         </div>
-        <button class="mobile-cta-btn">手続きへ</button>
+        {% if has_pending_request %}
+        <button class="mobile-cta-btn mobile-cta-pending" disabled>申請中です</button>
+        {% else %}
+        <button class="mobile-cta-btn">申請へ</button>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

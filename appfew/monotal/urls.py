@@ -15,6 +15,7 @@ urlpatterns = [
     path('sell/', views.create_sell, name='create_sell'),
     path('sell/addresses/', views.sell_address_manage, name='sell_address_manage'),
     path('sell/verification-required/', views.verification_required, name='verification_required'),
+    path('sell/bank-account-required/', views.bank_account_required, name='bank_account_required'),
     path('shop/', views.product_list, name='product_list'),
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     path('product/<int:product_id>/edit/', views.product_edit, name='product_edit'),
@@ -48,4 +49,25 @@ urlpatterns = [
     path('mypage/bank-accounts/', views.mypage_bank_account_list, name='mypage_bank_account_list'),
     path('mypage/bank-accounts/<int:bank_account_id>/edit/', views.bank_account_edit, name='bank_account_edit'),
     path('mypage/bank-accounts/<int:bank_account_id>/delete/', views.bank_account_delete, name='bank_account_delete'),
+    path('mypage/credit-cards/', views.mypage_credit_card_list, name='mypage_credit_card_list'),
+    path('mypage/credit-cards/<int:credit_card_id>/edit/', views.credit_card_edit, name='credit_card_edit'),
+    path('mypage/credit-cards/<int:credit_card_id>/delete/', views.credit_card_delete, name='credit_card_delete'),
+
+    # レンタル関連
+    path('product/<int:product_id>/rental/', views.rental_request, name='rental_request'),
+    path('product/<int:product_id>/rental/complete/', views.rental_request_complete, name='rental_request_complete'),
+    path('mypage/rental-management/', views.mypage_rental_management, name='mypage_rental_management'),
+    path('rental-request/<int:request_id>/approve/', views.rental_request_approve, name='rental_request_approve'),
+    path('rental-request/<int:request_id>/reject/', views.rental_request_reject, name='rental_request_reject'),
+    path('rental-request/<int:request_id>/start/', views.rental_start_page, name='rental_start_page'),
+    path('rental-request/<int:request_id>/start/addresses/', views.rental_address_manage, name='rental_address_manage'),
+    path('rental-request/<int:request_id>/start/cards/', views.rental_card_manage, name='rental_card_manage'),
+    path('rental-request/<int:request_id>/start/confirm/', views.rental_request_start, name='rental_request_start'),
+    path('rental-request/<int:request_id>/cancel/', views.rental_request_cancel, name='rental_request_cancel'),
+    path('rental-request/<int:request_id>/cancel-seller/', views.rental_request_cancel_seller, name='rental_request_cancel_seller'),
+
+    # 通知関連
+    path('notifications/', views.notification_list, name='notification_list'),
+    path('notifications/<int:notification_id>/read/', views.notification_mark_read, name='notification_mark_read'),
+    path('notifications/read-all/', views.notification_mark_all_read, name='notification_mark_all_read'),
 ]

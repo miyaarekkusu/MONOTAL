@@ -40,11 +40,35 @@
             <!-- Header Actions -->
             <div class="flex items-center gap-3 lg:gap-4">
                 {% if user.is_authenticated %}
-                    <!-- Notification -->
-                    <a href="#" class="relative text-zinc-500 hover:text-zinc-900 transition-colors">
-                        <span class="iconify" data-icon="lucide:bell" data-width="20" data-height="20"></span>
-                        <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-600 text-[9px] font-bold text-white flex items-center justify-center">3</span>
+                    <!-- Rental Management -->
+                    <a href="{% url 'mypage_rental_management' %}" class="relative text-zinc-500 hover:text-zinc-900 transition-colors" title="レンタル管理">
+                        <span class="iconify" data-icon="lucide:package" data-width="20" data-height="20"></span>
+                        {% if pending_rental_count %}
+                        <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-600 text-[9px] font-bold text-white flex items-center justify-center">{{ pending_rental_count }}</span>
+                        {% endif %}
                     </a>
+                    <!-- Notification -->
+                    <div class="relative" id="notification-dropdown-container">
+                        <button id="notification-dropdown-btn" class="relative text-zinc-500 hover:text-zinc-900 transition-colors">
+                            <span class="iconify" data-icon="lucide:bell" data-width="20" data-height="20"></span>
+                            {% if unread_notification_count > 0 %}
+                            <span id="notification-badge" class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-600 text-[9px] font-bold text-white flex items-center justify-center">{{ unread_notification_count }}</span>
+                            {% endif %}
+                        </button>
+                        <!-- Notification Dropdown -->
+                        <div id="notification-dropdown-menu" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                                <h3 class="font-semibold text-sm text-zinc-900">通知</h3>
+                                <button id="mark-all-read-btn" class="text-xs text-pink-600 hover:text-pink-700 font-medium">すべて既読</button>
+                            </div>
+                            <div id="notification-list" class="max-h-80 overflow-y-auto">
+                                <div class="p-4 text-center text-zinc-400 text-sm">
+                                    <span class="iconify inline-block mb-2" data-icon="lucide:loader-2" data-width="24"></span>
+                                    <p>読み込み中...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <!-- Profile Dropdown -->
                     <div class="relative" id="profile-dropdown-container">
                         <button id="profile-dropdown-btn" class="h-8 w-8 rounded-full bg-zinc-100 flex items-center justify-center overflow-hidden hover:ring-2 hover:ring-pink-600 transition-all">
@@ -183,30 +207,186 @@
     <!-- Profile Dropdown Script -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Profile Dropdown
         const dropdownBtn = document.getElementById('profile-dropdown-btn');
         const dropdownMenu = document.getElementById('profile-dropdown-menu');
 
         if (dropdownBtn && dropdownMenu) {
-            // Toggle dropdown on button click
             dropdownBtn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 dropdownMenu.classList.toggle('hidden');
+                // 通知ドロップダウンを閉じる
+                const notifMenu = document.getElementById('notification-dropdown-menu');
+                if (notifMenu) notifMenu.classList.add('hidden');
             });
 
-            // Close dropdown when clicking outside
             document.addEventListener('click', function(e) {
                 if (!dropdownMenu.contains(e.target) && !dropdownBtn.contains(e.target)) {
                     dropdownMenu.classList.add('hidden');
                 }
             });
 
-            // Close dropdown on escape key
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     dropdownMenu.classList.add('hidden');
                 }
             });
         }
+
+        // Notification Dropdown
+        const notifBtn = document.getElementById('notification-dropdown-btn');
+        const notifMenu = document.getElementById('notification-dropdown-menu');
+        const notifList = document.getElementById('notification-list');
+        const notifBadge = document.getElementById('notification-badge');
+        const markAllReadBtn = document.getElementById('mark-all-read-btn');
+        let notificationsLoaded = false;
+
+        if (notifBtn && notifMenu) {
+            notifBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                notifMenu.classList.toggle('hidden');
+                // プロフィールドロップダウンを閉じる
+                if (dropdownMenu) dropdownMenu.classList.add('hidden');
+                // 初回のみ通知を読み込む
+                if (!notificationsLoaded && !notifMenu.classList.contains('hidden')) {
+                    loadNotifications();
+                }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!notifMenu.contains(e.target) && !notifBtn.contains(e.target)) {
+                    notifMenu.classList.add('hidden');
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    notifMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        // すべて既読ボタン
+        if (markAllReadBtn) {
+            markAllReadBtn.addEventListener('click', async function() {
+                try {
+                    const response = await fetch('/monotal/notifications/read-all/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': getCSRFToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success) {
+                        // すべての通知を既読表示に
+                        document.querySelectorAll('.notification-item.unread').forEach(item => {
+                            item.classList.remove('unread');
+                        });
+                        // バッジを非表示
+                        if (notifBadge) notifBadge.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error('Mark all read error:', e);
+                }
+            });
+        }
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/monotal/notifications/', {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    notificationsLoaded = true;
+                    renderNotifications(data.notifications);
+                }
+            } catch (e) {
+                console.error('Load notifications error:', e);
+                notifList.innerHTML = '<div class="p-4 text-center text-zinc-400 text-sm">読み込みに失敗しました</div>';
+            }
+        }
+
+        function renderNotifications(notifications) {
+            if (notifications.length === 0) {
+                notifList.innerHTML = `
+                    <div class="p-8 text-center text-zinc-400">
+                        <span class="iconify inline-block mb-2" data-icon="lucide:bell-off" data-width="32"></span>
+                        <p class="text-sm">通知はありません</p>
+                    </div>
+                `;
+                return;
+            }
+
+            notifList.innerHTML = notifications.map(notif => `
+                <a href="${notif.link_url || '#'}"
+                   class="notification-item block px-4 py-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors ${notif.is_read ? '' : 'unread bg-pink-50/50'}"
+                   data-notification-id="${notif.notification_id}"
+                   onclick="markNotificationRead(${notif.notification_id})">
+                    <div class="flex items-start gap-3">
+                        <span class="iconify flex-shrink-0 mt-0.5 ${notif.is_read ? 'text-zinc-400' : 'text-pink-600'}"
+                              data-icon="${getNotificationIcon(notif.type)}" data-width="18"></span>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-zinc-900 ${notif.is_read ? '' : 'font-semibold'}">${escapeHtml(notif.title)}</p>
+                            ${notif.detail ? `<p class="text-xs text-zinc-500 mt-0.5 truncate">${escapeHtml(notif.detail)}</p>` : ''}
+                            <p class="text-[10px] text-zinc-400 mt-1">${notif.created_at}</p>
+                        </div>
+                        ${notif.is_read ? '' : '<span class="flex-shrink-0 w-2 h-2 rounded-full bg-pink-600 mt-1.5"></span>'}
+                    </div>
+                </a>
+            `).join('');
+        }
+
+        function getNotificationIcon(type) {
+            switch (type) {
+                case 'レンタル通知': return 'lucide:package';
+                case 'メッセージ通知': return 'lucide:message-square';
+                default: return 'lucide:bell';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function getCSRFToken() {
+            return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+        }
+
+        // グローバル関数として公開
+        window.markNotificationRead = async function(notificationId) {
+            try {
+                await fetch(`/monotal/notifications/${notificationId}/read/`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': getCSRFToken(),
+                        'Content-Type': 'application/json'
+                    }
+                });
+                // 通知を既読表示に
+                const item = document.querySelector(`.notification-item[data-notification-id="${notificationId}"]`);
+                if (item) {
+                    item.classList.remove('unread', 'bg-pink-50/50');
+                    item.querySelector('.iconify')?.classList.replace('text-pink-600', 'text-zinc-400');
+                    item.querySelector('.w-2.h-2')?.remove();
+                }
+                // バッジの数を減らす
+                if (notifBadge) {
+                    const count = parseInt(notifBadge.textContent) - 1;
+                    if (count <= 0) {
+                        notifBadge.style.display = 'none';
+                    } else {
+                        notifBadge.textContent = count;
+                    }
+                }
+            } catch (e) {
+                console.error('Mark read error:', e);
+            }
+        };
     });
     </script>
 

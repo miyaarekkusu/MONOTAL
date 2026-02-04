@@ -1,10 +1,13 @@
-/**
+﻿/**
  * 本人確認申請画面用JavaScript
  */
 
 document.addEventListener('DOMContentLoaded', function() {
     const form = document.getElementById('verificationForm');
     if (!form) return;
+
+    // 生年月日セレクトの初期化
+    initBirthdateSelects();
 
     // 画像アップロードエリアの設定
     setupImageUpload('id', 'idImage', 'idUploadArea', 'idPreview');
@@ -14,6 +17,111 @@ document.addEventListener('DOMContentLoaded', function() {
     // フォーム送信処理
     form.addEventListener('submit', handleFormSubmit);
 });
+
+/**
+ * 生年月日セレクトの初期化
+ */
+function initBirthdateSelects() {
+    const forms = document.querySelectorAll('.verification-form');
+    forms.forEach(form => {
+        const yearSelect = form.querySelector('select[name="birth_year"]');
+        const monthSelect = form.querySelector('select[name="birth_month"]');
+        const daySelect = form.querySelector('select[name="birth_day"]');
+        const hiddenInput = form.querySelector('input[name="birth_date"]');
+
+        if (!yearSelect || !monthSelect || !daySelect || !hiddenInput) return;
+
+        // 年の選択肢を生成（現在の年から100年前まで）
+        const currentYear = new Date().getFullYear();
+        for (let year = currentYear; year >= currentYear - 100; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year + '年';
+            yearSelect.appendChild(option);
+        }
+
+        // 日の選択肢を生成
+        updateDayOptions(daySelect, monthSelect.value, yearSelect.value);
+
+        // 既存の値がある場合は設定
+        const existingValue = hiddenInput.value;
+        if (existingValue) {
+            const parts = existingValue.split('-');
+            if (parts.length === 3) {
+                yearSelect.value = parts[0];
+                monthSelect.value = parseInt(parts[1], 10);
+                updateDayOptions(daySelect, monthSelect.value, yearSelect.value);
+                daySelect.value = parseInt(parts[2], 10);
+            }
+        }
+
+        // 年または月が変わったら日の選択肢を更新
+        yearSelect.addEventListener('change', () => {
+            updateDayOptions(daySelect, monthSelect.value, yearSelect.value);
+            updateHiddenBirthdate(yearSelect, monthSelect, daySelect, hiddenInput);
+        });
+
+        monthSelect.addEventListener('change', () => {
+            updateDayOptions(daySelect, monthSelect.value, yearSelect.value);
+            updateHiddenBirthdate(yearSelect, monthSelect, daySelect, hiddenInput);
+        });
+
+        daySelect.addEventListener('change', () => {
+            updateHiddenBirthdate(yearSelect, monthSelect, daySelect, hiddenInput);
+        });
+    });
+}
+
+/**
+ * 日の選択肢を更新
+ */
+function updateDayOptions(daySelect, month, year) {
+    const currentValue = daySelect.value;
+    const daysInMonth = getDaysInMonth(parseInt(month, 10) || 1, parseInt(year, 10) || new Date().getFullYear());
+
+    // 現在の選択肢をクリア（最初のプレースホルダー以外）
+    while (daySelect.options.length > 1) {
+        daySelect.remove(1);
+    }
+
+    // 日の選択肢を追加
+    for (let day = 1; day <= daysInMonth; day++) {
+        const option = document.createElement('option');
+        option.value = day;
+        option.textContent = day + '日';
+        daySelect.appendChild(option);
+    }
+
+    // 以前の値が有効なら復元
+    if (currentValue && parseInt(currentValue, 10) <= daysInMonth) {
+        daySelect.value = currentValue;
+    }
+}
+
+/**
+ * 指定月の日数を取得（うるう年考慮）
+ */
+function getDaysInMonth(month, year) {
+    if (!month || month < 1 || month > 12) return 31;
+    return new Date(year, month, 0).getDate();
+}
+
+/**
+ * 非表示の生年月日フィールドを更新
+ */
+function updateHiddenBirthdate(yearSelect, monthSelect, daySelect, hiddenInput) {
+    const year = yearSelect.value;
+    const month = monthSelect.value;
+    const day = daySelect.value;
+
+    if (year && month && day) {
+        const paddedMonth = String(month).padStart(2, '0');
+        const paddedDay = String(day).padStart(2, '0');
+        hiddenInput.value = `${year}-${paddedMonth}-${paddedDay}`;
+    } else {
+        hiddenInput.value = '';
+    }
+}
 
 /**
  * CSRFトークンを取得
@@ -203,6 +311,15 @@ async function handleFormSubmit(e) {
 
     clearAllErrors();
 
+    const form = document.getElementById('verificationForm');
+
+    // 個人情報フィールド
+    const lastName = document.getElementById('lastName');
+    const firstName = document.getElementById('firstName');
+    const birthDate = form.querySelector('input[name="birth_date"]');
+    const gender = document.getElementById('gender');
+
+    // 画像フィールド
     const faceImage = document.getElementById('faceImage');
     const idImage = document.getElementById('idImage');
     const idBackImage = document.getElementById('idBackImage');
@@ -210,6 +327,28 @@ async function handleFormSubmit(e) {
     // クライアント側バリデーション
     let hasError = false;
 
+    // 個人情報バリデーション
+    if (!lastName || !lastName.value.trim()) {
+        showFieldError('last_name', '姓を入力してください');
+        hasError = true;
+    }
+
+    if (!firstName || !firstName.value.trim()) {
+        showFieldError('first_name', '名を入力してください');
+        hasError = true;
+    }
+
+    if (!birthDate || !birthDate.value) {
+        showFieldError('birth_date', '生年月日を入力してください');
+        hasError = true;
+    }
+
+    if (!gender || !gender.value) {
+        showFieldError('gender', '性別を選択してください');
+        hasError = true;
+    }
+
+    // 画像バリデーション
     if (!idImage || !idImage.files[0]) {
         showFieldError('id_image', '身分証明書（表面）は必須です');
         hasError = true;

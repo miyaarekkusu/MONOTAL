@@ -1,4 +1,4 @@
-﻿<!-- Sidebar Navigation -->
+<!-- Sidebar Navigation -->
 <aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
 
     <!-- Group: Product Management -->
@@ -53,10 +53,17 @@
             </a>
             {% endif %}
 
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
-                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:shopping-bag" data-width="20"></span>
-                レンタル一覧
+            {% if current_page == 'rental_management' %}
+            <a href="{% url 'mypage_rental_management' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:package" data-width="20"></span>
+                レンタル管理
             </a>
+            {% else %}
+            <a href="{% url 'mypage_rental_management' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:package" data-width="20"></span>
+                レンタル管理
+            </a>
+            {% endif %}
         </nav>
     </div>
 
@@ -116,6 +123,17 @@
             <a href="{% url 'mypage_bank_account_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
                 <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:building-2" data-width="20"></span>
                 口座管理
+            </a>
+            {% endif %}
+            {% if current_page == 'credit_card_list' %}
+            <a href="{% url 'mypage_credit_card_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:credit-card" data-width="20"></span>
+                カード管理
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_credit_card_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:credit-card" data-width="20"></span>
+                カード管理
             </a>
             {% endif %}
         </nav>

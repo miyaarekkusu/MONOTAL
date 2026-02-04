@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    本人確認ページ - identity_verification.css
    ============================================ */
 
@@ -667,4 +667,138 @@
 
 .fa-spin {
     animation: spin 1s linear infinite;
+}
+
+/* ============================================
+   個人情報入力フォーム
+   ============================================ */
+.personal-info-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.input-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+@media (max-width: 480px) {
+    .input-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.input-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #3f3f46;
+}
+
+.input-label .required {
+    color: #ef4444;
+}
+
+.text-input,
+.select-input {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: #18181b;
+    background: white;
+    border: 1px solid #d4d4d8;
+    border-radius: 8px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.text-input:focus,
+.select-input:focus {
+    outline: none;
+    border-color: #ec4899;
+    box-shadow: 0 0 0 3px rgba(236, 72, 153, 0.1);
+}
+
+.text-input::placeholder {
+    color: #a1a1aa;
+}
+
+.select-input {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 36px;
+}
+
+/* ============================================
+   生年月日入力
+   ============================================ */
+.birthdate-gender-row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+}
+
+@media (min-width: 480px) {
+    .birthdate-gender-row {
+        grid-template-columns: 2fr 1fr;
+        gap: 12px;
+    }
+}
+
+.birthdate-group {
+    min-width: 0;
+}
+
+.birthdate-selects {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.birthdate-select {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 8px;
+    font-size: 14px;
+    background-position: right 6px center;
+    padding-right: 24px;
+}
+
+.birthdate-select.year-select {
+    flex: 1.4;
+}
+
+.birthdate-select.month-select {
+    flex: 1;
+}
+
+.birthdate-select.day-select {
+    flex: 0.9;
+}
+
+.gender-group {
+    min-width: 0;
+}
+
+@media (max-width: 479px) {
+    .birthdate-selects {
+        gap: 6px;
+    }
+
+    .birthdate-select {
+        padding: 10px 6px;
+        padding-right: 22px;
+        font-size: 13px;
+        background-position: right 4px center;
+    }
 }

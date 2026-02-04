@@ -1,0 +1,568 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}レンタル開始 - {{ product.product_name }} | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+.rental-start-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.page-header {
+    margin-bottom: 32px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #18181b;
+    margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: #71717a;
+    margin: 0;
+}
+
+.product-summary {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.product-image {
+    width: 100px;
+    height: 100px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 12px 0;
+    line-height: 1.4;
+}
+
+.product-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+}
+
+.detail-label {
+    color: #71717a;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #18181b;
+    font-weight: 500;
+}
+
+.detail-value.price {
+    color: #ec4899;
+    font-weight: 700;
+}
+
+.section {
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title .iconify {
+    color: #ec4899;
+}
+
+.option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.option-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 2px solid #e4e4e7;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-item:hover {
+    border-color: #d4d4d8;
+}
+
+.option-item.selected {
+    border-color: #ec4899;
+    background: #fdf2f8;
+}
+
+.option-item input[type="radio"] {
+    margin-top: 2px;
+    accent-color: #ec4899;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 4px 0;
+}
+
+.option-detail {
+    font-size: 12px;
+    color: #71717a;
+    margin: 0;
+}
+
+.option-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #ec4899;
+    background: #fce7f3;
+    border-radius: 4px;
+    margin-left: 8px;
+}
+
+.empty-message {
+    text-align: center;
+    padding: 24px;
+    color: #71717a;
+    font-size: 14px;
+}
+
+.empty-message .iconify {
+    display: block;
+    margin: 0 auto 8px;
+    color: #d4d4d8;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #71717a;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #f4f4f5;
+}
+
+.btn-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    background: #3b82f6;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-submit:hover {
+    background: #2563eb;
+}
+
+.btn-submit:disabled {
+    background: #a1a1aa;
+    cursor: not-allowed;
+}
+
+.card-number {
+    font-family: monospace;
+    letter-spacing: 1px;
+}
+
+.no-data-notice {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px;
+    background: #fef3c7;
+    border: 1px solid #fcd34d;
+    border-radius: 8px;
+}
+
+.no-data-notice .warning-icon {
+    color: #d97706;
+    flex-shrink: 0;
+}
+
+.notice-content {
+    flex: 1;
+}
+
+.notice-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #92400e;
+    margin: 0 0 2px 0;
+}
+
+.notice-text {
+    font-size: 12px;
+    color: #a16207;
+    margin: 0;
+}
+
+.register-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    background: #ec4899;
+    border-radius: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+
+.register-btn:hover {
+    background: #db2777;
+}
+
+.manage-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 12px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ec4899;
+    text-decoration: none;
+}
+
+.manage-link:hover {
+    text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+    .product-summary {
+        flex-direction: column;
+    }
+
+    .product-image {
+        width: 100%;
+        height: 200px;
+    }
+
+    .no-data-notice {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-back, .btn-submit {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="rental-start-container">
+    <div class="page-header">
+        <h1 class="page-title">レンタル開始</h1>
+        <p class="page-subtitle">配送先住所と決済カードを確認してください</p>
+    </div>
+
+    <!-- 商品情報 -->
+    <div class="product-summary">
+        {% if product.images.all %}
+        <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="product-image">
+        {% else %}
+        <div class="product-image" style="background: #e4e4e7; display: flex; align-items: center; justify-content: center;">
+            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+        </div>
+        {% endif %}
+        <div class="product-info">
+            <h3>{{ product.product_name }}</h3>
+            <div class="product-details-list">
+                <div class="detail-row">
+                    <span class="detail-label">価格</span>
+                    <span class="detail-value price">¥{{ product.rental_fee|floatformat:0 }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">送料</span>
+                    <span class="detail-value">{% if product.shipping_burden %}{{ product.shipping_burden.burden_name }}{% else %}未設定{% endif %}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">申請日時</span>
+                    <span class="detail-value">{{ rental_request.register_datetime|date:"Y年n月j日 H:i" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">発送元</span>
+                    <span class="detail-value">{% if shipping_prefecture %}{{ shipping_prefecture.prefecture_name }}{% else %}未設定{% endif %}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">出品者</span>
+                    <span class="detail-value">{{ seller.display_name }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" action="{% url 'rental_request_start' request_id=rental_request.rental_request_id %}" id="rental-start-form">
+        {% csrf_token %}
+
+        <!-- 配送先住所 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:map-pin" data-width="20"></span>
+                配送先住所
+            </h2>
+            {% if my_addresses %}
+            <div class="option-list">
+                {% for address in my_addresses %}
+                <label class="option-item" data-address-id="{{ address.user_address_id }}">
+                    <input type="radio" name="address_id" value="{{ address.user_address_id }}" {% if address.is_default %}checked{% endif %}>
+                    <div class="option-content">
+                        <p class="option-label">
+                            〒{{ address.postal_code|slice:":3" }}-{{ address.postal_code|slice:"3:" }}
+                            {% if address.is_default %}<span class="option-badge">デフォルト</span>{% endif %}
+                        </p>
+                        <p class="option-detail">
+                            {{ address.prefecture.prefecture_name }}{{ address.city }} {{ address.street_address }}
+                        </p>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <a href="{% url 'rental_address_manage' request_id=rental_request.rental_request_id %}" class="manage-link">
+                <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                住所を追加・編集する
+            </a>
+            {% else %}
+            <div class="no-data-notice">
+                <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
+                <div class="notice-content">
+                    <p class="notice-title">配送先住所が登録されていません</p>
+                    <p class="notice-text">レンタルを開始するには住所の登録が必要です</p>
+                </div>
+                <a href="{% url 'rental_address_manage' request_id=rental_request.rental_request_id %}" class="register-btn">
+                    住所を登録する
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 決済カード -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:credit-card" data-width="20"></span>
+                決済カード
+            </h2>
+            {% if my_cards %}
+            <div class="option-list">
+                {% for card in my_cards %}
+                <label class="option-item" data-card-id="{{ card.credit_card_id }}">
+                    <input type="radio" name="card_id" value="{{ card.credit_card_id }}" {% if card.is_default %}checked{% endif %}>
+                    <div class="option-content">
+                        <p class="option-label">
+                            クレジットカード
+                            {% if card.is_default %}<span class="option-badge">デフォルト</span>{% endif %}
+                        </p>
+                        <p class="option-detail">
+                            <span class="card-number">{{ card.masked_card_number }}</span><br>
+                            有効期限: {{ card.expiry_display }} / {{ card.card_holder_name }}
+                        </p>
+                    </div>
+                </label>
+                {% endfor %}
+            </div>
+            <a href="{% url 'rental_card_manage' request_id=rental_request.rental_request_id %}" class="manage-link">
+                <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                カードを追加・編集する
+            </a>
+            {% else %}
+            <div class="no-data-notice">
+                <span class="iconify warning-icon" data-icon="lucide:alert-triangle" data-width="20"></span>
+                <div class="notice-content">
+                    <p class="notice-title">決済カードが登録されていません</p>
+                    <p class="notice-text">レンタルを開始するにはカードの登録が必要です</p>
+                </div>
+                <a href="{% url 'rental_card_manage' request_id=rental_request.rental_request_id %}" class="register-btn">
+                    カードを登録する
+                </a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="form-actions">
+            <a href="{% url 'mypage_rental_management' %}" class="btn-back">
+                <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span>
+                レンタル管理に戻る
+            </a>
+            <button type="submit" class="btn-submit" id="submit-btn" {% if not my_addresses or not my_cards %}disabled{% endif %}>
+                <span class="iconify" data-icon="lucide:play" data-width="18"></span>
+                レンタルを開始する
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+<script>
+const STORAGE_KEY = 'rentalStartFormData_{{ rental_request.rental_request_id }}';
+
+// フォームデータの保存
+function saveFormData() {
+    const selectedAddress = document.querySelector('input[name="address_id"]:checked');
+    const selectedCard = document.querySelector('input[name="card_id"]:checked');
+
+    const formData = {
+        address_id: selectedAddress?.value || '',
+        card_id: selectedCard?.value || ''
+    };
+
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
+}
+
+// フォームデータの復元
+function restoreFormData() {
+    const savedData = sessionStorage.getItem(STORAGE_KEY);
+    if (!savedData) return;
+
+    try {
+        const formData = JSON.parse(savedData);
+
+        // 住所の復元
+        if (formData.address_id) {
+            const addressRadio = document.querySelector(`input[name="address_id"][value="${formData.address_id}"]`);
+            if (addressRadio) {
+                addressRadio.checked = true;
+                document.querySelectorAll('input[name="address_id"]').forEach(r => {
+                    r.closest('.option-item')?.classList.remove('selected');
+                });
+                addressRadio.closest('.option-item')?.classList.add('selected');
+            }
+        }
+
+        // カードの復元
+        if (formData.card_id) {
+            const cardRadio = document.querySelector(`input[name="card_id"][value="${formData.card_id}"]`);
+            if (cardRadio) {
+                cardRadio.checked = true;
+                document.querySelectorAll('input[name="card_id"]').forEach(r => {
+                    r.closest('.option-item')?.classList.remove('selected');
+                });
+                cardRadio.closest('.option-item')?.classList.add('selected');
+            }
+        }
+
+        // 復元後にクリア
+        sessionStorage.removeItem(STORAGE_KEY);
+    } catch (e) {
+        console.error('Failed to restore form data:', e);
+        sessionStorage.removeItem(STORAGE_KEY);
+    }
+}
+
+// ページ読み込み時に復元
+restoreFormData();
+
+// オプション選択時のスタイル更新
+document.querySelectorAll('.option-item').forEach(item => {
+    const radio = item.querySelector('input[type="radio"]');
+    if (radio.checked) {
+        item.classList.add('selected');
+    }
+    radio.addEventListener('change', () => {
+        // 同じname属性のオプションからselectedを削除
+        document.querySelectorAll(`input[name="${radio.name}"]`).forEach(r => {
+            r.closest('.option-item').classList.remove('selected');
+        });
+        if (radio.checked) {
+            item.classList.add('selected');
+        }
+    });
+});
+
+// 住所・カード編集リンクをクリックした時に保存
+document.querySelectorAll('.manage-link, .register-btn').forEach(link => {
+    link.addEventListener('click', saveFormData);
+});
+
+// フォーム送信時の確認
+document.getElementById('rental-start-form').addEventListener('submit', (e) => {
+    if (!confirm('レンタルを開始しますか？')) {
+        e.preventDefault();
+    }
+});
+</script>
+{% endblock %}

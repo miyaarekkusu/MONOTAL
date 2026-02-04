@@ -1,11 +1,11 @@
 ﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}本人確認が必要です - MONOTAL{% endblock %}
+{% block title %}受取口座の登録が必要です - MONOTAL{% endblock %}
 
 {% block extra_css %}
 <style>
-.verification-required {
+.bank-required {
     min-height: 100vh;
     background-color: #fafafa;
     display: flex;
@@ -14,7 +14,7 @@
     padding: 16px;
 }
 
-.verification-card {
+.bank-required-card {
     background: white;
     border-radius: 16px;
     border: 1px solid #e4e4e7;
@@ -25,22 +25,22 @@
     text-align: center;
 }
 
-.verification-icon {
+.bank-required-icon {
     width: 80px;
     height: 80px;
     border-radius: 50%;
-    background: #fef2f2;
+    background: #fef3c7;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 24px;
 }
 
-.verification-icon .iconify {
-    color: #ef4444;
+.bank-required-icon .iconify {
+    color: #f59e0b;
 }
 
-.verification-title {
+.bank-required-title {
     font-size: 24px;
     font-weight: 700;
     color: #18181b;
@@ -48,14 +48,14 @@
     letter-spacing: -0.025em;
 }
 
-.verification-message {
+.bank-required-message {
     font-size: 14px;
     color: #71717a;
     line-height: 1.6;
     margin: 0 0 32px 0;
 }
 
-.verification-actions {
+.bank-required-actions {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -104,13 +104,13 @@
     border-color: #d4d4d8;
 }
 
-.verification-note {
+.bank-required-note {
     margin-top: 24px;
     padding-top: 24px;
     border-top: 1px solid #f4f4f5;
 }
 
-.verification-note p {
+.bank-required-note p {
     font-size: 12px;
     color: #a1a1aa;
     margin: 0;
@@ -120,45 +120,34 @@
 {% endblock %}
 
 {% block content %}
-<div class="verification-required">
-    <div class="verification-card">
-        <div class="verification-icon">
-            <span class="iconify" data-icon="lucide:shield-alert" data-width="40"></span>
+<div class="bank-required">
+    <div class="bank-required-card">
+        <div class="bank-required-icon">
+            <span class="iconify" data-icon="lucide:landmark" data-width="40"></span>
         </div>
 
-        <h1 class="verification-title">本人確認が必要です</h1>
+        <h1 class="bank-required-title">受取口座の登録が必要です</h1>
 
-        <p class="verification-message">
-            {% if context_type == 'rental' %}
-            レンタル手続きを行うには本人確認が必要です。<br>
-            {% else %}
-            商品を出品するには本人確認が必要です。<br>
-            {% endif %}
-            本人確認を完了すると、商品の出品やレンタルのリクエストができるようになります。
+        <p class="bank-required-message">
+            商品を出品するには受取口座の登録が必要です。<br>
+            売上金の受け取りに使用する銀行口座を登録してください。
         </p>
 
-        <div class="verification-actions">
-            <a href="{% url 'identity_verification' %}" class="btn-primary">
-                <span class="iconify" data-icon="lucide:user-check" data-width="18"></span>
-                本人確認を行う
+        <div class="bank-required-actions">
+            <a href="{% url 'mypage_bank_account_list' %}" class="btn-primary">
+                <span class="iconify" data-icon="lucide:plus-circle" data-width="18"></span>
+                口座を登録する
             </a>
-            {% if context_type == 'rental' and product_id %}
-            <a href="{% url 'product_detail' product_id=product_id %}" class="btn-secondary">
-                <span class="iconify" data-icon="lucide:arrow-left" data-width="18"></span>
-                商品詳細に戻る
-            </a>
-            {% else %}
             <a href="{% url 'index' %}" class="btn-secondary">
                 <span class="iconify" data-icon="lucide:arrow-left" data-width="18"></span>
                 ホームに戻る
             </a>
-            {% endif %}
         </div>
 
-        <div class="verification-note">
+        <div class="bank-required-note">
             <p>
-                本人確認には顔写真と身分証明書の画像が必要です。<br>
-                審査には通常1〜2営業日かかります。
+                登録された口座情報は売上金の振込にのみ使用されます。<br>
+                口座情報は安全に保管されます。
             </p>
         </div>
     </div>

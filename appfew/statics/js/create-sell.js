@@ -1,5 +1,6 @@
 ﻿document.addEventListener('DOMContentLoaded', function () {
     const sellForm = document.getElementById('sellForm');
+    const FORM_STORAGE_KEY = 'createSellFormData';
 
     // 画像管理
     let uploadedImages = [];
@@ -14,6 +15,140 @@
             await submitProduct();
         });
     }
+
+    // ========================================
+    // フォームデータ保存・復元機能
+    // ========================================
+    function saveFormData() {
+        const rentalPlans = [];
+        document.querySelectorAll('.rental-plan-row').forEach(row => {
+            const daysInput = row.querySelector('.days-input');
+            const priceInput = row.querySelector('.price-input');
+            if (daysInput && priceInput) {
+                rentalPlans.push({
+                    days: daysInput.value,
+                    price: priceInput.value
+                });
+            }
+        });
+
+        const formData = {
+            productName: document.getElementById('productName')?.value || '',
+            category: document.getElementById('category')?.value || '',
+            condition: document.getElementById('condition')?.value || '',
+            description: document.getElementById('description')?.value || '',
+            shippingDays: document.getElementById('shippingDays')?.value || '',
+            shippingBurden: document.getElementById('shippingBurden')?.value || '',
+            rentalPlans: rentalPlans,
+            agreeTerms: document.getElementById('agreeTerms')?.checked || false
+        };
+
+        sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+    }
+
+    function restoreFormData() {
+        const savedData = sessionStorage.getItem(FORM_STORAGE_KEY);
+        if (!savedData) return;
+
+        try {
+            const formData = JSON.parse(savedData);
+
+            if (formData.productName) {
+                const nameInput = document.getElementById('productName');
+                if (nameInput) {
+                    nameInput.value = formData.productName;
+                    updateCharCount('productName', 'nameCount', 40);
+                }
+            }
+
+            if (formData.category) {
+                const categorySelect = document.getElementById('category');
+                if (categorySelect) categorySelect.value = formData.category;
+            }
+
+            if (formData.condition) {
+                const conditionSelect = document.getElementById('condition');
+                if (conditionSelect) conditionSelect.value = formData.condition;
+            }
+
+            if (formData.description) {
+                const descInput = document.getElementById('description');
+                if (descInput) {
+                    descInput.value = formData.description;
+                    updateCharCount('description', 'descCount', 1000);
+                }
+            }
+
+            if (formData.shippingDays) {
+                const shippingDaysSelect = document.getElementById('shippingDays');
+                if (shippingDaysSelect) shippingDaysSelect.value = formData.shippingDays;
+            }
+
+            if (formData.shippingBurden) {
+                const shippingBurdenSelect = document.getElementById('shippingBurden');
+                if (shippingBurdenSelect) shippingBurdenSelect.value = formData.shippingBurden;
+            }
+
+            // レンタルプラン復元
+            if (formData.rentalPlans && formData.rentalPlans.length > 0) {
+                const existingRows = document.querySelectorAll('.rental-plan-row');
+
+                // 最初の行に値を設定
+                if (existingRows.length > 0 && formData.rentalPlans[0]) {
+                    const firstRow = existingRows[0];
+                    const daysInput = firstRow.querySelector('.days-input');
+                    const priceInput = firstRow.querySelector('.price-input');
+                    if (daysInput) daysInput.value = formData.rentalPlans[0].days || '';
+                    if (priceInput) priceInput.value = formData.rentalPlans[0].price || '';
+                }
+
+                // 追加行が必要な場合
+                for (let i = 1; i < formData.rentalPlans.length; i++) {
+                    addPlanRow();
+                    const rows = document.querySelectorAll('.rental-plan-row');
+                    const newRow = rows[rows.length - 1];
+                    const daysInput = newRow.querySelector('.days-input');
+                    const priceInput = newRow.querySelector('.price-input');
+                    if (daysInput) daysInput.value = formData.rentalPlans[i].days || '';
+                    if (priceInput) priceInput.value = formData.rentalPlans[i].price || '';
+                }
+            }
+
+            if (formData.agreeTerms) {
+                const agreeTermsCheckbox = document.getElementById('agreeTerms');
+                if (agreeTermsCheckbox) agreeTermsCheckbox.checked = true;
+            }
+
+            // 復元後にデータを削除
+            sessionStorage.removeItem(FORM_STORAGE_KEY);
+        } catch (e) {
+            console.error('フォームデータの復元に失敗:', e);
+            sessionStorage.removeItem(FORM_STORAGE_KEY);
+        }
+    }
+
+    function clearFormData() {
+        sessionStorage.removeItem(FORM_STORAGE_KEY);
+    }
+
+    // 住所編集リンククリック時にフォームデータを保存
+    const addressManageLink = document.querySelector('.address-manage-link');
+    const registerAddressBtn = document.querySelector('.register-address-btn');
+
+    if (addressManageLink) {
+        addressManageLink.addEventListener('click', function() {
+            saveFormData();
+        });
+    }
+
+    if (registerAddressBtn) {
+        registerAddressBtn.addEventListener('click', function() {
+            saveFormData();
+        });
+    }
+
+    // ページ読み込み時にフォームデータを復元
+    restoreFormData();
 
     // ========================================
     // 画像アップロード
@@ -147,12 +282,12 @@
         newRow.dataset.rowId = planRowId;
         newRow.innerHTML = `
             <div class="col-days">
-                <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1">
+                <input type="number" class="plan-input days-input" placeholder="日数を入力" min="1" max="3650">
                 <span class="input-suffix">日</span>
             </div>
             <div class="col-price">
                 <span class="input-prefix">¥</span>
-                <input type="number" class="plan-input price-input" placeholder="金額を入力" min="100">
+                <input type="number" class="plan-input price-input" placeholder="金額を入力" min="100" max="9999999">
             </div>
             <div class="col-action">
                 <button type="button" class="delete-plan-btn">
@@ -335,6 +470,7 @@
             }
 
             if (response.ok && data.success) {
+                clearFormData();
                 window.location.href = data.redirect_url || '/monotal/';
 
             } else {
@@ -400,14 +536,23 @@
             errors.rentalPlans = '少なくとも1つのレンタルプランを設定してください';
         } else {
             let hasValidPlan = false;
-            formData.rental_plans.forEach((plan, index) => {
+            for (const plan of formData.rental_plans) {
+                if (plan.days > 3650) {
+                    errors.rentalPlans = '日数は3650日以下で設定してください';
+                    break;
+                }
+                if (plan.price > 9999999) {
+                    errors.rentalPlans = '金額は9,999,999円以下で設定してください';
+                    break;
+                }
                 if (plan.days > 0 && plan.price >= 100) {
                     hasValidPlan = true;
                 }
                 if (plan.days > 0 && plan.price > 0 && plan.price < 100) {
                     errors.rentalPlans = '金額は100円以上で設定してください';
+                    break;
                 }
-            });
+            }
             if (!hasValidPlan && !errors.rentalPlans) {
                 errors.rentalPlans = '日数と金額を正しく入力してください';
             }
@@ -416,12 +561,6 @@
         // 住所選択チェック
         if (!formData.address_id) {
             errors.address = '発送元住所を選択してください';
-        }
-
-        // 受取口座チェック
-        const bankAccountStatus = document.querySelector('.bank-account-status');
-        if (!bankAccountStatus) {
-            errors.bank_account = '受取口座を登録してください';
         }
 
         // 利用規約
@@ -446,8 +585,6 @@
                 showErrorAt('rentalPlansError', errors[field]);
             } else if (field === 'address') {
                 showErrorAt('addressError', errors[field]);
-            } else if (field === 'bank_account') {
-                showErrorAt('bankAccountError', errors[field]);
             } else {
                 const input = document.getElementById(field);
                 if (input) {

@@ -678,6 +678,18 @@ body {
     box-shadow: 0 10px 15px -3px rgba(219, 39, 119, 0.2);
 }
 
+.rental-cta-btn.rental-pending {
+    background: #a1a1aa;
+    cursor: not-allowed;
+    box-shadow: none;
+    gap: 8px;
+}
+
+.rental-cta-btn.rental-pending:hover {
+    background: #a1a1aa;
+    box-shadow: none;
+}
+
 /* ============================================
    Seller Section
    ============================================ */
@@ -926,6 +938,16 @@ body {
 
 .mobile-cta-btn:hover {
     background: #be185d;
+}
+
+.mobile-cta-btn.mobile-cta-pending {
+    background: #a1a1aa;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.mobile-cta-btn.mobile-cta-pending:hover {
+    background: #a1a1aa;
 }
 
 /* ============================================

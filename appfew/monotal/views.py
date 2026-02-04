@@ -117,7 +117,7 @@ class LoginView(View):
                     return JsonResponse({
                         'success': True,
                         'message': 'ログインしました',
-                        'redirect_url': '/'
+                        'redirect_url': '/monotal/'
                     })
                 return redirect('index')
             else:
@@ -505,13 +505,11 @@ class ProfileSettingView(View):
         return redirect('profile_setting', username=username)
 
 
-# 出品ステータス定数
-PRODUCT_STATUS_DRAFT = 1      # 下書き
-PRODUCT_STATUS_LISTED = 2     # 出品中
-PRODUCT_STATUS_RENTING = 3    # レンタル中
-PRODUCT_STATUS_PAUSED = 4     # 出品停止
-PRODUCT_STATUS_COMPLETED = 5  # 取引完了
-PRODUCT_STATUS_DELETED = 6    # 削除済み
+# 出品ステータス定数（DBの値に合わせる）
+PRODUCT_STATUS_LISTED = 1     # 貸出可能（出品中）
+PRODUCT_STATUS_RENTING = 2    # 貸出中
+PRODUCT_STATUS_PAUSED = 3     # 非公開
+PRODUCT_STATUS_DELETED = 4    # 削除
 
 # ユーザーステータス定数
 USER_STATUS_UNVERIFIED = 1    # 未認証（本人確認未完了）
@@ -521,7 +519,21 @@ USER_STATUS_VERIFIED = 2      # 承認済み（本人確認完了）
 class VerificationRequiredView(View):
     """本人確認が必要なページ"""
     def get(self, request, *args, **kwargs):
-        return render(request, 'verification_required.html')
+        # コンテキストに応じてメッセージを変更
+        context_type = request.GET.get('context', 'sell')
+        product_id = request.GET.get('product_id', '')
+        context = {
+            'context_type': context_type,
+            'product_id': product_id,
+        }
+        return render(request, 'verification_required.html', context)
+
+
+class BankAccountRequiredView(View):
+    """受取口座の登録が必要なページ"""
+    def get(self, request, *args, **kwargs):
+        context = {}
+        return render(request, 'bank_account_required.html', context)
 
 
 class CreateSellView(View):
@@ -541,6 +553,10 @@ class CreateSellView(View):
         # 本人確認チェック
         if request.user.user_status_id != USER_STATUS_VERIFIED:
             return redirect('verification_required')
+
+        # 受取口座チェック
+        if not BankAccount.objects.filter(user=request.user).exists():
+            return redirect('bank_account_required')
 
         # マスターデータを取得
         categories = ProductCategory.objects.filter(
@@ -597,6 +613,16 @@ class CreateSellView(View):
                     'redirect_url': '/monotal/sell/verification-required/'
                 }, status=403)
             return redirect('verification_required')
+
+        # 受取口座チェック
+        if not BankAccount.objects.filter(user=request.user).exists():
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '受取口座が登録されていません。口座を登録してください。',
+                    'redirect_url': '/monotal/sell/bank-account-required/'
+                }, status=403)
+            return redirect('bank_account_required')
 
         try:
             # FormDataから取得
@@ -665,7 +691,13 @@ class CreateSellView(View):
                     days = plan.get('days', 0)
                     price = plan.get('price', 0)
 
-                    if days > 0 and price >= 100:
+                    if days > 3650:
+                        errors['rental_plans'] = '日数は3650日以下で設定してください'
+                        break
+                    elif price > 9999999:
+                        errors['rental_plans'] = '金額は9,999,999円以下で設定してください'
+                        break
+                    elif days > 0 and price >= 100:
                         has_valid_plan = True
                     elif days > 0 and 0 < price < 100:
                         errors['rental_plans'] = '金額は100円以上で設定してください'
@@ -734,13 +766,13 @@ class CreateSellView(View):
                 except ShippingBurden.DoesNotExist:
                     pass
 
-            # 商品ステータス（出品中）
+            # 商品ステータス（貸出可能）
             try:
                 status_obj = ProductStatus.objects.get(product_status_id=PRODUCT_STATUS_LISTED)
             except ProductStatus.DoesNotExist:
                 status_obj = ProductStatus.objects.create(
                     product_status_id=PRODUCT_STATUS_LISTED,
-                    status_name='出品中'
+                    status_name='貸出可能'
                 )
 
             # ========================================
@@ -769,7 +801,9 @@ class CreateSellView(View):
                     product_category=category_obj,
                     rental_days=rental_days_value,
                     rental_fee=rental_fee_value,
-                    user=request.user
+                    user=request.user,
+                    shipping_address=selected_address,
+                    shipping_prefecture=selected_address.prefecture if selected_address else None
                 )
 
                 # 画像保存
@@ -810,11 +844,11 @@ class CreateSellView(View):
                 return JsonResponse({
                     'success': True,
                     'message': '商品を出品しました',
-                    'redirect_url': '/monotal/'
+                    'redirect_url': f'/monotal/product/{product.product_id}/'
                 })
 
             messages.success(request, '商品を出品しました')
-            return redirect('index')
+            return redirect('product_detail', product_id=product.product_id)
 
         except Exception as e:
             if is_ajax:
@@ -835,7 +869,7 @@ class ProductListView(View):
         products = Product.objects.filter(
             delete_datetime__isnull=True
         ).exclude(
-            product_status_id__in=[3, 4]  # メンテナンス中(3)、非公開(4)を除外
+            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]  # 非公開(3)、削除(4)を除外
         ).select_related(
             'product_condition',
             'product_status',
@@ -968,6 +1002,7 @@ class ProductDetailView(View):
                 'product_category',
                 'shipping_days',
                 'shipping_burden',
+                'shipping_prefecture',
                 'user'
             ).prefetch_related(
                 'images'  # 商品画像も一緒に取得
@@ -979,8 +1014,8 @@ class ProductDetailView(View):
             messages.error(request, '商品が見つかりません。')
             return redirect('product_list')
 
-        # 非公開商品（status_id=4）は出品者のみアクセス可能
-        if product.product_status_id == 4:
+        # 非公開商品（status_id=3）は出品者のみアクセス可能
+        if product.product_status_id == PRODUCT_STATUS_PAUSED:
             if not request.user.is_authenticated or request.user != product.user:
                 messages.error(request, 'この商品は非公開です。')
                 return redirect('product_list')
@@ -992,13 +1027,6 @@ class ProductDetailView(View):
         rental_plans = ProductRentalPlan.objects.filter(
             product=product
         ).order_by('rental_days')
-
-        # 出品者の住所（都道府県）を取得
-        seller_address = None
-        if product.user:
-            seller_address = UserAddress.objects.filter(
-                user=product.user
-            ).select_related('prefecture').first()
 
         # 閲覧履歴を保存（ログインユーザーのみ、自分の商品は除外）
         if request.user.is_authenticated and product.user != request.user:
@@ -1034,15 +1062,24 @@ class ProductDetailView(View):
         # 現在のユーザーが出品者かどうか
         is_seller = request.user.is_authenticated and request.user == product.user
 
+        # レンタル申請中または承認済みかチェック
+        has_pending_request = False
+        if request.user.is_authenticated and not is_seller:
+            has_pending_request = RentalRequest.objects.filter(
+                product=product,
+                requester_user=request.user,
+                rental_request_status_id__in=[RENTAL_REQUEST_STATUS_PENDING, RENTAL_REQUEST_STATUS_APPROVED]
+            ).exists()
+
         context = {
             'product': product,
             'product_images': product_images,
             'rental_plans': rental_plans,
-            'seller_address': seller_address,
             'is_bookmarked': is_bookmarked,
             'bookmark_count': bookmark_count,
             'message_count': message_count,
             'is_seller': is_seller,
+            'has_pending_request': has_pending_request,
         }
 
         return render(request, self.template_name, context)
@@ -1341,6 +1378,20 @@ class IdentityVerificationView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         context = {}
 
+        # 既存の個人情報を取得（UserPersonalInfoから、なければ最新のIdentityVerificationから）
+        try:
+            personal_info = UserPersonalInfo.objects.get(user=request.user)
+            context['personal_info'] = personal_info
+        except UserPersonalInfo.DoesNotExist:
+            # 最新の申請から個人情報を取得
+            latest_verification = IdentityVerification.objects.filter(
+                user=request.user
+            ).order_by('-register_datetime').first()
+
+            if latest_verification and latest_verification.last_name:
+                # IdentityVerificationの個人情報をpersonal_infoとして渡す
+                context['personal_info'] = latest_verification
+
         # ユーザーステータスで本人確認完了を判定（user_status_id=2が承認済み）
         if request.user.user_status_id == 2:
             context['existing_status'] = 1  # 承認済み表示
@@ -1381,6 +1432,14 @@ class IdentityVerificationView(LoginRequiredMixin, View):
             messages.error(request, message)
             return redirect('identity_verification')
 
+        # 個人情報取得
+        last_name = request.POST.get('last_name', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name_kana = request.POST.get('last_name_kana', '').strip()
+        first_name_kana = request.POST.get('first_name_kana', '').strip()
+        birth_date = request.POST.get('birth_date', '').strip()
+        gender = request.POST.get('gender', '').strip()
+
         # 画像取得
         face_image = request.FILES.get('face_image')
         id_image = request.FILES.get('id_image')
@@ -1388,7 +1447,17 @@ class IdentityVerificationView(LoginRequiredMixin, View):
 
         errors = {}
 
-        # バリデーション
+        # 個人情報バリデーション
+        if not last_name:
+            errors['last_name'] = '姓を入力してください'
+        if not first_name:
+            errors['first_name'] = '名を入力してください'
+        if not birth_date:
+            errors['birth_date'] = '生年月日を入力してください'
+        if not gender:
+            errors['gender'] = '性別を選択してください'
+
+        # 画像バリデーション
         if not face_image:
             errors['face_image'] = '顔写真は必須です'
         elif face_image.size > 5 * 1024 * 1024:
@@ -1429,10 +1498,19 @@ class IdentityVerificationView(LoginRequiredMixin, View):
 
             # トランザクション開始
             with transaction.atomic():
-                # 本人確認レコード作成
+                # 個人情報を含めて本人確認レコード作成（承認時にUserPersonalInfoに移行）
+                from datetime import datetime
+                birth_date_obj = datetime.strptime(birth_date, '%Y-%m-%d').date()
+
                 verification = IdentityVerification.objects.create(
                     user=request.user,
-                    identity_verification_status=pending_status
+                    identity_verification_status=pending_status,
+                    last_name=last_name,
+                    first_name=first_name,
+                    last_name_kana=last_name_kana or None,
+                    first_name_kana=first_name_kana or None,
+                    birth_date=birth_date_obj,
+                    gender=int(gender)
                 )
 
                 # 顔写真を保存
@@ -1573,6 +1651,20 @@ class AdminVerificationDetailView(LoginRequiredMixin, View):
                     verification.identity_verification_status = approved_status
                     verification.approval_datetime = timezone.now()
                     verification.save()
+
+                    # 個人情報をUserPersonalInfoに移行（作成または更新）
+                    if verification.last_name and verification.first_name:
+                        UserPersonalInfo.objects.update_or_create(
+                            user=verification.user,
+                            defaults={
+                                'last_name': verification.last_name,
+                                'first_name': verification.first_name,
+                                'last_name_kana': verification.last_name_kana,
+                                'first_name_kana': verification.first_name_kana,
+                                'birth_date': verification.birth_date,
+                                'gender': verification.gender
+                            }
+                        )
 
                     # ユーザーステータスを承認済み(2)に更新
                     try:
@@ -1921,6 +2013,10 @@ class ProductEditView(LoginRequiredMixin, View):
             messages.error(request, 'この商品を編集する権限がありません。')
             return redirect('product_detail', product_id=product_id)
 
+        # 受取口座チェック
+        if not BankAccount.objects.filter(user=request.user).exists():
+            return redirect('bank_account_required')
+
         # マスターデータを取得
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
@@ -1992,6 +2088,16 @@ class ProductEditView(LoginRequiredMixin, View):
             messages.error(request, 'この商品を編集する権限がありません。')
             return redirect('product_detail', product_id=product_id)
 
+        # 受取口座チェック
+        if not BankAccount.objects.filter(user=request.user).exists():
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '受取口座が登録されていません。口座を登録してください。',
+                    'redirect_url': '/monotal/sell/bank-account-required/'
+                }, status=403)
+            return redirect('bank_account_required')
+
         try:
             # FormDataから取得
             product_name = request.POST.get('product_name', '').strip()
@@ -2060,7 +2166,13 @@ class ProductEditView(LoginRequiredMixin, View):
                     days = plan.get('days', 0)
                     price = plan.get('price', 0)
 
-                    if days > 0 and price >= 100:
+                    if days > 3650:
+                        errors['rental_plans'] = '日数は3650日以下で設定してください'
+                        break
+                    elif price > 9999999:
+                        errors['rental_plans'] = '金額は9,999,999円以下で設定してください'
+                        break
+                    elif days > 0 and price >= 100:
                         has_valid_plan = True
                     elif days > 0 and 0 < price < 100:
                         errors['rental_plans'] = '金額は100円以上で設定してください'
@@ -2146,6 +2258,8 @@ class ProductEditView(LoginRequiredMixin, View):
 
                 product.rental_days = rental_days_value
                 product.rental_fee = rental_fee_value
+                product.shipping_address = selected_address
+                product.shipping_prefecture = selected_address.prefecture if selected_address else None
                 product.save()
 
                 # 削除対象の画像を削除
@@ -2210,6 +2324,7 @@ profile = ProfileView.as_view()
 profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()
 verification_required = VerificationRequiredView.as_view()
+bank_account_required = BankAccountRequiredView.as_view()
 product_list = ProductListView.as_view()
 product_detail = ProductDetailView.as_view()
 bookmark_toggle = BookmarkToggleView.as_view()
@@ -2240,7 +2355,7 @@ product_edit = ProductEditView.as_view()
 MAX_USER_ADDRESSES = 3
 
 # 銀行口座管理定数
-MAX_BANK_ACCOUNTS = 3
+MAX_BANK_ACCOUNTS = 1
 
 
 class MyPageAddressListView(LoginRequiredMixin, View):
@@ -2712,6 +2827,9 @@ class BankAccountDeleteView(LoginRequiredMixin, View):
                 user=request.user
             )
 
+            # 最後の1件を削除する場合、警告メッセージを追加
+            is_last_account = BankAccount.objects.filter(user=request.user).count() == 1
+
             was_default = account.is_default
             account.delete()
 
@@ -2722,9 +2840,13 @@ class BankAccountDeleteView(LoginRequiredMixin, View):
                     remaining.is_default = True
                     remaining.save()
 
+            message = '口座を削除しました'
+            if is_last_account:
+                message = '口座を削除しました。出品するには受取口座の登録が必要です。'
+
             return JsonResponse({
                 'success': True,
-                'message': '口座を削除しました'
+                'message': message
             })
 
         except BankAccount.DoesNotExist:
@@ -2738,6 +2860,252 @@ class BankAccountDeleteView(LoginRequiredMixin, View):
 mypage_bank_account_list = MyPageBankAccountListView.as_view()
 bank_account_edit = BankAccountEditView.as_view()
 bank_account_delete = BankAccountDeleteView.as_view()
+
+
+# クレジットカード管理定数
+MAX_CREDIT_CARDS = 3
+
+
+class MyPageCreditCardListView(LoginRequiredMixin, View):
+    """
+    マイページ - クレジットカード管理
+    カード一覧表示、新規登録（POST、最大3件制限）
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # ユーザーのクレジットカードを取得
+        credit_cards = CreditCard.objects.filter(
+            user=request.user
+        ).order_by('-is_default', '-register_datetime')
+
+        context = {
+            'credit_cards': credit_cards,
+            'card_count': credit_cards.count(),
+            'max_cards': MAX_CREDIT_CARDS,
+            'can_add_card': credit_cards.count() < MAX_CREDIT_CARDS,
+            'current_page': 'credit_card_list',
+        }
+
+        return render(request, 'mypage/credit_card_list.html', context)
+
+    def post(self, request, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        # カード数チェック
+        current_count = CreditCard.objects.filter(user=request.user).count()
+        if current_count >= MAX_CREDIT_CARDS:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'カードは最大{MAX_CREDIT_CARDS}件までです'
+                }, status=400)
+            messages.error(request, f'カードは最大{MAX_CREDIT_CARDS}件までです')
+            return redirect('mypage_credit_card_list')
+
+        # フォームデータ取得
+        card_number = request.POST.get('card_number', '').replace(' ', '').replace('-', '')
+        expiry_month = request.POST.get('expiry_month', '').strip()
+        expiry_year = request.POST.get('expiry_year', '').strip()
+        card_holder_name = request.POST.get('card_holder_name', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not card_number:
+            errors['card_number'] = 'カード番号は必須です'
+        elif not card_number.isdigit() or len(card_number) < 13 or len(card_number) > 19:
+            errors['card_number'] = 'カード番号が正しくありません'
+
+        if not expiry_month:
+            errors['expiry_month'] = '有効期限（月）は必須です'
+        elif not expiry_month.isdigit() or int(expiry_month) < 1 or int(expiry_month) > 12:
+            errors['expiry_month'] = '有効期限（月）が正しくありません'
+
+        if not expiry_year:
+            errors['expiry_year'] = '有効期限（年）は必須です'
+        elif not expiry_year.isdigit() or len(expiry_year) != 4:
+            errors['expiry_year'] = '有効期限（年）は4桁で入力してください'
+
+        if not card_holder_name:
+            errors['card_holder_name'] = 'カード名義人は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_credit_card_list')
+
+        try:
+            # 最初のカードの場合はデフォルトに設定
+            is_first_card = current_count == 0
+
+            card = CreditCard.objects.create(
+                user=request.user,
+                card_number_last4=card_number[-4:],
+                expiry_month=int(expiry_month),
+                expiry_year=int(expiry_year),
+                card_holder_name=card_holder_name,
+                is_default=is_first_card
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'カードを追加しました',
+                    'card': {
+                        'id': card.credit_card_id,
+                        'masked_card_number': card.masked_card_number,
+                        'expiry_display': card.expiry_display,
+                        'card_holder_name': card.card_holder_name,
+                        'is_default': card.is_default,
+                    }
+                })
+
+            messages.success(request, 'カードを追加しました')
+            return redirect('mypage_credit_card_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_credit_card_list')
+
+
+class CreditCardEditView(LoginRequiredMixin, View):
+    """
+    クレジットカード編集API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, credit_card_id, *args, **kwargs):
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        try:
+            card = CreditCard.objects.get(
+                credit_card_id=credit_card_id,
+                user=request.user
+            )
+        except CreditCard.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'カードが見つかりません'
+                }, status=404)
+            messages.error(request, 'カードが見つかりません')
+            return redirect('mypage_credit_card_list')
+
+        # フォームデータ取得
+        card_number = request.POST.get('card_number', '').replace(' ', '').replace('-', '')
+        expiry_month = request.POST.get('expiry_month', '').strip()
+        expiry_year = request.POST.get('expiry_year', '').strip()
+        card_holder_name = request.POST.get('card_holder_name', '').strip()
+
+        errors = {}
+
+        # バリデーション
+        if not card_number:
+            errors['card_number'] = 'カード番号は必須です'
+        elif not card_number.isdigit() or len(card_number) < 13 or len(card_number) > 19:
+            errors['card_number'] = 'カード番号が正しくありません'
+
+        if not expiry_month:
+            errors['expiry_month'] = '有効期限（月）は必須です'
+        elif not expiry_month.isdigit() or int(expiry_month) < 1 or int(expiry_month) > 12:
+            errors['expiry_month'] = '有効期限（月）が正しくありません'
+
+        if not expiry_year:
+            errors['expiry_year'] = '有効期限（年）は必須です'
+        elif not expiry_year.isdigit() or len(expiry_year) != 4:
+            errors['expiry_year'] = '有効期限（年）は4桁で入力してください'
+
+        if not card_holder_name:
+            errors['card_holder_name'] = 'カード名義人は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            for msg in errors.values():
+                messages.error(request, msg)
+            return redirect('mypage_credit_card_list')
+
+        try:
+            # カードを更新
+            card.card_number_last4 = card_number[-4:]
+            card.expiry_month = int(expiry_month)
+            card.expiry_year = int(expiry_year)
+            card.card_holder_name = card_holder_name
+            card.save()
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'カードを更新しました',
+                    'card': {
+                        'id': card.credit_card_id,
+                        'masked_card_number': card.masked_card_number,
+                        'expiry_display': card.expiry_display,
+                        'card_holder_name': card.card_holder_name,
+                        'is_default': card.is_default,
+                    }
+                })
+
+            messages.success(request, 'カードを更新しました')
+            return redirect('mypage_credit_card_list')
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('mypage_credit_card_list')
+
+
+class CreditCardDeleteView(LoginRequiredMixin, View):
+    """
+    クレジットカード削除API
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, credit_card_id, *args, **kwargs):
+        try:
+            card = CreditCard.objects.get(
+                credit_card_id=credit_card_id,
+                user=request.user
+            )
+
+            was_default = card.is_default
+            card.delete()
+
+            # デフォルトカードを削除した場合、残りの最初のカードをデフォルトに
+            if was_default:
+                remaining = CreditCard.objects.filter(user=request.user).first()
+                if remaining:
+                    remaining.is_default = True
+                    remaining.save()
+
+            return JsonResponse({
+                'success': True,
+                'message': 'カードを削除しました'
+            })
+
+        except CreditCard.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'message': 'カードが見つかりません'
+            }, status=404)
+
+
+# クレジットカード管理関連
+mypage_credit_card_list = MyPageCreditCardListView.as_view()
+credit_card_edit = CreditCardEditView.as_view()
+credit_card_delete = CreditCardDeleteView.as_view()
 
 
 class SellAddressManageView(LoginRequiredMixin, View):
@@ -3003,8 +3371,9 @@ class ProductDeleteView(LoginRequiredMixin, View):
         try:
             product = Product.objects.get(product_id=product_id, user=request.user)
 
-            # 論理削除（delete_datetimeを設定）
+            # 論理削除（delete_datetimeを設定 + ステータスを削除に変更）
             product.delete_datetime = timezone.now()
+            product.product_status_id = PRODUCT_STATUS_DELETED
             product.save()
 
             return JsonResponse({
@@ -3029,3 +3398,884 @@ class ProductDeleteView(LoginRequiredMixin, View):
 # 商品ステータス・削除
 product_status_update = ProductStatusUpdateView.as_view()
 product_delete = ProductDeleteView.as_view()
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  レンタル関連 / RENTAL                                                        ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# レンタル申請ステータス定数
+RENTAL_REQUEST_STATUS_PENDING = 1    # 申請中
+RENTAL_REQUEST_STATUS_APPROVED = 2   # 承認（レンタル開始待ち）
+RENTAL_REQUEST_STATUS_REJECTED = 3   # 拒否
+RENTAL_REQUEST_STATUS_CANCELLED = 4  # キャンセル
+RENTAL_REQUEST_STATUS_COMPLETED = 5  # 完了（レンタル開始済み）
+
+
+class RentalRequestView(LoginRequiredMixin, View):
+    """
+    レンタル申請API
+
+    POSTでレンタル申請を作成
+    アクセス条件:
+    - ログイン必須
+    - 本人確認完了（user_status_id = 2）必須
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, product_id, *args, **kwargs):
+        # 本人確認チェック
+        if request.user.user_status_id != USER_STATUS_VERIFIED:
+            return redirect(f'/monotal/sell/verification-required/?context=rental&product_id={product_id}')
+
+        # 商品を取得
+        try:
+            product = Product.objects.select_related('user').get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            messages.error(request, '商品が見つかりません')
+            return redirect('product_list')
+
+        # 自分の商品はレンタルできない
+        if product.user == request.user:
+            messages.error(request, '自分の商品はレンタルできません')
+            return redirect('product_detail', product_id=product_id)
+
+        # 既に申請中または承認済みかチェック（キャンセル・完了・拒否以外）
+        existing_request = RentalRequest.objects.filter(
+            product=product,
+            requester_user=request.user,
+            rental_request_status_id__in=[RENTAL_REQUEST_STATUS_PENDING, RENTAL_REQUEST_STATUS_APPROVED]
+        ).exists()
+
+        if existing_request:
+            messages.info(request, '既にこの商品に申請中または承認済みの申請があります')
+            return redirect('product_detail', product_id=product_id)
+
+        try:
+            # 申請中ステータスを取得または作成
+            pending_status, _ = RentalRequestStatus.objects.get_or_create(
+                rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING,
+                defaults={'status_name': '申請中'}
+            )
+
+            # レンタル申請を作成
+            rental_request = RentalRequest.objects.create(
+                product=product,
+                requester_user=request.user,
+                requested_user=product.user,
+                rental_request_status=pending_status
+            )
+
+            # 出品者に通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                title='新しいレンタル申請があります',
+                detail=f'「{product.product_name}」に{request.user.display_name}さんからレンタル申請がありました。',
+                link_url=f'/monotal/mypage/rental-management/',
+                target_users=[product.user]
+            )
+
+            # 申請完了画面へリダイレクト
+            return redirect('rental_request_complete', product_id=product_id)
+
+        except Exception as e:
+            messages.error(request, f'申請に失敗しました: {str(e)}')
+            return redirect('product_detail', product_id=product_id)
+
+
+class RentalRequestCompleteView(LoginRequiredMixin, View):
+    """
+    レンタル申請完了画面
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, product_id, *args, **kwargs):
+        try:
+            product = Product.objects.select_related('user').prefetch_related('images').get(
+                product_id=product_id,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return redirect('product_list')
+
+        context = {
+            'product': product,
+        }
+        return render(request, 'rental_request_complete.html', context)
+
+
+class MyPageRentalManagementView(LoginRequiredMixin, View):
+    """
+    レンタル管理ページ
+    出品者: 受け取った申請の承認/拒否、レンタル開始/キャンセル
+    購入者: 自分の申請状況の確認
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 出品者として受け取った申請（自分が出品した商品への申請）
+        received_base = RentalRequest.objects.filter(
+            requested_user=request.user
+        ).select_related(
+            'product', 'product__product_status', 'requester_user', 'rental_request_status'
+        ).prefetch_related(
+            'product__images'
+        ).order_by('-register_datetime')
+
+        # 受け取った申請: 承認待ち（削除済み商品は除く）
+        received_pending = received_base.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 受け取った申請: 承認済み/完了（削除済み商品は除く）
+        received_approved = received_base.filter(
+            rental_request_status_id__in=[RENTAL_REQUEST_STATUS_APPROVED, RENTAL_REQUEST_STATUS_COMPLETED]
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 受け取った申請: 拒否（削除済み商品は除く）
+        received_rejected = received_base.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_REJECTED
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 受け取った申請: キャンセル（ステータス4 または 商品が削除された場合）
+        received_cancelled = received_base.filter(
+            Q(rental_request_status_id=RENTAL_REQUEST_STATUS_CANCELLED) |
+            Q(product__product_status_id=PRODUCT_STATUS_DELETED)
+        )
+
+        # 購入者として送った申請（自分が申請したもの）
+        sent_base = RentalRequest.objects.filter(
+            requester_user=request.user
+        ).select_related(
+            'product', 'product__product_status', 'requested_user', 'rental_request_status'
+        ).prefetch_related(
+            'product__images'
+        ).order_by('-register_datetime')
+
+        # 送った申請: 承認待ち（削除済み商品は除く）
+        sent_pending = sent_base.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 送った申請: 承認済み/完了（削除済み商品は除く）
+        sent_approved = sent_base.filter(
+            rental_request_status_id__in=[RENTAL_REQUEST_STATUS_APPROVED, RENTAL_REQUEST_STATUS_COMPLETED]
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 送った申請: 拒否（削除済み商品は除く）
+        sent_rejected = sent_base.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_REJECTED
+        ).exclude(product__product_status_id=PRODUCT_STATUS_DELETED)
+        # 送った申請: キャンセル（ステータス4 または 商品が削除された場合）
+        sent_cancelled = sent_base.filter(
+            Q(rental_request_status_id=RENTAL_REQUEST_STATUS_CANCELLED) |
+            Q(product__product_status_id=PRODUCT_STATUS_DELETED)
+        )
+
+        context = {
+            'received_pending': received_pending,
+            'received_approved': received_approved,
+            'received_rejected': received_rejected,
+            'received_cancelled': received_cancelled,
+            'received_pending_count': received_pending.count(),
+            'sent_pending': sent_pending,
+            'sent_approved': sent_approved,
+            'sent_rejected': sent_rejected,
+            'sent_cancelled': sent_cancelled,
+            'sent_pending_count': sent_pending.count(),
+            'current_page': 'rental_management',
+        }
+        return render(request, 'mypage/rental_management.html', context)
+
+
+class RentalRequestApproveView(LoginRequiredMixin, View):
+    """レンタル申請を承認"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related(
+                'product', 'requester_user'
+            ).get(
+                rental_request_id=request_id,
+                requested_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING
+            )
+            rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_APPROVED
+            rental_request.approval_datetime = timezone.now()
+            rental_request.save()
+
+            # 申請者に通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                title='レンタル申請が承認されました',
+                detail=f'「{rental_request.product.product_name}」のレンタル申請が承認されました。レンタル開始手続きを行ってください。',
+                link_url=f'/monotal/rental-request/{request_id}/start/',
+                target_users=[rental_request.requester_user]
+            )
+
+            return JsonResponse({'success': True, 'message': '申請を承認しました'})
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+class RentalRequestRejectView(LoginRequiredMixin, View):
+    """レンタル申請を拒否"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related(
+                'product', 'requester_user'
+            ).get(
+                rental_request_id=request_id,
+                requested_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING
+            )
+            rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_REJECTED
+            rental_request.rejection_datetime = timezone.now()
+            rental_request.save()
+
+            # 申請者に通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                title='レンタル申請が拒否されました',
+                detail=f'「{rental_request.product.product_name}」のレンタル申請が拒否されました。',
+                link_url=f'/monotal/mypage/rental-management/',
+                target_users=[rental_request.requester_user]
+            )
+
+            return JsonResponse({'success': True, 'message': '申請を拒否しました'})
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+class RentalStartPageView(LoginRequiredMixin, View):
+    """レンタル開始ページ（住所・カード選択）- 申請者（購入者）がアクセス"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related(
+                'product', 'requested_user',
+                'product__shipping_prefecture'
+            ).prefetch_related('product__images').get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+        except RentalRequest.DoesNotExist:
+            messages.error(request, '申請が見つかりません')
+            return redirect('mypage_rental_management')
+
+        # 自分（申請者）の住所一覧
+        my_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', 'user_address_id')
+
+        # 自分（申請者）のクレジットカード一覧
+        my_cards = CreditCard.objects.filter(
+            user=request.user
+        ).order_by('-is_default', 'credit_card_id')
+
+        # 商品に登録された発送元都道府県を取得
+        shipping_prefecture = rental_request.product.shipping_prefecture
+
+        context = {
+            'rental_request': rental_request,
+            'product': rental_request.product,
+            'seller': rental_request.requested_user,
+            'shipping_prefecture': shipping_prefecture,
+            'my_addresses': my_addresses,
+            'my_cards': my_cards,
+        }
+        return render(request, 'rental_start.html', context)
+
+
+class RentalAddressManageView(LoginRequiredMixin, View):
+    """
+    レンタル開始ページ用 - 配送先住所管理
+    戻るボタンでレンタル開始ページに戻る
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, request_id, *args, **kwargs):
+        # レンタルリクエストの存在確認
+        try:
+            rental_request = RentalRequest.objects.get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+        except RentalRequest.DoesNotExist:
+            messages.error(request, '申請が見つかりません')
+            return redirect('mypage_rental_management')
+
+        user_addresses = UserAddress.objects.filter(
+            user=request.user
+        ).select_related('prefecture').order_by('-is_default', '-register_datetime')
+
+        prefectures = Prefecture.objects.all()
+
+        context = {
+            'user_addresses': user_addresses,
+            'address_count': user_addresses.count(),
+            'max_addresses': MAX_USER_ADDRESSES,
+            'can_add_address': user_addresses.count() < MAX_USER_ADDRESSES,
+            'prefectures': prefectures,
+            'back_url': reverse('rental_start_page', kwargs={'request_id': request_id}),
+            'back_text': '取引開始画面に戻る',
+            'page_title': '配送先住所の管理',
+            'request_id': request_id,
+        }
+
+        return render(request, 'sell_address_manage.html', context)
+
+    def post(self, request, request_id, *args, **kwargs):
+        # レンタルリクエストの存在確認
+        try:
+            rental_request = RentalRequest.objects.get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        current_count = UserAddress.objects.filter(user=request.user).count()
+        if current_count >= MAX_USER_ADDRESSES:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'住所は最大{MAX_USER_ADDRESSES}件までです'
+                }, status=400)
+            return redirect('rental_address_manage', request_id=request_id)
+
+        postal_code = request.POST.get('postal_code', '').strip().replace('-', '')
+        prefecture_id = request.POST.get('prefecture', '')
+        city = request.POST.get('city', '').strip()
+        street_address = request.POST.get('street_address', '').strip()
+
+        errors = {}
+
+        if not postal_code or len(postal_code) != 7:
+            errors['postal_code'] = '郵便番号は7桁で入力してください'
+        if not prefecture_id:
+            errors['prefecture'] = '都道府県を選択してください'
+        if not city:
+            errors['city'] = '市区町村・町域は必須です'
+        if not street_address:
+            errors['street_address'] = '番地・建物名は必須です'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return redirect('rental_address_manage', request_id=request_id)
+
+        try:
+            prefecture_obj = Prefecture.objects.get(prefecture_id=prefecture_id)
+            is_first_address = current_count == 0
+
+            address = UserAddress.objects.create(
+                user=request.user,
+                postal_code=postal_code,
+                prefecture=prefecture_obj,
+                city=city,
+                street_address=street_address,
+                is_default=is_first_address
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': '住所を追加しました',
+                    'address': {
+                        'id': address.user_address_id,
+                        'postal_code': address.postal_code,
+                        'prefecture': prefecture_obj.prefecture_name,
+                        'city': address.city,
+                        'street_address': address.street_address,
+                        'is_default': address.is_default,
+                    }
+                })
+
+            return redirect('rental_address_manage', request_id=request_id)
+
+        except Prefecture.DoesNotExist:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': '都道府県が無効です'
+                }, status=400)
+            return redirect('rental_address_manage', request_id=request_id)
+
+
+class RentalCardManageView(LoginRequiredMixin, View):
+    """
+    レンタル開始ページ用 - 決済カード管理
+    戻るボタンでレンタル開始ページに戻る
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, request_id, *args, **kwargs):
+        # レンタルリクエストの存在確認
+        try:
+            rental_request = RentalRequest.objects.get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+        except RentalRequest.DoesNotExist:
+            messages.error(request, '申請が見つかりません')
+            return redirect('mypage_rental_management')
+
+        credit_cards = CreditCard.objects.filter(
+            user=request.user
+        ).order_by('-is_default', '-register_datetime')
+
+        context = {
+            'credit_cards': credit_cards,
+            'card_count': credit_cards.count(),
+            'max_cards': MAX_CREDIT_CARDS,
+            'can_add_card': credit_cards.count() < MAX_CREDIT_CARDS,
+            'back_url': reverse('rental_start_page', kwargs={'request_id': request_id}),
+            'back_text': '取引開始画面に戻る',
+            'page_title': '決済カードの管理',
+            'request_id': request_id,
+            'current_page': 'rental_card_manage',
+        }
+
+        return render(request, 'rental_card_manage.html', context)
+
+    def post(self, request, request_id, *args, **kwargs):
+        # レンタルリクエストの存在確認
+        try:
+            rental_request = RentalRequest.objects.get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
+        current_count = CreditCard.objects.filter(user=request.user).count()
+        if current_count >= MAX_CREDIT_CARDS:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'カードは最大{MAX_CREDIT_CARDS}枚までです'
+                }, status=400)
+            return redirect('rental_card_manage', request_id=request_id)
+
+        card_number = request.POST.get('card_number', '').strip().replace(' ', '')
+        expiry_month = request.POST.get('expiry_month', '')
+        expiry_year = request.POST.get('expiry_year', '')
+        card_holder_name = request.POST.get('card_holder_name', '').strip().upper()
+
+        errors = {}
+
+        if not card_number or len(card_number) < 13 or len(card_number) > 19:
+            errors['card_number'] = '有効なカード番号を入力してください'
+        elif not card_number.isdigit():
+            errors['card_number'] = 'カード番号は数字のみ入力してください'
+
+        if not expiry_month or not expiry_year:
+            errors['expiry'] = '有効期限を入力してください'
+        else:
+            try:
+                month = int(expiry_month)
+                year = int(expiry_year)
+                if month < 1 or month > 12:
+                    errors['expiry'] = '有効な月を入力してください'
+            except ValueError:
+                errors['expiry'] = '有効期限の形式が無効です'
+
+        if not card_holder_name:
+            errors['card_holder_name'] = 'カード名義を入力してください'
+
+        if errors:
+            if is_ajax:
+                return JsonResponse({'success': False, 'errors': errors}, status=400)
+            return redirect('rental_card_manage', request_id=request_id)
+
+        try:
+            is_first_card = current_count == 0
+
+            card = CreditCard.objects.create(
+                user=request.user,
+                card_number_last4=card_number[-4:],
+                expiry_month=int(expiry_month),
+                expiry_year=int(expiry_year),
+                card_holder_name=card_holder_name,
+                is_default=is_first_card
+            )
+
+            if is_ajax:
+                return JsonResponse({
+                    'success': True,
+                    'message': 'カードを追加しました',
+                    'card': {
+                        'id': card.credit_card_id,
+                        'last4': card.card_number_last4,
+                        'expiry_display': card.expiry_display,
+                        'card_holder_name': card.card_holder_name,
+                        'is_default': card.is_default,
+                    }
+                })
+
+            return redirect('rental_card_manage', request_id=request_id)
+
+        except Exception as e:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': f'エラーが発生しました: {str(e)}'
+                }, status=500)
+            return redirect('rental_card_manage', request_id=request_id)
+
+
+class RentalRequestStartView(LoginRequiredMixin, View):
+    """レンタルを開始（承認済み→完了、RentalHistoryを作成）- 申請者（購入者）が実行"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related('product', 'requested_user').get(
+                rental_request_id=request_id,
+                requester_user=request.user,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            )
+
+            # 住所とカードのバリデーション
+            address_id = request.POST.get('address_id')
+            card_id = request.POST.get('card_id')
+
+            if not address_id or not card_id:
+                messages.error(request, '住所とカードを選択してください')
+                return redirect('rental_start_page', request_id=request_id)
+
+            # 自分（申請者）の住所を確認
+            try:
+                address = UserAddress.objects.get(
+                    user_address_id=address_id,
+                    user=request.user
+                )
+            except UserAddress.DoesNotExist:
+                messages.error(request, '選択された住所が見つかりません')
+                return redirect('rental_start_page', request_id=request_id)
+
+            # 自分（申請者）のカードを確認
+            try:
+                card = CreditCard.objects.get(
+                    credit_card_id=card_id,
+                    user=request.user
+                )
+            except CreditCard.DoesNotExist:
+                messages.error(request, '選択されたカードが見つかりません')
+                return redirect('rental_start_page', request_id=request_id)
+
+            with transaction.atomic():
+                # 1. RentalRequestを完了に
+                rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_COMPLETED
+                rental_request.save()
+
+                # 2. RentalHistoryを作成（購入者の配送先住所を含む）
+                rental_status, _ = RentalStatus.objects.get_or_create(
+                    rental_status_id=1,
+                    defaults={'status_name': '発送準備中'}
+                )
+                rental_history = RentalHistory.objects.create(
+                    product=rental_request.product,
+                    lender_user=rental_request.requested_user,
+                    renter_user=request.user,
+                    rental_status=rental_status,
+                    renter_address=address,
+                    rental_start_datetime=timezone.now()
+                )
+
+                # 3. 商品のステータスをレンタル中に変更
+                product = rental_request.product
+                product.product_status_id = PRODUCT_STATUS_RENTING  # 貸出中
+                product.save()
+
+                # 4. チャットルームを作成（1対1、rental_history紐付け）
+                chat_room_type, _ = ChatRoomType.objects.get_or_create(
+                    chat_room_type_id=1,
+                    defaults={'type_name': '1対1'}
+                )
+                chat_room = ChatRoom.objects.create(
+                    chat_room_type=chat_room_type,
+                    rental_history=rental_history
+                )
+
+                # 5. チャットルームに参加者を追加（貸し手と借り手）
+                ChatRoomParticipant.objects.create(
+                    chat_room=chat_room,
+                    user=rental_request.requested_user  # 貸し手（出品者）
+                )
+                ChatRoomParticipant.objects.create(
+                    chat_room=chat_room,
+                    user=request.user  # 借り手（購入者）
+                )
+
+            messages.success(request, 'レンタルを開始しました')
+            return redirect('mypage_rental_management')
+
+        except RentalRequest.DoesNotExist:
+            messages.error(request, '申請が見つかりません')
+            return redirect('mypage_rental_management')
+        except Exception as e:
+            messages.error(request, f'エラーが発生しました: {str(e)}')
+            return redirect('rental_start_page', request_id=request_id)
+
+
+class RentalRequestCancelView(LoginRequiredMixin, View):
+    """申請をキャンセル - 申請者は申請中・承認済みでキャンセル可能"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related(
+                'product', 'requested_user'
+            ).get(rental_request_id=request_id)
+
+            # 申請者のみキャンセル可能
+            if rental_request.requester_user != request.user:
+                return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
+
+            # 申請中または承認済みの場合のみキャンセル可能
+            if rental_request.rental_request_status_id not in [RENTAL_REQUEST_STATUS_PENDING, RENTAL_REQUEST_STATUS_APPROVED]:
+                return JsonResponse({'success': False, 'message': 'この申請はキャンセルできません'}, status=400)
+
+            rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_CANCELLED
+            rental_request.save()
+
+            # 出品者に通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                title='レンタル申請がキャンセルされました',
+                detail=f'「{rental_request.product.product_name}」へのレンタル申請が申請者によりキャンセルされました。',
+                link_url=f'/monotal/mypage/rental-management/',
+                target_users=[rental_request.requested_user]
+            )
+
+            return JsonResponse({'success': True, 'message': 'キャンセルしました'})
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+class RentalRequestCancelSellerView(LoginRequiredMixin, View):
+    """申請をキャンセル - 出品者は承認済みでキャンセル可能"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, request_id, *args, **kwargs):
+        try:
+            rental_request = RentalRequest.objects.select_related(
+                'product', 'requester_user'
+            ).get(rental_request_id=request_id)
+
+            # 出品者のみキャンセル可能
+            if rental_request.requested_user != request.user:
+                return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
+
+            # 承認済みの場合のみキャンセル可能
+            if rental_request.rental_request_status_id != RENTAL_REQUEST_STATUS_APPROVED:
+                return JsonResponse({'success': False, 'message': 'この申請はキャンセルできません'}, status=400)
+
+            rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_CANCELLED
+            rental_request.save()
+
+            # 申請者に通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                title='レンタルがキャンセルされました',
+                detail=f'「{rental_request.product.product_name}」のレンタルが出品者によりキャンセルされました。',
+                link_url=f'/monotal/mypage/rental-management/',
+                target_users=[rental_request.requester_user]
+            )
+
+            return JsonResponse({'success': True, 'message': 'キャンセルしました'})
+        except RentalRequest.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+# レンタル関連
+rental_request = RentalRequestView.as_view()
+rental_request_complete = RentalRequestCompleteView.as_view()
+mypage_rental_management = MyPageRentalManagementView.as_view()
+rental_request_approve = RentalRequestApproveView.as_view()
+rental_request_reject = RentalRequestRejectView.as_view()
+rental_start_page = RentalStartPageView.as_view()
+rental_address_manage = RentalAddressManageView.as_view()
+rental_card_manage = RentalCardManageView.as_view()
+rental_request_start = RentalRequestStartView.as_view()
+rental_request_cancel = RentalRequestCancelView.as_view()
+rental_request_cancel_seller = RentalRequestCancelSellerView.as_view()
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  通知関連 / NOTIFICATION                                                      ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+# 通知タイプ定数
+NOTIFICATION_TYPE_SYSTEM = 1      # システム通知
+NOTIFICATION_TYPE_MESSAGE = 2     # メッセージ通知
+NOTIFICATION_TYPE_RENTAL = 3      # レンタル通知
+
+# 通知既読ステータス定数
+NOTIFICATION_READ_STATUS_UNREAD = 1  # 未読
+NOTIFICATION_READ_STATUS_READ = 2    # 既読
+
+
+def create_notification(notification_type_id, title, detail, link_url, target_users):
+    """
+    通知を作成するヘルパー関数
+
+    Args:
+        notification_type_id: 通知タイプID (1: システム, 2: メッセージ, 3: レンタル)
+        title: 通知タイトル
+        detail: 通知詳細
+        link_url: リンクURL
+        target_users: 通知対象ユーザーのリスト
+
+    Returns:
+        作成されたNotificationオブジェクト
+    """
+    notification_type = NotificationType.objects.get(notification_type_id=notification_type_id)
+
+    notification = Notification.objects.create(
+        notification_type=notification_type,
+        notification_title=title,
+        notification_detail=detail,
+        link_url=link_url
+    )
+
+    # 対象ユーザーを登録
+    for user in target_users:
+        NotificationTargetUser.objects.create(
+            notification=notification,
+            user=user
+        )
+
+    return notification
+
+
+class NotificationListView(LoginRequiredMixin, View):
+    """通知一覧を取得するAPI"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # 自分宛ての通知を取得
+        target_notifications = NotificationTargetUser.objects.filter(
+            user=request.user
+        ).select_related(
+            'notification', 'notification__notification_type'
+        ).order_by('-register_datetime')[:20]
+
+        # 既読情報を取得
+        read_notification_ids = set(
+            NotificationRead.objects.filter(
+                user=request.user,
+                notification_read_status_id=NOTIFICATION_READ_STATUS_READ
+            ).values_list('notification_id', flat=True)
+        )
+
+        notifications = []
+        for target in target_notifications:
+            notif = target.notification
+            notifications.append({
+                'notification_id': notif.notification_id,
+                'type': notif.notification_type.notification_type_name,
+                'title': notif.notification_title,
+                'detail': notif.notification_detail,
+                'link_url': notif.link_url,
+                'is_read': notif.notification_id in read_notification_ids,
+                'created_at': target.register_datetime.strftime('%Y/%m/%d %H:%M'),
+            })
+
+        return JsonResponse({
+            'success': True,
+            'notifications': notifications,
+        })
+
+
+class NotificationMarkReadView(LoginRequiredMixin, View):
+    """通知を既読にするAPI"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, notification_id, *args, **kwargs):
+        try:
+            # 自分宛ての通知か確認
+            target = NotificationTargetUser.objects.get(
+                notification_id=notification_id,
+                user=request.user
+            )
+
+            read_status = NotificationReadStatus.objects.get(
+                notification_read_status_id=NOTIFICATION_READ_STATUS_READ
+            )
+
+            # 既読レコードを作成または更新
+            NotificationRead.objects.update_or_create(
+                notification_id=notification_id,
+                user=request.user,
+                defaults={
+                    'notification_read_status': read_status,
+                    'read_datetime': timezone.now()
+                }
+            )
+
+            return JsonResponse({'success': True})
+
+        except NotificationTargetUser.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '通知が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+class NotificationMarkAllReadView(LoginRequiredMixin, View):
+    """すべての通知を既読にするAPI"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, *args, **kwargs):
+        try:
+            # 自分宛ての通知IDを取得
+            target_notification_ids = NotificationTargetUser.objects.filter(
+                user=request.user
+            ).values_list('notification_id', flat=True)
+
+            read_status = NotificationReadStatus.objects.get(
+                notification_read_status_id=NOTIFICATION_READ_STATUS_READ
+            )
+
+            # 各通知について既読レコードを作成または更新
+            for notification_id in target_notification_ids:
+                NotificationRead.objects.update_or_create(
+                    notification_id=notification_id,
+                    user=request.user,
+                    defaults={
+                        'notification_read_status': read_status,
+                        'read_datetime': timezone.now()
+                    }
+                )
+
+            return JsonResponse({'success': True})
+
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+# 通知関連ビュー
+notification_list = NotificationListView.as_view()
+notification_mark_read = NotificationMarkReadView.as_view()
+notification_mark_all_read = NotificationMarkAllReadView.as_view()

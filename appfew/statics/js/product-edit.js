@@ -509,12 +509,6 @@ document.addEventListener('DOMContentLoaded', function () {
             errors.address = '発送元住所を選択してください';
         }
 
-        // 受取口座チェック
-        const bankAccountStatus = document.querySelector('.bank-account-status');
-        if (!bankAccountStatus) {
-            errors.bank_account = '受取口座を登録してください';
-        }
-
         return errors;
     }
 
