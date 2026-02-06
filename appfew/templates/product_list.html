@@ -139,7 +139,69 @@
 
         <!-- ページタイトル & ツールバー -->
         <div class="page-header">
+            {% if request.GET.q %}
+            <h1 class="page-title">
+                「{{ request.GET.q }}」の検索結果
+                <span class="text-zinc-400 font-normal text-base ml-2">（{{ page_obj.paginator.count }}件）</span>
+            </h1>
+            {% else %}
             <h1 class="page-title">おすすめ商品</h1>
+            {% endif %}
+
+            <!-- 適用中のフィルター表示 -->
+            {% if request.GET.q or request.GET.category or request.GET.min_price or request.GET.max_price or request.GET.condition %}
+            <div class="flex items-center gap-2 mt-3 flex-wrap">
+                <span class="text-xs text-zinc-500 font-medium">絞り込み条件:</span>
+
+                {% if request.GET.q %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-pink-50 text-pink-700 text-xs font-medium rounded-full">
+                    <span class="iconify" data-icon="lucide:search" data-width="12"></span>
+                    {{ request.GET.q }}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'q' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="hover:text-pink-900">
+                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                    </a>
+                </span>
+                {% endif %}
+
+                {% if request.GET.category %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 text-purple-700 text-xs font-medium rounded-full">
+                    <span class="iconify" data-icon="lucide:tag" data-width="12"></span>
+                    カテゴリー
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'category' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="hover:text-purple-900">
+                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                    </a>
+                </span>
+                {% endif %}
+
+                {% if request.GET.min_price or request.GET.max_price %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-medium rounded-full">
+                    <span class="iconify" data-icon="lucide:yen-sign" data-width="12"></span>
+                    {% if request.GET.min_price and request.GET.max_price %}
+                    ¥{{ request.GET.min_price }} - ¥{{ request.GET.max_price }}
+                    {% elif request.GET.min_price %}
+                    ¥{{ request.GET.min_price }}以上
+                    {% else %}
+                    ¥{{ request.GET.max_price }}以下
+                    {% endif %}
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'min_price' and key != 'max_price' and key != 'min_fee' and key != 'max_fee' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="hover:text-blue-900">
+                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                    </a>
+                </span>
+                {% endif %}
+
+                {% if request.GET.condition %}
+                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="12"></span>
+                    商品の状態
+                    <a href="?{% for key, value in request.GET.items %}{% if key != 'condition' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="hover:text-green-900">
+                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                    </a>
+                </span>
+                {% endif %}
+
+                <a href="{% url 'product_list' %}" class="text-xs text-zinc-500 hover:text-zinc-900 font-medium underline">すべてクリア</a>
+            </div>
+            {% endif %}
 
             <div class="toolbar">
                 <div class="sort-select-wrapper">

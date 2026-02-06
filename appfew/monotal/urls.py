@@ -17,6 +17,7 @@ urlpatterns = [
     path('sell/verification-required/', views.verification_required, name='verification_required'),
     path('sell/bank-account-required/', views.bank_account_required, name='bank_account_required'),
     path('shop/', views.product_list, name='product_list'),
+    path('search/autocomplete/', views.search_autocomplete, name='search_autocomplete'),
     path('product/<int:product_id>/', views.product_detail, name='product_detail'),
     path('product/<int:product_id>/edit/', views.product_edit, name='product_edit'),
     path('product/<int:product_id>/edit/addresses/', views.edit_address_manage, name='edit_address_manage'),

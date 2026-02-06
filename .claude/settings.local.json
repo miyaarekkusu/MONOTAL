@@ -19,7 +19,9 @@
       "Bash(powershell -Command \"Stop-Process -Name python -Force -ErrorAction SilentlyContinue; Remove-Item ''C:/Users/alexm/source/repos/miyaarekkusu/HEWSakuhin/appfew/db.sqlite3'' -Force\")",
       "Bash(powershell -Command \"Get-Process | Where-Object {$_Path -like ''*python*'' -or $_Path -like ''*sqlite*'' -or $_Name -like ''*code*''} | Select-Object Id, ProcessName, Path\")",
       "Bash(python manage.py shell:*)",
-      "Bash(python:*)"
+      "Bash(python:*)",
+      "Bash(sqlite3:*)",
+      "Bash(tree:*)"
     ]
   }
 }

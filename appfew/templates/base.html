@@ -30,12 +30,29 @@
             </a>
 
             <!-- Search -->
-            <div class="hidden md:flex flex-1 max-w-xl relative">
-                <input type="text" placeholder="キーワードから探す" class="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2.5 pl-4 pr-10 text-sm text-zinc-900 placeholder-zinc-400 focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none focus:bg-white transition-all shadow-sm">
-                <button class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900">
-                    <span class="iconify" data-icon="lucide:search" data-width="18" data-height="18"></span>
-                </button>
-            </div>
+            <form method="GET" action="{% url 'product_list' %}" class="hidden md:flex flex-1 max-w-xl relative" id="header-search-form">
+                <div class="flex-1 relative">
+                    <input
+                        type="text"
+                        name="q"
+                        id="header-search-input"
+                        value="{{ request.GET.q|default:'' }}"
+                        placeholder="商品名・カテゴリから探す"
+                        autocomplete="off"
+                        class="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2.5 pl-4 pr-10 text-sm text-zinc-900 placeholder-zinc-400 focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none focus:bg-white transition-all shadow-sm"
+                    >
+
+                    <!-- Autocomplete Dropdown -->
+                    <div id="autocomplete-dropdown" class="hidden absolute top-full left-0 right-0 mt-2 bg-white border border-zinc-200 rounded-lg shadow-lg max-h-80 overflow-y-auto z-50">
+                        <!-- 候補がここに表示される -->
+                    </div>
+
+                    <!-- Search Button -->
+                    <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-pink-600 hover:scale-110 transition-all">
+                        <span class="iconify" data-icon="lucide:search" data-width="18" data-height="18"></span>
+                    </button>
+                </div>
+            </form>
 
             <!-- Header Actions -->
             <div class="flex items-center gap-3 lg:gap-4">
@@ -179,9 +196,9 @@
                 <span class="iconify" data-icon="lucide:home" data-width="24"></span>
                 <span class="text-[10px] font-bold">ホーム</span>
             </a>
-            <a href="#" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:bell" data-width="24"></span>
-                <span class="text-[10px] font-medium">お知らせ</span>
+            <a href="{% url 'product_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:search" data-width="24"></span>
+                <span class="text-[10px] font-medium">さがす</span>
             </a>
             <div class="w-8"></div> <!-- Spacer for Sell Button -->
             <a href="#" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
@@ -389,6 +406,10 @@
         };
     });
     </script>
+
+    <!-- Search Autocomplete Script -->
+    {% load static %}
+    <script src="{% static 'js/search-autocomplete.js' %}"></script>
 
 </body>
 </html>

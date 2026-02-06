@@ -928,19 +928,19 @@ class ProductListView(View):
             except ValueError:
                 pass
 
-        # 価格フィルター（最小）
-        min_fee = request.GET.get('min_fee')
-        if min_fee:
+        # 価格フィルター（最小）- min_fee と min_price の両方に対応
+        min_price = request.GET.get('min_price') or request.GET.get('min_fee')
+        if min_price:
             try:
-                queryset = queryset.filter(rental_fee__gte=int(min_fee))
+                queryset = queryset.filter(rental_plans__rental_fee__gte=int(min_price))
             except ValueError:
                 pass
 
-        # 価格フィルター（最大）
-        max_fee = request.GET.get('max_fee')
-        if max_fee:
+        # 価格フィルター（最大）- max_fee と max_price の両方に対応
+        max_price = request.GET.get('max_price') or request.GET.get('max_fee')
+        if max_price:
             try:
-                queryset = queryset.filter(rental_fee__lte=int(max_fee))
+                queryset = queryset.filter(rental_plans__rental_fee__lte=int(max_price))
             except ValueError:
                 pass
 
@@ -969,12 +969,13 @@ class ProductListView(View):
             except ValueError:
                 pass
 
-        # テキスト検索
+        # テキスト検索（商品名、説明、カテゴリ名）
         search_query = request.GET.get('q')
         if search_query:
             queryset = queryset.filter(
                 Q(product_name__icontains=search_query) |
-                Q(product_description__icontains=search_query)
+                Q(product_description__icontains=search_query) |
+                Q(product_category__category_name__icontains=search_query)
             )
 
         return queryset
@@ -985,8 +986,10 @@ class ProductListView(View):
         """
         return {
             'category': request.GET.get('category', ''),
-            'min_fee': request.GET.get('min_fee', ''),
-            'max_fee': request.GET.get('max_fee', ''),
+            'min_fee': request.GET.get('min_price') or request.GET.get('min_fee', ''),
+            'max_fee': request.GET.get('max_price') or request.GET.get('max_fee', ''),
+            'min_price': request.GET.get('min_price') or request.GET.get('min_fee', ''),
+            'max_price': request.GET.get('max_price') or request.GET.get('max_fee', ''),
             'min_days': request.GET.get('min_days', ''),
             'max_days': request.GET.get('max_days', ''),
             'conditions': request.GET.getlist('condition'),
@@ -4789,3 +4792,57 @@ transaction_receive = TransactionReceiveView.as_view()
 transaction_return_ship = TransactionReturnShipView.as_view()
 transaction_return_receive = TransactionReturnReceiveView.as_view()
 transaction_cancel = TransactionCancelView.as_view()
+
+
+class SearchAutocompleteView(View):
+    """
+    検索オートコンプリートAPI
+    キーワードに基づいてカテゴリーと商品名の候補を返す
+    """
+    def get(self, request, *args, **kwargs):
+        q = request.GET.get('q', '').strip()
+
+        # 最低2文字以上
+        if len(q) < 2:
+            return JsonResponse({'suggestions': []})
+
+        suggestions = []
+
+        # カテゴリー候補（最大3件）
+        categories = ProductCategory.objects.filter(
+            category_name__icontains=q
+        )[:3]
+
+        for cat in categories:
+            suggestions.append({
+                'type': 'category',
+                'text': cat.category_name,
+                'value': cat.category_name,
+                'category_id': cat.product_category_id,
+                'icon': 'lucide:tag'
+            })
+
+        # 商品名候補（公開中の商品のみ、最大5件）
+        products = Product.objects.filter(
+            Q(product_name__icontains=q) | Q(product_description__icontains=q),
+            delete_datetime__isnull=True,
+            product_status_id=PRODUCT_STATUS_LISTED  # 貸出可能
+        ).distinct()[:5]
+
+        for prod in products:
+            suggestions.append({
+                'type': 'product',
+                'text': prod.product_name,
+                'value': prod.product_name,
+                'product_id': prod.product_id,
+                'icon': 'lucide:box'
+            })
+
+        return JsonResponse({
+            'success': True,
+            'suggestions': suggestions
+        })
+
+
+# 検索オートコンプリートビュー
+search_autocomplete = SearchAutocompleteView.as_view()

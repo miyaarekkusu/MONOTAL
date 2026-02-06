@@ -446,17 +446,21 @@ details[open] .filter-summary .icon {
     align-items: center;
     justify-content: center;
     border-radius: 4px;
-    border: 1px solid #e4e4e7;
+    border: 2px solid #e4e4e7;
     background-color: white;
     padding: 8px;
     font-size: 0.75rem;
     font-weight: 500;
     color: #52525b;
-    transition: border-color 0.2s;
+    transition: all 0.2s ease;
 }
 
 .condition-label:hover {
-    border-color: #d4d4d8;
+    border-color: #fbb6ce;
+    background-color: #fef2f2;
+    color: #db2777;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(219, 39, 119, 0.1);
 }
 
 .condition-label input {
@@ -464,6 +468,20 @@ details[open] .filter-summary .icon {
     opacity: 0;
     width: 0;
     height: 0;
+}
+
+/* チェックされた状態 */
+.condition-label:has(input:checked) {
+    border-color: #db2777;
+    background-color: #fce7f3;
+    color: #be185d;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(219, 39, 119, 0.2);
+}
+
+.condition-label:has(input:checked):hover {
+    background-color: #fbcfe8;
+    border-color: #be185d;
 }
 
 /* Price Range */
