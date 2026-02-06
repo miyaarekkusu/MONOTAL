@@ -1,0 +1,318 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}取引 - {{ product.product_name }} | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/transaction.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="transaction-page">
+    <!-- ヘッダー: 商品情報 + 進捗 -->
+    <header class="transaction-header">
+        <div class="header-content">
+            <a href="{% url 'product_detail' product_id=product.product_id %}" class="product-thumb">
+                {% if product.images.first %}
+                <img src="{{ product.images.first.image.url }}" alt="{{ product.product_name }}">
+                {% else %}
+                <span class="iconify" data-icon="lucide:image" data-width="24"></span>
+                {% endif %}
+            </a>
+            <div class="header-info">
+                <h1>{{ product.product_name }}</h1>
+                <div class="header-badges">
+                    <span class="status-badge status-{{ rental_history.rental_status_id }}">
+                        {{ rental_history.rental_status.status_name }}
+                    </span>
+                    <span class="role-badge {% if is_lender %}lender{% else %}renter{% endif %}">
+                        {% if is_lender %}出品者{% else %}購入者{% endif %}
+                    </span>
+                </div>
+            </div>
+            <!-- 進捗インジケーター -->
+            <div class="progress-bar">
+                <div class="progress-step {% if rental_history.rental_status_id >= 1 %}done{% endif %} {% if rental_history.rental_status_id == 1 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:package" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 2 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 2 %}done{% endif %} {% if rental_history.rental_status_id == 2 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:truck" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 3 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 3 %}done{% endif %} {% if rental_history.rental_status_id == 3 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:home" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 4 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 4 %}done{% endif %} {% if rental_history.rental_status_id == 4 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:undo-2" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 5 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 5 %}done{% endif %} {% if rental_history.rental_status_id == 5 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                </div>
+            </div>
+        </div>
+        {% if rental_history.rental_status_id == 6 %}
+        <div class="cancelled-banner">
+            <span class="iconify" data-icon="lucide:x-circle" data-width="18"></span>
+            この取引はキャンセルされました
+        </div>
+        {% endif %}
+    </header>
+
+    <!-- 3カラムレイアウト -->
+    <div class="transaction-body">
+        <!-- 左カラム: 配送情報 + 取引相手 -->
+        <aside class="left-panel">
+            <!-- 配送先情報（貸主に表示） -->
+            {% if is_lender and renter_address %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:map-pin" data-width="16"></span> 配送先</h3>
+                {% if partner_verified and partner_personal_info %}
+                <div class="address-box">
+                    <p class="name">{{ partner_personal_info.full_name }} 様</p>
+                    <p class="postal">〒{{ renter_address.postal_code }}</p>
+                    <p class="address">{{ renter_address.prefecture.prefecture_name }}{{ renter_address.city }}{{ renter_address.street_address }}</p>
+                </div>
+                {% else %}
+                <div class="warning-box">
+                    <span class="iconify" data-icon="lucide:alert-triangle" data-width="14"></span>
+                    本人確認未完了
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
+
+            <!-- 発送元情報（借り手に表示） -->
+            {% if is_renter and shipping_address %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:building-2" data-width="16"></span> 発送元</h3>
+                {% if partner_verified and partner_personal_info %}
+                <div class="address-box">
+                    <p class="name">{{ partner_personal_info.full_name }} 様</p>
+                    <p class="address">{{ shipping_address.prefecture.prefecture_name }}{{ shipping_address.city }}</p>
+                </div>
+                {% else %}
+                <div class="warning-box">
+                    <span class="iconify" data-icon="lucide:alert-triangle" data-width="14"></span>
+                    本人確認未完了
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
+
+            <!-- 取引相手 -->
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:user" data-width="16"></span> 取引相手</h3>
+                <a href="{% url 'profile' username=partner_user.user_name %}" class="partner-link">
+                    <div class="partner-avatar">
+                        {% if partner_user.user_image %}
+                        <img src="{{ partner_user.user_image.url }}" alt="">
+                        {% else %}
+                        <span class="iconify" data-icon="lucide:user" data-width="20"></span>
+                        {% endif %}
+                    </div>
+                    <div class="partner-detail">
+                        <span class="partner-name">{{ partner_user.display_name }}</span>
+                        {% if partner_verified %}
+                        <span class="verified"><span class="iconify" data-icon="lucide:badge-check" data-width="12"></span> 本人確認済</span>
+                        {% endif %}
+                    </div>
+                </a>
+            </section>
+
+            <!-- 取引詳細 -->
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:clock" data-width="16"></span> 取引履歴</h3>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <span class="timeline-label">開始</span>
+                        <span class="timeline-value">{{ rental_history.register_datetime|date:"m/d H:i" }}</span>
+                    </div>
+                    {% if rental_history.shipping_completed_datetime %}
+                    <div class="timeline-item">
+                        <span class="timeline-label">発送</span>
+                        <span class="timeline-value">{{ rental_history.shipping_completed_datetime|date:"m/d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if rental_history.rental_start_datetime %}
+                    <div class="timeline-item">
+                        <span class="timeline-label">受取</span>
+                        <span class="timeline-value">{{ rental_history.rental_start_datetime|date:"m/d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if rental_history.rental_end_datetime %}
+                    <div class="timeline-item">
+                        <span class="timeline-label">返送</span>
+                        <span class="timeline-value">{{ rental_history.rental_end_datetime|date:"m/d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                    {% if rental_history.receipt_completed_datetime %}
+                    <div class="timeline-item">
+                        <span class="timeline-label">完了</span>
+                        <span class="timeline-value">{{ rental_history.receipt_completed_datetime|date:"m/d H:i" }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </section>
+        </aside>
+
+        <!-- 中央: チャット -->
+        <section class="chat-panel">
+            <div class="chat-header">
+                <span class="iconify" data-icon="lucide:message-square" data-width="18"></span>
+                取引メッセージ
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-loading">
+                    <span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="24"></span>
+                </div>
+            </div>
+            <div class="chat-input">
+                <textarea id="messageInput" placeholder="メッセージを入力..." maxlength="2000"></textarea>
+                <button id="sendBtn" class="send-btn">
+                    <span class="iconify" data-icon="lucide:send" data-width="18"></span>
+                </button>
+            </div>
+        </section>
+
+        <!-- 右カラム: アクション -->
+        <aside class="right-panel">
+            <!-- アクションボタン -->
+            <section class="panel-section action-panel">
+                <h3><span class="iconify" data-icon="lucide:zap" data-width="16"></span> アクション</h3>
+
+                {% if is_lender and rental_history.rental_status_id == 1 %}
+                <button id="shipBtn" class="action-btn primary">
+                    <span class="iconify" data-icon="lucide:truck" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>発送を通知</strong>
+                        <small>商品を発送したら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if is_renter and rental_history.rental_status_id == 2 %}
+                <button id="receiveBtn" class="action-btn primary">
+                    <span class="iconify" data-icon="lucide:package-check" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>受取完了</strong>
+                        <small>商品が届いたら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if is_renter and rental_history.rental_status_id == 3 %}
+                <button id="returnShipBtn" class="action-btn primary">
+                    <span class="iconify" data-icon="lucide:undo-2" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>返送を通知</strong>
+                        <small>商品を返送したら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if is_lender and rental_history.rental_status_id == 4 %}
+                <button id="returnReceiveBtn" class="action-btn success">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>返却を確認</strong>
+                        <small>商品が届いたら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if rental_history.rental_status_id == 5 %}
+                <div class="completed-box">
+                    <span class="iconify" data-icon="lucide:party-popper" data-width="32"></span>
+                    <p>取引完了</p>
+                    <small>{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</small>
+                </div>
+                {% endif %}
+
+                {% if rental_history.rental_status_id in '1234'|make_list %}
+                <button id="cancelBtn" class="action-btn danger-outline">
+                    <span class="iconify" data-icon="lucide:x" data-width="18"></span>
+                    <span>キャンセル</span>
+                </button>
+                {% endif %}
+            </section>
+
+            <!-- 次のステップ案内 -->
+            {% if rental_history.rental_status_id < 5 and rental_history.rental_status_id != 6 %}
+            <section class="panel-section guide-panel">
+                <h3><span class="iconify" data-icon="lucide:info" data-width="16"></span> 次のステップ</h3>
+                <div class="guide-content">
+                    {% if rental_history.rental_status_id == 1 %}
+                        {% if is_lender %}
+                        <p>商品を梱包し、配送先に発送してください。発送が完了したら「発送を通知」ボタンを押してください。</p>
+                        {% else %}
+                        <p>出品者が商品を発送するまでお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 2 %}
+                        {% if is_renter %}
+                        <p>商品が届いたら「受取完了」ボタンを押してください。</p>
+                        {% else %}
+                        <p>借り手が商品を受け取るまでお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 3 %}
+                        {% if is_renter %}
+                        <p>レンタル期間が終了したら商品を返送し、「返送を通知」ボタンを押してください。</p>
+                        {% else %}
+                        <p>借り手が商品を返送するまでお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 4 %}
+                        {% if is_lender %}
+                        <p>商品が届いたら内容を確認し、「返却を確認」ボタンを押して取引を完了してください。</p>
+                        {% else %}
+                        <p>出品者が商品を受け取るまでお待ちください。</p>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </section>
+            {% endif %}
+        </aside>
+    </div>
+</main>
+
+<!-- キャンセルモーダル -->
+<div id="cancelModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>取引をキャンセル</h2>
+            <button class="modal-close" id="modalCloseBtn">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <form id="cancelForm">
+            <div class="form-group">
+                <label class="form-label">キャンセル理由</label>
+                <select name="return_reason_id" id="returnReasonSelect" required class="form-select">
+                    <option value="">選択してください</option>
+                    {% for reason in return_reasons %}
+                    <option value="{{ reason.return_reason_id }}">{{ reason.return_reason_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">詳細（任意）</label>
+                <textarea name="return_reason_detail" id="returnReasonDetail" maxlength="1000" rows="4" class="form-textarea" placeholder="キャンセルの詳細を入力してください"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" id="modalCancelBtn">閉じる</button>
+                <button type="submit" class="btn-danger">キャンセルを確定</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const RENTAL_HISTORY_ID = {{ rental_history.rental_history_id }};
+    const CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/transaction.js' %}"></script>
+{% endblock %}

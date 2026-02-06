@@ -186,6 +186,14 @@
     color: #f9fafb;
 }
 
+/* RentalStatus用スタイル */
+.request-status.status-1 { background: #fef3c7; color: #d97706; } /* 発送準備中 */
+.request-status.status-2 { background: #dbeafe; color: #2563eb; } /* 配送中 */
+.request-status.status-3 { background: #d1fae5; color: #059669; } /* レンタル中 */
+.request-status.status-4 { background: #e0e7ff; color: #4f46e5; } /* 返送中 */
+.request-status.status-5 { background: #f3f4f6; color: #374151; } /* 返却済み */
+.request-status.status-6 { background: #fee2e2; color: #dc2626; } /* キャンセル */
+
 .request-actions {
     display: flex;
     flex-direction: column;
@@ -387,6 +395,12 @@
                         送った申請
                         {% if sent_pending_count > 0 %}
                         <span class="badge">{{ sent_pending_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button class="tab-btn" data-tab="transactions">
+                        取引中
+                        {% if transactions_lender_count > 0 or transactions_renter_count > 0 %}
+                        <span class="badge">{{ transactions_lender_count|add:transactions_renter_count }}</span>
                         {% endif %}
                     </button>
                 </div>
@@ -793,6 +807,109 @@
                     <div class="empty-state">
                         <span class="iconify" data-icon="lucide:send" data-width="48"></span>
                         <p>キャンセルした申請はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- 取引中 -->
+            <div class="tab-content" id="tab-transactions">
+                <!-- Sub Tabs -->
+                <div class="sub-tab-container">
+                    <button class="sub-tab-btn active" data-subtab="transactions-lender">
+                        出品者として
+                        {% if transactions_lender_count > 0 %}
+                        <span class="sub-badge">{{ transactions_lender_count }}</span>
+                        {% endif %}
+                    </button>
+                    <button class="sub-tab-btn" data-subtab="transactions-renter">
+                        購入者として
+                        {% if transactions_renter_count > 0 %}
+                        <span class="sub-badge">{{ transactions_renter_count }}</span>
+                        {% endif %}
+                    </button>
+                </div>
+
+                <!-- 出品者として -->
+                <div class="sub-tab-content active" id="subtab-transactions-lender">
+                    {% if transactions_as_lender %}
+                        {% for tx in transactions_as_lender %}
+                        <div class="request-card">
+                            <div class="request-card-inner">
+                                <p class="request-user">借り手: <a href="{% url 'profile' username=tx.renter_user.user_name %}" class="request-user-link">{{ tx.renter_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-image-link">
+                                        {% if tx.product.images.all %}
+                                        <img src="{{ tx.product.images.all.0.image.url }}" alt="{{ tx.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
+                                        <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                <a href="{% url 'transaction' rental_history_id=tx.rental_history_id %}" class="btn-start">
+                                    <span class="iconify" data-icon="lucide:message-square" data-width="14"></span>
+                                    取引画面
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:package" data-width="48"></span>
+                        <p>出品者として取引中の商品はありません</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- 購入者として -->
+                <div class="sub-tab-content" id="subtab-transactions-renter">
+                    {% if transactions_as_renter %}
+                        {% for tx in transactions_as_renter %}
+                        <div class="request-card">
+                            <div class="request-card-inner">
+                                <p class="request-user">出品者: <a href="{% url 'profile' username=tx.lender_user.user_name %}" class="request-user-link">{{ tx.lender_user.display_name }}</a></p>
+                                <div class="request-product-row">
+                                    <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-image-link">
+                                        {% if tx.product.images.all %}
+                                        <img src="{{ tx.product.images.all.0.image.url }}" alt="{{ tx.product.product_name }}" class="request-image">
+                                        {% else %}
+                                        <div class="request-image-placeholder">
+                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+                                        </div>
+                                        {% endif %}
+                                    </a>
+                                    <div class="request-info">
+                                        <h3 class="request-product-name">
+                                            <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
+                                        </h3>
+                                        <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
+                                        <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="request-actions">
+                                <a href="{% url 'transaction' rental_history_id=tx.rental_history_id %}" class="btn-start">
+                                    <span class="iconify" data-icon="lucide:message-square" data-width="14"></span>
+                                    取引画面
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                    <div class="empty-state">
+                        <span class="iconify" data-icon="lucide:shopping-bag" data-width="48"></span>
+                        <p>購入者として取引中の商品はありません</p>
                     </div>
                     {% endif %}
                 </div>

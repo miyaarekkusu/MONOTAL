@@ -1,0 +1,815 @@
+﻿/* =====================================================
+   取引画面 - 3カラムフルワイドレイアウト
+   ===================================================== */
+
+.transaction-page {
+    min-height: calc(100vh - 64px);
+    background: #f4f4f5;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ヘッダー */
+.transaction-header {
+    background: white;
+    border-bottom: 1px solid #e4e4e7;
+    padding: 12px 24px;
+    position: sticky;
+    top: 64px;
+    z-index: 100;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 1800px;
+    margin: 0 auto;
+}
+
+.product-thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    background: #f4f4f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a1a1aa;
+}
+
+.product-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.header-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.header-info h1 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.header-badges {
+    display: flex;
+    gap: 8px;
+}
+
+.status-badge {
+    display: inline-flex;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-badge.status-1 { background: #fef3c7; color: #d97706; }
+.status-badge.status-2 { background: #dbeafe; color: #2563eb; }
+.status-badge.status-3 { background: #d1fae5; color: #059669; }
+.status-badge.status-4 { background: #e0e7ff; color: #4f46e5; }
+.status-badge.status-5 { background: #f3f4f6; color: #374151; }
+.status-badge.status-6 { background: #fee2e2; color: #dc2626; }
+
+.role-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.role-badge.lender { background: #fdf2f8; color: #ec4899; }
+.role-badge.renter { background: #eff6ff; color: #3b82f6; }
+
+/* 進捗バー（コンパクト版） */
+.progress-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-left: auto;
+}
+
+.progress-step {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #e4e4e7;
+    color: #a1a1aa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.progress-step.done {
+    background: #d1fae5;
+    color: #059669;
+}
+
+.progress-step.current {
+    background: #ec4899;
+    color: white;
+}
+
+.progress-line {
+    width: 24px;
+    height: 2px;
+    background: #e4e4e7;
+}
+
+.progress-line.done {
+    background: #10b981;
+}
+
+.cancelled-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px;
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 12px;
+    border-radius: 8px;
+    max-width: 1800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+/* 3カラムボディ */
+.transaction-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 280px 1fr 300px;
+    gap: 0;
+    max-width: 100%;
+    height: calc(100vh - 140px);
+}
+
+/* 左パネル */
+.left-panel {
+    background: white;
+    border-right: 1px solid #e4e4e7;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* 右パネル */
+.right-panel {
+    background: white;
+    border-left: 1px solid #e4e4e7;
+    overflow-y: auto;
+    padding: 16px;
+}
+
+/* パネルセクション共通 */
+.panel-section {
+    margin-bottom: 20px;
+}
+
+.panel-section:last-child {
+    margin-bottom: 0;
+}
+
+.panel-section h3 {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #71717a;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 12px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #f4f4f5;
+}
+
+/* 住所ボックス */
+.address-box {
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.address-box .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 6px 0;
+}
+
+.address-box .postal {
+    font-size: 12px;
+    color: #71717a;
+    margin: 0 0 4px 0;
+}
+
+.address-box .address {
+    font-size: 13px;
+    color: #18181b;
+    margin: 0;
+    line-height: 1.5;
+}
+
+.warning-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: #fef3c7;
+    border-radius: 8px;
+    font-size: 12px;
+    color: #d97706;
+}
+
+/* 取引相手 */
+.partner-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: #f9fafb;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.partner-link:hover {
+    background: #f4f4f5;
+}
+
+.partner-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #e4e4e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #71717a;
+    flex-shrink: 0;
+}
+
+.partner-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.partner-detail {
+    flex: 1;
+    min-width: 0;
+}
+
+.partner-name {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+}
+
+.verified {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: #059669;
+    margin-top: 2px;
+}
+
+/* タイムライン */
+.timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.timeline-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+.timeline-label {
+    color: #71717a;
+}
+
+.timeline-value {
+    color: #18181b;
+    font-weight: 500;
+}
+
+/* チャットパネル（中央） */
+.chat-panel {
+    display: flex;
+    flex-direction: column;
+    background: #f9fafb;
+    height: 100%;
+}
+
+.chat-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 20px;
+    background: white;
+    border-bottom: 1px solid #e4e4e7;
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.chat-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #a1a1aa;
+}
+
+.chat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: #a1a1aa;
+    height: 100%;
+    text-align: center;
+}
+
+.chat-empty p {
+    margin: 0;
+    font-size: 14px;
+}
+
+.chat-empty span {
+    font-size: 12px;
+}
+
+/* メッセージアイテム */
+.message-item {
+    display: flex;
+    gap: 10px;
+    max-width: 70%;
+}
+
+.message-item.mine {
+    margin-left: auto;
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #e4e4e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #a1a1aa;
+}
+
+.message-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.message-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.message-item.mine .message-header {
+    flex-direction: row-reverse;
+}
+
+.message-name {
+    font-size: 11px;
+    font-weight: 500;
+    color: #71717a;
+}
+
+.message-time {
+    font-size: 10px;
+    color: #a1a1aa;
+}
+
+.message-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.message-item:not(.mine) .message-bubble {
+    background: white;
+    color: #18181b;
+    border: 1px solid #e4e4e7;
+    border-bottom-left-radius: 4px;
+}
+
+.message-item.mine .message-bubble {
+    background: #ec4899;
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+/* チャット入力 */
+.chat-input {
+    display: flex;
+    gap: 12px;
+    padding: 16px 20px;
+    background: white;
+    border-top: 1px solid #e4e4e7;
+}
+
+.chat-input textarea {
+    flex: 1;
+    border: 1px solid #e4e4e7;
+    border-radius: 24px;
+    padding: 12px 18px;
+    font-size: 14px;
+    resize: none;
+    font-family: inherit;
+    max-height: 120px;
+}
+
+.chat-input textarea:focus {
+    outline: none;
+    border-color: #ec4899;
+}
+
+.send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #ec4899;
+    color: white;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.send-btn:hover {
+    background: #db2777;
+    transform: scale(1.05);
+}
+
+.send-btn:disabled {
+    background: #e4e4e7;
+    color: #a1a1aa;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* アクションボタン */
+.action-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.action-btn .action-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.action-btn .action-text strong {
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.action-btn .action-text small {
+    font-size: 11px;
+    opacity: 0.8;
+    margin-top: 2px;
+}
+
+.action-btn.primary {
+    background: #ec4899;
+    color: white;
+}
+
+.action-btn.primary:hover {
+    background: #db2777;
+}
+
+.action-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.action-btn.success:hover {
+    background: #059669;
+}
+
+.action-btn.danger-outline {
+    background: transparent;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    justify-content: center;
+    padding: 10px 16px;
+}
+
+.action-btn.danger-outline:hover {
+    background: #fee2e2;
+}
+
+.completed-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 16px;
+    background: #f0fdf4;
+    border-radius: 12px;
+    color: #059669;
+    text-align: center;
+}
+
+.completed-box p {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.completed-box small {
+    font-size: 12px;
+    color: #71717a;
+}
+
+/* ガイドパネル */
+.guide-panel {
+    background: #f9fafb;
+    border-radius: 12px;
+    padding: 16px !important;
+    margin-top: 8px;
+}
+
+.guide-content p {
+    font-size: 13px;
+    color: #52525b;
+    line-height: 1.6;
+    margin: 0;
+}
+
+/* モーダル */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    position: relative;
+    background: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid #e4e4e7;
+}
+
+.modal-header h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0;
+}
+
+.modal-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #71717a;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-close:hover {
+    background: #f4f4f5;
+}
+
+#cancelForm {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #18181b;
+    margin-bottom: 8px;
+}
+
+.form-select,
+.form-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+}
+
+.form-select:focus,
+.form-textarea:focus {
+    outline: none;
+    border-color: #ec4899;
+}
+
+.form-textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.btn-cancel-modal {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #f4f4f5;
+    color: #71717a;
+    border: none;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-cancel-modal:hover {
+    background: #e4e4e7;
+}
+
+.btn-danger {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #dc2626;
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-danger:hover {
+    background: #b91c1c;
+}
+
+/* アニメーション */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* レスポンシブ: タブレット */
+@media (max-width: 1200px) {
+    .transaction-body {
+        grid-template-columns: 240px 1fr 260px;
+    }
+}
+
+/* レスポンシブ: モバイル */
+@media (max-width: 900px) {
+    .transaction-body {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        height: auto;
+    }
+
+    .left-panel,
+    .right-panel {
+        border: none;
+        border-bottom: 1px solid #e4e4e7;
+    }
+
+    .chat-panel {
+        height: 500px;
+    }
+
+    .progress-bar {
+        display: none;
+    }
+
+    .header-content {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 640px) {
+    .transaction-header {
+        padding: 12px 16px;
+    }
+
+    .left-panel,
+    .right-panel {
+        padding: 12px;
+    }
+
+    .chat-messages {
+        padding: 16px;
+    }
+
+    .chat-input {
+        padding: 12px 16px;
+    }
+
+    .message-item {
+        max-width: 85%;
+    }
+}

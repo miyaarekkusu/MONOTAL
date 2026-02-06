@@ -515,6 +515,14 @@ PRODUCT_STATUS_DELETED = 4    # 削除
 USER_STATUS_UNVERIFIED = 1    # 未認証（本人確認未完了）
 USER_STATUS_VERIFIED = 2      # 承認済み（本人確認完了）
 
+# レンタルステータス定数（往復発送フロー対応）
+RENTAL_STATUS_PREPARING = 1   # 発送準備中
+RENTAL_STATUS_SHIPPING = 2    # 配送中（貸主→借り手）
+RENTAL_STATUS_RENTING = 3     # レンタル中
+RENTAL_STATUS_RETURNING = 4   # 返送中（借り手→貸主）
+RENTAL_STATUS_COMPLETED = 5   # 返却済み（完了）
+RENTAL_STATUS_CANCELLED = 6   # キャンセル
+
 
 class VerificationRequiredView(View):
     """本人確認が必要なページ"""
@@ -3570,6 +3578,32 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             Q(product__product_status_id=PRODUCT_STATUS_DELETED)
         )
 
+        # 取引中（RentalHistory）: 貸主として
+        transactions_as_lender = RentalHistory.objects.filter(
+            lender_user=request.user,
+            rental_status_id__in=[
+                RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
+                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
+            ]
+        ).select_related(
+            'product', 'renter_user', 'rental_status'
+        ).prefetch_related(
+            'product__images'
+        ).order_by('-register_datetime')
+
+        # 取引中（RentalHistory）: 借り手として
+        transactions_as_renter = RentalHistory.objects.filter(
+            renter_user=request.user,
+            rental_status_id__in=[
+                RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
+                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
+            ]
+        ).select_related(
+            'product', 'lender_user', 'rental_status'
+        ).prefetch_related(
+            'product__images'
+        ).order_by('-register_datetime')
+
         context = {
             'received_pending': received_pending,
             'received_approved': received_approved,
@@ -3581,6 +3615,10 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             'sent_rejected': sent_rejected,
             'sent_cancelled': sent_cancelled,
             'sent_pending_count': sent_pending.count(),
+            'transactions_as_lender': transactions_as_lender,
+            'transactions_as_renter': transactions_as_renter,
+            'transactions_lender_count': transactions_as_lender.count(),
+            'transactions_renter_count': transactions_as_renter.count(),
             'current_page': 'rental_management',
         }
         return render(request, 'mypage/rental_management.html', context)
@@ -4279,3 +4317,475 @@ class NotificationMarkAllReadView(LoginRequiredMixin, View):
 notification_list = NotificationListView.as_view()
 notification_mark_read = NotificationMarkReadView.as_view()
 notification_mark_all_read = NotificationMarkAllReadView.as_view()
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                                                                              ║
+# ║  取引画面関連ビュー / TRANSACTION VIEWS                                        ║
+# ║                                                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+class TransactionView(LoginRequiredMixin, View):
+    """取引詳細画面"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related(
+                'product',
+                'product__user',
+                'product__shipping_address',
+                'product__shipping_address__prefecture',
+                'lender_user',
+                'renter_user',
+                'rental_status',
+                'renter_address',
+                'renter_address__prefecture'
+            ).prefetch_related(
+                'product__images'
+            ).get(rental_history_id=rental_history_id)
+
+            # アクセス権チェック（貸主または借り手のみ）
+            is_lender = request.user == rental_history.lender_user
+            is_renter = request.user == rental_history.renter_user
+
+            if not is_lender and not is_renter:
+                messages.error(request, 'この取引にアクセスする権限がありません')
+                return redirect('mypage_rental_management')
+
+            # 取引相手を特定
+            partner_user = rental_history.renter_user if is_lender else rental_history.lender_user
+
+            # チャットルームを取得
+            chat_room = ChatRoom.objects.filter(rental_history=rental_history).first()
+
+            # 相手の本人確認状態を確認
+            partner_verified = partner_user.user_status_id == USER_STATUS_VERIFIED
+
+            # 相手の個人情報（本人確認済みの場合のみ）
+            partner_personal_info = None
+            if partner_verified:
+                try:
+                    partner_personal_info = partner_user.personal_info
+                except UserPersonalInfo.DoesNotExist:
+                    pass
+
+            # 返品理由マスターを取得
+            return_reasons = ReturnReason.objects.all()
+
+            context = {
+                'rental_history': rental_history,
+                'product': rental_history.product,
+                'chat_room': chat_room,
+                'is_lender': is_lender,
+                'is_renter': is_renter,
+                'partner_user': partner_user,
+                'partner_verified': partner_verified,
+                'partner_personal_info': partner_personal_info,
+                'return_reasons': return_reasons,
+                # 貸主向け: 借り手の配送先住所
+                'renter_address': rental_history.renter_address if is_lender else None,
+                # 借り手向け: 発送元住所
+                'shipping_address': rental_history.product.shipping_address if is_renter else None,
+            }
+
+            return render(request, 'transaction.html', context)
+
+        except RentalHistory.DoesNotExist:
+            messages.error(request, '取引が見つかりません')
+            return redirect('mypage_rental_management')
+
+
+class TransactionMessagesView(LoginRequiredMixin, View):
+    """取引チャットメッセージAPI"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, rental_history_id, *args, **kwargs):
+        """メッセージ一覧取得"""
+        try:
+            rental_history = RentalHistory.objects.get(rental_history_id=rental_history_id)
+
+            # アクセス権チェック
+            if request.user != rental_history.lender_user and request.user != rental_history.renter_user:
+                return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
+
+            # チャットルームを取得
+            chat_room = ChatRoom.objects.filter(rental_history=rental_history).first()
+            if not chat_room:
+                return JsonResponse({'success': True, 'messages': [], 'total_count': 0})
+
+            # メッセージを取得（古い順）
+            messages_qs = Message.objects.filter(chat_room=chat_room).select_related('user').order_by('register_datetime')
+
+            messages_data = []
+            for msg in messages_qs:
+                messages_data.append({
+                    'message_id': msg.message_id,
+                    'user_id': msg.user.user_id,
+                    'user_name': msg.user.display_name,
+                    'user_image': msg.user.user_image.url if msg.user.user_image else None,
+                    'content': msg.message_content,
+                    'created_at': msg.register_datetime.strftime('%Y/%m/%d %H:%M'),
+                    'is_mine': msg.user == request.user,
+                })
+
+            return JsonResponse({
+                'success': True,
+                'messages': messages_data,
+                'total_count': len(messages_data),
+            })
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        """メッセージ送信"""
+        try:
+            rental_history = RentalHistory.objects.get(rental_history_id=rental_history_id)
+
+            # アクセス権チェック
+            if request.user != rental_history.lender_user and request.user != rental_history.renter_user:
+                return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
+
+            # リクエストデータ取得
+            try:
+                data = json.loads(request.body)
+                content = data.get('content', '').strip()
+            except json.JSONDecodeError:
+                content = request.POST.get('content', '').strip()
+
+            if not content:
+                return JsonResponse({'success': False, 'message': 'メッセージを入力してください'}, status=400)
+
+            if len(content) > 2000:
+                return JsonResponse({'success': False, 'message': 'メッセージは2000文字以内で入力してください'}, status=400)
+
+            # チャットルームを取得（なければ作成）
+            chat_room = ChatRoom.objects.filter(rental_history=rental_history).first()
+            if not chat_room:
+                chat_room_type, _ = ChatRoomType.objects.get_or_create(
+                    chat_room_type_id=1,
+                    defaults={'type_name': '1対1'}
+                )
+                chat_room = ChatRoom.objects.create(
+                    chat_room_type=chat_room_type,
+                    rental_history=rental_history
+                )
+                # 参加者を追加
+                ChatRoomParticipant.objects.create(chat_room=chat_room, user=rental_history.lender_user)
+                ChatRoomParticipant.objects.create(chat_room=chat_room, user=rental_history.renter_user)
+
+            # メッセージを作成
+            message = Message.objects.create(
+                chat_room=chat_room,
+                user=request.user,
+                message_content=content
+            )
+
+            return JsonResponse({
+                'success': True,
+                'message': {
+                    'message_id': message.message_id,
+                    'user_id': request.user.user_id,
+                    'user_name': request.user.display_name,
+                    'user_image': request.user.user_image.url if request.user.user_image else None,
+                    'content': message.message_content,
+                    'created_at': message.register_datetime.strftime('%Y/%m/%d %H:%M'),
+                    'is_mine': True,
+                }
+            })
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+
+class TransactionShipView(LoginRequiredMixin, View):
+    """貸主が商品を発送通知"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'renter_user').get(
+                rental_history_id=rental_history_id,
+                lender_user=request.user,
+                rental_status_id=RENTAL_STATUS_PREPARING
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_SHIPPING
+                rental_history.shipping_completed_datetime = timezone.now()
+                rental_history.save()
+
+                # 借り手に通知を送信
+                self._send_notification(
+                    rental_history.renter_user,
+                    '商品が発送されました',
+                    f'「{rental_history.product.product_name}」が発送されました。届きましたら受取完了をお願いします。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '発送を通知しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、発送できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        """通知を送信"""
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(
+                notification=notification,
+                user=user
+            )
+        except Exception:
+            pass  # 通知失敗は無視
+
+
+class TransactionReceiveView(LoginRequiredMixin, View):
+    """借り手が商品受取完了"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'lender_user').get(
+                rental_history_id=rental_history_id,
+                renter_user=request.user,
+                rental_status_id=RENTAL_STATUS_SHIPPING
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_RENTING
+                rental_history.rental_start_datetime = timezone.now()
+                rental_history.save()
+
+                # 貸主に通知を送信
+                self._send_notification(
+                    rental_history.lender_user,
+                    '商品が受け取られました',
+                    f'「{rental_history.product.product_name}」が借り手に届きました。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '受取を完了しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、受取できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class TransactionReturnShipView(LoginRequiredMixin, View):
+    """借り手が商品を返送"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'lender_user').get(
+                rental_history_id=rental_history_id,
+                renter_user=request.user,
+                rental_status_id=RENTAL_STATUS_RENTING
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_RETURNING
+                rental_history.rental_end_datetime = timezone.now()
+                rental_history.save()
+
+                # 貸主に通知を送信
+                self._send_notification(
+                    rental_history.lender_user,
+                    '商品が返送されました',
+                    f'「{rental_history.product.product_name}」が返送されました。届きましたら返却受取をお願いします。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返送を通知しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、返送できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class TransactionReturnReceiveView(LoginRequiredMixin, View):
+    """貸主が返却を受取完了（取引完了）"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'renter_user').get(
+                rental_history_id=rental_history_id,
+                lender_user=request.user,
+                rental_status_id=RENTAL_STATUS_RETURNING
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_COMPLETED
+                rental_history.receipt_completed_datetime = timezone.now()
+                rental_history.save()
+
+                # 商品のステータスを貸出可能に戻す
+                product = rental_history.product
+                product.product_status_id = PRODUCT_STATUS_LISTED
+                product.save()
+
+                # 借り手に通知を送信
+                self._send_notification(
+                    rental_history.renter_user,
+                    '取引が完了しました',
+                    f'「{rental_history.product.product_name}」の取引が完了しました。ご利用ありがとうございました。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返却を確認しました。取引が完了しました。'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、返却確認できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class TransactionCancelView(LoginRequiredMixin, View):
+    """取引をキャンセル"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'lender_user', 'renter_user').get(
+                rental_history_id=rental_history_id
+            )
+
+            # アクセス権チェック
+            is_lender = request.user == rental_history.lender_user
+            is_renter = request.user == rental_history.renter_user
+
+            if not is_lender and not is_renter:
+                return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
+
+            # キャンセル可能な状態かチェック（発送準備中〜返送中）
+            if rental_history.rental_status_id not in [
+                RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
+                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
+            ]:
+                return JsonResponse({'success': False, 'message': 'この取引はキャンセルできません'}, status=400)
+
+            # リクエストデータ取得
+            try:
+                data = json.loads(request.body)
+                return_reason_id = data.get('return_reason_id')
+                return_reason_detail = data.get('return_reason_detail', '')
+            except json.JSONDecodeError:
+                return_reason_id = request.POST.get('return_reason_id')
+                return_reason_detail = request.POST.get('return_reason_detail', '')
+
+            if not return_reason_id:
+                return JsonResponse({'success': False, 'message': 'キャンセル理由を選択してください'}, status=400)
+
+            with transaction.atomic():
+                # ReturnReasonHistoryを作成
+                return_reason = ReturnReason.objects.get(return_reason_id=return_reason_id)
+                ReturnReasonHistory.objects.create(
+                    rental_history=rental_history,
+                    return_reason=return_reason,
+                    return_request_datetime=timezone.now(),
+                    return_reason_detail=return_reason_detail[:1000] if return_reason_detail else None
+                )
+
+                # レンタル履歴をキャンセルに
+                rental_history.rental_status_id = RENTAL_STATUS_CANCELLED
+                rental_history.save()
+
+                # 商品のステータスを貸出可能に戻す
+                product = rental_history.product
+                product.product_status_id = PRODUCT_STATUS_LISTED
+                product.save()
+
+                # 相手に通知を送信
+                partner_user = rental_history.renter_user if is_lender else rental_history.lender_user
+                self._send_notification(
+                    partner_user,
+                    '取引がキャンセルされました',
+                    f'「{rental_history.product.product_name}」の取引がキャンセルされました。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '取引をキャンセルしました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
+        except ReturnReason.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '無効なキャンセル理由です'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+# 取引関連ビュー
+transaction_view = TransactionView.as_view()
+transaction_messages = TransactionMessagesView.as_view()
+transaction_ship = TransactionShipView.as_view()
+transaction_receive = TransactionReceiveView.as_view()
+transaction_return_ship = TransactionReturnShipView.as_view()
+transaction_return_receive = TransactionReturnReceiveView.as_view()
+transaction_cancel = TransactionCancelView.as_view()

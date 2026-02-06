@@ -66,6 +66,15 @@ urlpatterns = [
     path('rental-request/<int:request_id>/cancel/', views.rental_request_cancel, name='rental_request_cancel'),
     path('rental-request/<int:request_id>/cancel-seller/', views.rental_request_cancel_seller, name='rental_request_cancel_seller'),
 
+    # 取引画面
+    path('transaction/<int:rental_history_id>/', views.transaction_view, name='transaction'),
+    path('transaction/<int:rental_history_id>/messages/', views.transaction_messages, name='transaction_messages'),
+    path('transaction/<int:rental_history_id>/ship/', views.transaction_ship, name='transaction_ship'),
+    path('transaction/<int:rental_history_id>/receive/', views.transaction_receive, name='transaction_receive'),
+    path('transaction/<int:rental_history_id>/return-ship/', views.transaction_return_ship, name='transaction_return_ship'),
+    path('transaction/<int:rental_history_id>/return-receive/', views.transaction_return_receive, name='transaction_return_receive'),
+    path('transaction/<int:rental_history_id>/cancel/', views.transaction_cancel, name='transaction_cancel'),
+
     # 通知関連
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:notification_id>/read/', views.notification_mark_read, name='notification_mark_read'),
