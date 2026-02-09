@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}保険クレーム管理 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_insurance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1 class="page-title">保険クレーム管理</h1>
+        {% if pending_count > 0 %}
+        <span class="total-count">未審査: {{ pending_count }}件</span>
+        {% endif %}
+    </div>
+
+    <!-- ステータスフィルター -->
+    <div class="filter-tabs">
+        <a href="?status=all" class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
+            すべて <span class="tab-count">{{ total_count }}</span>
+        </a>
+        <a href="?status=pending" class="filter-tab {% if current_filter == 'pending' %}active{% endif %}">
+            審査中 <span class="tab-count">{{ pending_count }}</span>
+        </a>
+        <a href="?status=approved" class="filter-tab {% if current_filter == 'approved' %}active{% endif %}">
+            承認済み <span class="tab-count">{{ approved_count }}</span>
+        </a>
+        <a href="?status=rejected" class="filter-tab {% if current_filter == 'rejected' %}active{% endif %}">
+            却下 <span class="tab-count">{{ rejected_count }}</span>
+        </a>
+    </div>
+
+    {% if claims %}
+    <table class="verification-table">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>ユーザー</th>
+                <th>商品名</th>
+                <th>修理費用</th>
+                <th>申請日</th>
+                <th>状態</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for claim in claims %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ claim.user.display_name }}</td>
+                <td class="product-name-cell">{{ claim.product.product_name }}</td>
+                <td class="repair-cost-cell">¥{{ claim.repair_cost|floatformat:0 }}</td>
+                <td>{{ claim.claim_datetime|date:"Y/m/d H:i" }}</td>
+                <td>
+                    {% if claim.insurance_claim_status.insurance_claim_status_id == 1 %}
+                        <span class="status-badge pending">審査中</span>
+                    {% elif claim.insurance_claim_status.insurance_claim_status_id == 2 %}
+                        <span class="status-badge approved">承認</span>
+                    {% else %}
+                        <span class="status-badge rejected">却下</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'admin_insurance_claim_detail' claim.claim_id %}" class="btn-review">
+                        {% if claim.insurance_claim_status.insurance_claim_status_id == 1 %}審査{% else %}詳細{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-message">
+        <span class="iconify empty-icon" data-icon="lucide:check-circle" data-width="48"></span>
+        <p>
+            {% if current_filter == 'pending' %}審査待ちのクレームはありません
+            {% elif current_filter == 'approved' %}承認済みのクレームはありません
+            {% elif current_filter == 'rejected' %}却下されたクレームはありません
+            {% else %}クレーム申請はありません
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'index' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            ホームに戻る
+        </a>
+    </p>
+</div>
+{% endblock %}

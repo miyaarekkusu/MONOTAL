@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 保険 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ - 保険</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">保険</h1>
+            </div>
+
+            {% if enrollment %}
+                <!-- 加入済み -->
+                <div class="bg-white border border-zinc-200 rounded-lg p-6 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="iconify text-green-600" data-icon="lucide:shield-check" data-width="28"></span>
+                        <h2 class="text-lg font-bold text-zinc-900">現在、保険に加入中です</h2>
+                    </div>
+
+                    <div class="space-y-2 text-sm text-zinc-700 mb-6">
+                        <p><span class="font-medium">保険プラン:</span> {{ enrollment.insurance.insurance_name }}</p>
+                        <p><span class="font-medium">加入日:</span> {{ enrollment.insurance_start_datetime|date:"Y年m月d日" }}</p>
+                        <p><span class="font-medium">月額料金:</span> ¥{{ enrollment.insurance.insurance_fee|floatformat:0 }}</p>
+                        <p><span class="font-medium">補償上限:</span> ¥{{ enrollment.insurance.coverage_limit|floatformat:0 }}</p>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <a href="{% url 'insurance_claim' %}" class="flex-1 rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white text-center hover:bg-pink-700 transition-colors">
+                            クレームを申請する
+                        </a>
+                        <button id="cancelBtn" onclick="cancelInsurance()" class="flex-1 rounded-lg border border-zinc-300 px-6 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                            保険を解約する
+                        </button>
+                    </div>
+                </div>
+            {% else %}
+                <!-- 未加入 -->
+                <div class="bg-white border border-zinc-200 rounded-lg p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="iconify text-pink-600" data-icon="lucide:shield" data-width="28"></span>
+                        <h2 class="text-lg font-bold text-zinc-900">MONOTALあんしん補償</h2>
+                    </div>
+
+                    <p class="text-sm text-zinc-600 mb-6">レンタル中の商品が破損した場合、修理費用を補償します。</p>
+
+                    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-bold text-zinc-900 mb-3">【プラン内容】</h3>
+                        <ul class="space-y-2 text-sm text-zinc-700">
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-pink-600" data-icon="lucide:circle-dot" data-width="12"></span>
+                                <span>月額料金: <span class="font-bold">¥2,000</span></span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-pink-600" data-icon="lucide:circle-dot" data-width="12"></span>
+                                <span>補償上限: <span class="font-bold">¥50,000</span></span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-pink-600" data-icon="lucide:circle-dot" data-width="12"></span>
+                                <span>対象: レンタル中の商品破損・故障</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-6">
+                        <h3 class="text-sm font-bold text-zinc-900 mb-3">【補償内容】</h3>
+                        <ul class="space-y-2 text-sm text-zinc-700">
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-green-600" data-icon="lucide:check" data-width="16"></span>
+                                <span>商品の修理費用</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-green-600" data-icon="lucide:check" data-width="16"></span>
+                                <span>部品交換費用</span>
+                            </li>
+                            <li class="flex items-center gap-2">
+                                <span class="iconify text-green-600" data-icon="lucide:check" data-width="16"></span>
+                                <span>修理不可の場合は上限額まで補償</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <button id="enrollBtn" onclick="enrollInsurance()" class="w-full rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors">
+                        月額¥2,000で加入する
+                    </button>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<!-- トースト通知 -->
+<div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all duration-300 translate-x-[120%] opacity-0" style="display:none;"></div>
+
+<!-- 解約確認モーダル -->
+{% if enrollment %}
+<div id="cancelModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-opacity duration-200 opacity-0 pointer-events-none">
+    <div class="bg-white rounded-xl p-6 w-[90%] max-w-[400px] shadow-2xl">
+        <div class="flex items-center gap-3 mb-4">
+            <span class="iconify text-amber-500" data-icon="lucide:alert-triangle" data-width="24"></span>
+            <h3 class="text-base font-bold text-zinc-900">保険を解約しますか？</h3>
+        </div>
+        <p class="text-sm text-zinc-600 mb-6">解約後は再度加入できますが、新たに月額料金が発生します。</p>
+        <div class="flex gap-3">
+            <button onclick="closeCancelModal()" class="flex-1 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                キャンセル
+            </button>
+            <button id="confirmCancelBtn" onclick="confirmCancel()" class="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-colors">
+                解約する
+            </button>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<script>
+function showToast(message, isSuccess) {
+    var toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.style.display = 'block';
+    toast.style.backgroundColor = isSuccess ? '#16a34a' : '#dc2626';
+    // trigger reflow
+    toast.offsetHeight;
+    toast.style.transform = 'translateX(0)';
+    toast.style.opacity = '1';
+    setTimeout(function() {
+        toast.style.transform = 'translateX(120%)';
+        toast.style.opacity = '0';
+        setTimeout(function() { toast.style.display = 'none'; }, 300);
+    }, 3000);
+}
+
+function setButtonLoading(btn, loading) {
+    if (!btn) return;
+    btn.disabled = loading;
+    if (loading) {
+        btn.dataset.originalText = btn.textContent;
+        btn.textContent = '処理中...';
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'not-allowed';
+    } else {
+        btn.textContent = btn.dataset.originalText || btn.textContent;
+        btn.style.opacity = '';
+        btn.style.cursor = '';
+    }
+}
+
+async function enrollInsurance() {
+    var btn = document.getElementById('enrollBtn');
+    setButtonLoading(btn, true);
+
+    try {
+        var response = await fetch('{% url "insurance_enroll" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        });
+        var data = await response.json();
+
+        if (data.success) {
+            showToast('保険に加入しました', true);
+            setTimeout(function() { location.reload(); }, 1500);
+        } else {
+            showToast(data.error || '加入に失敗しました', false);
+            setButtonLoading(btn, false);
+        }
+    } catch (error) {
+        showToast('ネットワークエラーが発生しました', false);
+        setButtonLoading(btn, false);
+    }
+}
+
+function cancelInsurance() {
+    var modal = document.getElementById('cancelModal');
+    modal.style.opacity = '1';
+    modal.style.pointerEvents = 'auto';
+}
+
+function closeCancelModal() {
+    var modal = document.getElementById('cancelModal');
+    modal.style.opacity = '0';
+    modal.style.pointerEvents = 'none';
+}
+
+async function confirmCancel() {
+    var btn = document.getElementById('confirmCancelBtn');
+    var cancelBtn = document.getElementById('cancelBtn');
+    setButtonLoading(btn, true);
+
+    try {
+        var response = await fetch('{% url "insurance_cancel" %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            }
+        });
+        var data = await response.json();
+
+        closeCancelModal();
+
+        if (data.success) {
+            showToast('保険を解約しました', true);
+            if (cancelBtn) cancelBtn.disabled = true;
+            setTimeout(function() { location.reload(); }, 1500);
+        } else {
+            showToast(data.error || '解約に失敗しました', false);
+            setButtonLoading(btn, false);
+        }
+    } catch (error) {
+        closeCancelModal();
+        showToast('ネットワークエラーが発生しました', false);
+        setButtonLoading(btn, false);
+    }
+}
+</script>
+{% endblock %}

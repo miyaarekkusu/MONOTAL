@@ -80,4 +80,17 @@ urlpatterns = [
     path('notifications/', views.notification_list, name='notification_list'),
     path('notifications/<int:notification_id>/read/', views.notification_mark_read, name='notification_mark_read'),
     path('notifications/read-all/', views.notification_mark_all_read, name='notification_mark_all_read'),
+
+    # 保険関連
+    path('mypage/insurance/', views.insurance_page, name='insurance_page'),
+    path('mypage/insurance/enroll/', views.insurance_enroll, name='insurance_enroll'),
+    path('mypage/insurance/cancel/', views.insurance_cancel, name='insurance_cancel'),
+    path('mypage/insurance/claim/', views.insurance_claim_page, name='insurance_claim'),
+    path('mypage/insurance/claim/submit/', views.insurance_claim_submit, name='insurance_claim_submit'),
+
+    # 管理者：保険クレーム管理
+    path('admin/insurance/claims/', views.admin_insurance_claims, name='admin_insurance_claims'),
+    path('admin/insurance/claims/<int:claim_id>/', views.admin_insurance_claim_detail, name='admin_insurance_claim_detail'),
+    path('admin/insurance/claims/<int:claim_id>/approve/', views.insurance_claim_approve, name='insurance_claim_approve'),
+    path('admin/insurance/claims/<int:claim_id>/reject/', views.insurance_claim_reject, name='insurance_claim_reject'),
 ]

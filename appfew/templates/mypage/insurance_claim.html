@@ -1,0 +1,380 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 保険クレーム申請 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li><a href="{% url 'insurance_page' %}" class="hover:underline hover:text-pink-600">保険</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">クレーム申請</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">保険クレーム申請</h1>
+                <p class="text-sm text-zinc-600 mt-2">破損した商品の修理費用を請求できます。</p>
+            </div>
+
+            <form id="claimForm" method="POST" action="{% url 'insurance_claim_submit' %}" enctype="multipart/form-data" class="bg-white border border-zinc-200 rounded-lg p-6" novalidate>
+                {% csrf_token %}
+
+                <!-- レンタル履歴選択 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-zinc-900 mb-2">
+                        レンタル履歴を選択 <span class="text-pink-600">*</span>
+                    </label>
+                    <select name="rental_history_id" id="rentalHistorySelect" class="w-full rounded-lg border border-zinc-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500">
+                        <option value="">選択してください</option>
+                        {% for history in rental_histories %}
+                        <option value="{{ history.rental_history_id }}" data-product-id="{{ history.product.product_id }}">
+                            {{ history.product.product_name }} ({{ history.rental_start_datetime|date:"Y/m/d" }} 〜 {% if history.rental_end_datetime %}{{ history.rental_end_datetime|date:"Y/m/d" }}{% else %}貸出中{% endif %})
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <input type="hidden" name="product_id" id="productIdInput">
+                    <p class="field-error hidden mt-1 text-xs text-red-600" id="error-rental"></p>
+                </div>
+
+                <!-- 破損内容 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-zinc-900 mb-2">
+                        破損内容 <span class="text-pink-600">*</span>
+                    </label>
+                    <textarea name="description" id="descriptionInput" class="w-full rounded-lg border border-zinc-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" rows="4" placeholder="破損の状況を詳しくご記入ください"></textarea>
+                    <p class="field-error hidden mt-1 text-xs text-red-600" id="error-description"></p>
+                </div>
+
+                <!-- 修理費用 -->
+                <div class="mb-6">
+                    <label class="block text-sm font-bold text-zinc-900 mb-2">
+                        修理費用 <span class="text-pink-600">*</span>
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">¥</span>
+                        <input type="text" inputmode="numeric" name="repair_cost" id="repairCostInput" class="w-full rounded-lg border border-zinc-300 pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="0">
+                    </div>
+                    <p class="text-xs text-zinc-500 mt-1">※補償上限: ¥50,000</p>
+                    <p class="field-error hidden mt-1 text-xs text-red-600" id="error-cost"></p>
+                </div>
+
+                <!-- 画像アップロード -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-zinc-900 mb-4">画像アップロード <span class="text-pink-600">*</span></h3>
+                    <div class="space-y-4">
+                        <!-- 破損画像 -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-2">
+                                1. 破損した商品の画像 <span class="text-pink-600">*</span>
+                            </label>
+                            <input type="file" name="image_1" id="imageInput1" accept="image/*" class="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                            <p class="field-error hidden mt-1 text-xs text-red-600" id="error-image1"></p>
+                        </div>
+
+                        <!-- 領収書 -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-2">
+                                2. 修理費用の領収書 <span class="text-pink-600">*</span>
+                            </label>
+                            <input type="file" name="image_2" id="imageInput2" accept="image/*" class="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                            <p class="field-error hidden mt-1 text-xs text-red-600" id="error-image2"></p>
+                        </div>
+
+                        <!-- 修理後画像 -->
+                        <div>
+                            <label class="block text-sm font-medium text-zinc-700 mb-2">
+                                3. 修理後の商品の画像 <span class="text-pink-600">*</span>
+                            </label>
+                            <input type="file" name="image_3" id="imageInput3" accept="image/*" class="w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-pink-50 file:text-pink-600 hover:file:bg-pink-100">
+                            <p class="field-error hidden mt-1 text-xs text-red-600" id="error-image3"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- サーバーエラー表示エリア -->
+                <div id="serverError" class="hidden mb-4 rounded-lg border border-red-200 bg-red-50 p-4">
+                    <div class="flex items-center gap-2">
+                        <span class="iconify text-red-600" data-icon="lucide:alert-circle" data-width="16"></span>
+                        <span class="text-sm font-bold text-red-700" id="serverErrorText"></span>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <a href="{% url 'insurance_page' %}" class="flex-1 rounded-lg border border-zinc-300 px-6 py-3 text-sm font-bold text-zinc-700 text-center hover:bg-zinc-50 transition-colors">
+                        キャンセル
+                    </a>
+                    <button id="submitBtn" type="submit" class="flex-1 rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors">
+                        クレームを申請する
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<!-- トースト通知 -->
+<div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all duration-300 translate-x-[120%] opacity-0" style="display:none;"></div>
+
+<script>
+(function() {
+    var MAX_FILE_SIZE = 5 * 1024 * 1024;
+    var BORDER_DEFAULT = 'border-zinc-300';
+    var BORDER_ERROR = 'border-red-400';
+
+    // ==================== ユーティリティ ====================
+
+    function showToast(message, isSuccess) {
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.display = 'block';
+        toast.style.backgroundColor = isSuccess ? '#16a34a' : '#dc2626';
+        toast.offsetHeight;
+        toast.style.transform = 'translateX(0)';
+        toast.style.opacity = '1';
+        setTimeout(function() {
+            toast.style.transform = 'translateX(120%)';
+            toast.style.opacity = '0';
+            setTimeout(function() { toast.style.display = 'none'; }, 300);
+        }, 3000);
+    }
+
+    function setButtonLoading(btn, loading) {
+        if (!btn) return;
+        btn.disabled = loading;
+        if (loading) {
+            btn.dataset.originalText = btn.textContent;
+            btn.textContent = '送信中...';
+            btn.style.opacity = '0.6';
+            btn.style.cursor = 'not-allowed';
+        } else {
+            btn.textContent = btn.dataset.originalText || btn.textContent;
+            btn.style.opacity = '';
+            btn.style.cursor = '';
+        }
+    }
+
+    // ==================== フィールドエラー表示 ====================
+
+    function showFieldError(fieldEl, errorEl, message) {
+        errorEl.textContent = message;
+        errorEl.classList.remove('hidden');
+        fieldEl.classList.remove(BORDER_DEFAULT);
+        fieldEl.classList.add(BORDER_ERROR);
+    }
+
+    function clearFieldError(fieldEl, errorEl) {
+        errorEl.textContent = '';
+        errorEl.classList.add('hidden');
+        fieldEl.classList.remove(BORDER_ERROR);
+        fieldEl.classList.add(BORDER_DEFAULT);
+    }
+
+    function showServerError(message) {
+        var el = document.getElementById('serverError');
+        document.getElementById('serverErrorText').textContent = message;
+        el.classList.remove('hidden');
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    function hideServerError() {
+        document.getElementById('serverError').classList.add('hidden');
+    }
+
+    // ==================== 個別バリデーション ====================
+
+    function validateRental() {
+        var el = document.getElementById('rentalHistorySelect');
+        var err = document.getElementById('error-rental');
+        if (!el.value) {
+            showFieldError(el, err, 'レンタル履歴を選択してください');
+            return false;
+        }
+        clearFieldError(el, err);
+        return true;
+    }
+
+    function validateDescription() {
+        var el = document.getElementById('descriptionInput');
+        var err = document.getElementById('error-description');
+        if (!el.value.trim()) {
+            showFieldError(el, err, '破損内容を入力してください');
+            return false;
+        }
+        clearFieldError(el, err);
+        return true;
+    }
+
+    function validateCost() {
+        var el = document.getElementById('repairCostInput');
+        var err = document.getElementById('error-cost');
+        var raw = el.value.replace(/[^0-9]/g, '');
+        var cost = parseInt(raw);
+
+        if (!raw || isNaN(cost)) {
+            showFieldError(el, err, '修理費用を入力してください');
+            return false;
+        }
+        if (cost < 1) {
+            showFieldError(el, err, '修理費用は1円以上で入力してください');
+            return false;
+        }
+        if (cost > 50000) {
+            showFieldError(el, err, '修理費用は補償上限の¥50,000以下で入力してください');
+            return false;
+        }
+        clearFieldError(el, err);
+        return true;
+    }
+
+    function validateImage(index) {
+        var el = document.getElementById('imageInput' + index);
+        var err = document.getElementById('error-image' + index);
+        var labels = ['破損した商品の画像', '修理費用の領収書', '修理後の商品の画像'];
+
+        if (!el.files.length) {
+            showFieldError(el, err, labels[index - 1] + 'を選択してください');
+            return false;
+        }
+        var file = el.files[0];
+        if (file.size > MAX_FILE_SIZE) {
+            showFieldError(el, err, 'ファイルサイズが5MBを超えています');
+            return false;
+        }
+        if (!file.type.startsWith('image/')) {
+            showFieldError(el, err, '画像ファイルを選択してください');
+            return false;
+        }
+        clearFieldError(el, err);
+        return true;
+    }
+
+    function validateAll() {
+        var r1 = validateRental();
+        var r2 = validateDescription();
+        var r3 = validateCost();
+        var r4 = validateImage(1);
+        var r5 = validateImage(2);
+        var r6 = validateImage(3);
+        return r1 && r2 && r3 && r4 && r5 && r6;
+    }
+
+    // ==================== リアルタイムイベント ====================
+
+    document.getElementById('rentalHistorySelect').addEventListener('change', function() {
+        var selectedOption = this.options[this.selectedIndex];
+        document.getElementById('productIdInput').value = selectedOption.getAttribute('data-product-id') || '';
+        validateRental();
+    });
+
+    document.getElementById('descriptionInput').addEventListener('blur', validateDescription);
+    document.getElementById('descriptionInput').addEventListener('input', function() {
+        // 入力中はエラーが出ていたらクリアのみ
+        var err = document.getElementById('error-description');
+        if (!err.classList.contains('hidden') && this.value.trim()) {
+            clearFieldError(this, err);
+        }
+    });
+
+    // 修理費用: 数字のみ許可 + リアルタイムバリデーション
+    var costInput = document.getElementById('repairCostInput');
+    costInput.addEventListener('input', function() {
+        // 数字以外を除去
+        this.value = this.value.replace(/[^0-9]/g, '');
+        // 入力中にエラーが出ていたら即時チェック
+        var err = document.getElementById('error-cost');
+        if (!err.classList.contains('hidden')) {
+            validateCost();
+        }
+    });
+    costInput.addEventListener('blur', validateCost);
+
+    // 画像: change時にバリデーション
+    [1, 2, 3].forEach(function(i) {
+        document.getElementById('imageInput' + i).addEventListener('change', function() {
+            validateImage(i);
+        });
+    });
+
+    // ==================== フォーム送信 ====================
+
+    document.getElementById('claimForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        hideServerError();
+
+        if (!validateAll()) {
+            // 最初のエラーフィールドにスクロール
+            var firstError = document.querySelector('.field-error:not(.hidden)');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            return;
+        }
+
+        var btn = document.getElementById('submitBtn');
+        setButtonLoading(btn, true);
+
+        var formData = new FormData(this);
+
+        try {
+            var response = await fetch('{% url "insurance_claim_submit" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            });
+            var data = await response.json();
+
+            if (data.success) {
+                showToast('クレームを申請しました', true);
+                setTimeout(function() {
+                    window.location.href = '{% url "insurance_page" %}';
+                }, 1500);
+            } else {
+                // サーバー側バリデーションエラー
+                if (data.field) {
+                    // フィールド特定エラー
+                    var fieldMap = {
+                        'rental_history_id': ['rentalHistorySelect', 'error-rental'],
+                        'description': ['descriptionInput', 'error-description'],
+                        'repair_cost': ['repairCostInput', 'error-cost'],
+                        'image_1': ['imageInput1', 'error-image1'],
+                        'image_2': ['imageInput2', 'error-image2'],
+                        'image_3': ['imageInput3', 'error-image3'],
+                    };
+                    var target = fieldMap[data.field];
+                    if (target) {
+                        showFieldError(document.getElementById(target[0]), document.getElementById(target[1]), data.error);
+                        document.getElementById(target[1]).scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } else {
+                        showServerError(data.error);
+                    }
+                } else {
+                    showServerError(data.error || '申請に失敗しました');
+                }
+                setButtonLoading(btn, false);
+            }
+        } catch (error) {
+            showToast('ネットワークエラーが発生しました', false);
+            setButtonLoading(btn, false);
+        }
+    });
+})();
+</script>
+{% endblock %}

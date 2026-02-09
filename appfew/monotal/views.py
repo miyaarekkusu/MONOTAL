@@ -4846,3 +4846,20 @@ class SearchAutocompleteView(View):
 
 # 検索オートコンプリートビュー
 search_autocomplete = SearchAutocompleteView.as_view()
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  保険関連ビュー / Insurance Related Views                                     ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+from .views_insurance import (
+    insurance_page,
+    insurance_enroll,
+    insurance_cancel,
+    insurance_claim_page,
+    insurance_claim_submit,
+    admin_insurance_claims,
+    admin_insurance_claim_detail,
+    insurance_claim_approve,
+    insurance_claim_reject,
+)

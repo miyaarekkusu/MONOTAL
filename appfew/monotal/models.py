@@ -1438,12 +1438,13 @@ class Insurance(models.Model):
     insurance_name = models.CharField(max_length=100, null=True, blank=True)
     insurance_description = models.CharField(max_length=1000, null=True, blank=True)
     insurance_fee = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    
+    coverage_limit = models.DecimalField(max_digits=10, decimal_places=0, default=50000)  # 補償上限金額
+
     class Meta:
         db_table = 'M_Insurance'
         verbose_name = '保険'
         verbose_name_plural = '保険'
-    
+
     def __str__(self):
         return self.insurance_name or f'保険 {self.insurance_id}'
 
@@ -1471,25 +1472,136 @@ class InsuranceEnrollment(models.Model):
     ユーザーの保険加入状況を管理
     """
     insurance_enrollment_id = models.AutoField(primary_key=True)
-    
+
     user = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
+        User,
+        on_delete=models.CASCADE,
         db_column='user_id'
     )
     insurance = models.ForeignKey(
-        Insurance, 
-        on_delete=models.PROTECT, 
+        Insurance,
+        on_delete=models.PROTECT,
         db_column='insurance_id'
     )
-    
+
     insurance_start_datetime = models.DateTimeField()
-    insurance_end_datetime = models.DateTimeField()
-    
+    insurance_end_datetime = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         db_table = 'T_InsuranceEnrollment'
         verbose_name = '保険加入'
         verbose_name_plural = '保険加入'
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# 保険クレーム / Insurance Claim
+# ────────────────────────────────────────────────────────────────────────────────
+
+class InsuranceClaimStatus(models.Model):
+    """
+    保険クレームステータスマスター
+    1: 審査中
+    2: 承認
+    3: 却下
+    """
+    insurance_claim_status_id = models.AutoField(primary_key=True)
+    status_name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'M_InsuranceClaimStatus'
+        verbose_name = '保険クレームステータス'
+        verbose_name_plural = '保険クレームステータス'
+
+    def __str__(self):
+        return self.status_name
+
+
+class InsuranceClaim(models.Model):
+    """
+    保険クレームテーブル
+    商品破損時の保険請求を管理
+    """
+    claim_id = models.AutoField(primary_key=True)
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        db_column='user_id'
+    )
+
+    rental_history = models.ForeignKey(
+        RentalHistory,
+        on_delete=models.PROTECT,
+        db_column='rental_history_id',
+        null=True,
+        blank=True
+    )
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.PROTECT,
+        db_column='product_id'
+    )
+
+    insurance_claim_status = models.ForeignKey(
+        InsuranceClaimStatus,
+        on_delete=models.PROTECT,
+        db_column='insurance_claim_status_id'
+    )
+
+    claim_description = models.TextField()  # 破損内容
+    repair_cost = models.DecimalField(max_digits=10, decimal_places=0)  # 修理費用
+
+    claim_datetime = models.DateTimeField(auto_now_add=True)
+    approval_datetime = models.DateTimeField(null=True, blank=True)
+    rejection_datetime = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(max_length=500, null=True, blank=True)
+
+    class Meta:
+        db_table = 'T_InsuranceClaim'
+        verbose_name = '保険クレーム'
+        verbose_name_plural = '保険クレーム'
+
+    def __str__(self):
+        return f"{self.user.display_name} - {self.product.product_name} (¥{self.repair_cost})"
+
+
+class InsuranceClaimImage(models.Model):
+    """
+    保険クレーム画像テーブル
+    クレーム申請時の添付画像を管理
+
+    【画像タイプ】
+    - 1: 破損した商品の画像
+    - 2: 修理費用の領収書
+    - 3: 修理後の商品の画像
+    """
+    IMAGE_TYPE_CHOICES = [
+        (1, '破損画像'),
+        (2, '領収書'),
+        (3, '修理後画像'),
+    ]
+
+    image_id = models.AutoField(primary_key=True)
+
+    claim = models.ForeignKey(
+        InsuranceClaim,
+        on_delete=models.CASCADE,
+        related_name='images',
+        db_column='claim_id'
+    )
+
+    image = models.ImageField(upload_to='insurance_claims/')
+    image_type = models.IntegerField(choices=IMAGE_TYPE_CHOICES)
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_InsuranceClaimImage'
+        verbose_name = '保険クレーム画像'
+        verbose_name_plural = '保険クレーム画像'
+
+    def __str__(self):
+        return f"Claim {self.claim_id} - {self.get_image_type_display()}"
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗

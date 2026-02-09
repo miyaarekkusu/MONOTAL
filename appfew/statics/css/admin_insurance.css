@@ -1,0 +1,191 @@
+/* 保険クレーム管理画面 追加スタイル */
+
+/* ステータスフィルタータブ */
+.filter-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    border: 1px solid #e5e7eb;
+}
+
+.filter-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 16px;
+    text-decoration: none;
+    color: #6b7280;
+    font-size: 14px;
+    font-weight: 500;
+    border-right: 1px solid #e5e7eb;
+    transition: all 0.2s ease;
+}
+
+.filter-tab:last-child {
+    border-right: none;
+}
+
+.filter-tab:hover {
+    background: #f9fafb;
+    color: #374151;
+}
+
+.filter-tab.active {
+    background: #007bff;
+    color: #fff;
+}
+
+.filter-tab.active .tab-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+.tab-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: #f3f4f6;
+    color: #6b7280;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* テーブルセル */
+.product-name-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.repair-cost-cell {
+    font-weight: 600;
+    color: #e11d48;
+}
+
+/* 詳細画面: 破損内容 */
+.claim-description {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+/* 詳細画面: 修理費用ハイライト */
+.repair-cost-highlight {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #e11d48;
+}
+
+/* 画像なし */
+.no-image {
+    color: #9ca3af;
+    font-size: 13px;
+    padding: 20px 0;
+}
+
+/* 審査結果カード */
+.result-card.result-approved {
+    background-color: #f0fdf4;
+    border: 1px solid #bbf7d0;
+}
+
+.result-card.result-rejected {
+    background-color: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+/* 却下理由モーダル */
+#rejectModal {
+    z-index: 1001;
+}
+
+.reject-modal-content {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.reject-modal-content h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: #18181b;
+}
+
+.reject-modal-content textarea {
+    width: 100%;
+    min-height: 120px;
+    padding: 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    resize: vertical;
+    box-sizing: border-box;
+}
+
+.reject-modal-content textarea:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.reject-modal-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.btn-cancel-modal {
+    background: #f3f4f6;
+    color: #374151;
+    padding: 10px 24px;
+    border: 1px solid #d1d5db;
+}
+
+.btn-cancel-modal:hover {
+    background: #e5e7eb;
+}
+
+/* レスポンシブ */
+@media (max-width: 768px) {
+    .filter-tabs {
+        flex-direction: column;
+    }
+
+    .filter-tab {
+        border-right: none;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .filter-tab:last-child {
+        border-bottom: none;
+    }
+
+    .reject-modal-content {
+        width: 95%;
+        padding: 20px;
+    }
+
+    .reject-modal-actions {
+        flex-direction: column;
+    }
+
+    .reject-modal-actions .btn {
+        width: 100%;
+    }
+}

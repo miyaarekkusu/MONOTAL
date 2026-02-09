@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}保険クレーム審査 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_insurance.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="page-title">保険クレーム審査</h1>
+
+    <!-- 申請者情報 -->
+    <div class="info-card">
+        <h2>申請者情報</h2>
+        <div class="info-row">
+            <span class="info-label">ユーザー名</span>
+            <span class="info-value">{{ claim.user.user_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">表示名</span>
+            <span class="info-value">{{ claim.user.display_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">メールアドレス</span>
+            <span class="info-value">{{ claim.user.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">申請日時</span>
+            <span class="info-value">{{ claim.claim_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">ステータス</span>
+            <span class="info-value">
+                {% if claim.insurance_claim_status.insurance_claim_status_id == 1 %}
+                    <span class="status-badge pending">審査中</span>
+                {% elif claim.insurance_claim_status.insurance_claim_status_id == 2 %}
+                    <span class="status-badge approved">承認</span>
+                {% else %}
+                    <span class="status-badge rejected">却下</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- レンタル情報 -->
+    <div class="info-card">
+        <h2>レンタル情報</h2>
+        <div class="info-row">
+            <span class="info-label">商品名</span>
+            <span class="info-value">{{ claim.product.product_name }}</span>
+        </div>
+        {% if claim.rental_history %}
+        <div class="info-row">
+            <span class="info-label">レンタル期間</span>
+            <span class="info-value">
+                {{ claim.rental_history.rental_start_datetime|date:"Y/m/d" }} 〜
+                {% if claim.rental_history.rental_end_datetime %}
+                    {{ claim.rental_history.rental_end_datetime|date:"Y/m/d" }}
+                {% else %}
+                    <span class="status-badge pending">貸出中</span>
+                {% endif %}
+            </span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 破損内容・修理費用 -->
+    <div class="info-card">
+        <h2>破損内容</h2>
+        <div class="info-row">
+            <span class="info-label">詳細</span>
+            <span class="info-value claim-description">{{ claim.claim_description }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">修理費用</span>
+            <span class="info-value repair-cost-highlight">¥{{ claim.repair_cost|floatformat:0 }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">補償上限</span>
+            <span class="info-value">¥{{ insurance_plan.coverage_limit|floatformat:0 }}</span>
+        </div>
+    </div>
+
+    <!-- 添付画像 -->
+    <div class="info-card">
+        <h2>添付画像</h2>
+        <div class="images-container">
+            <div class="image-card">
+                <h3>破損した商品</h3>
+                {% for img in images.damaged %}
+                <img src="{{ img.image.url }}" alt="破損画像" onclick="openModal(this.src)">
+                {% empty %}
+                <p class="no-image">画像なし</p>
+                {% endfor %}
+            </div>
+
+            <div class="image-card">
+                <h3>修理費用の領収書</h3>
+                {% for img in images.receipt %}
+                <img src="{{ img.image.url }}" alt="領収書" onclick="openModal(this.src)">
+                {% empty %}
+                <p class="no-image">画像なし</p>
+                {% endfor %}
+            </div>
+
+            <div class="image-card">
+                <h3>修理後の商品</h3>
+                {% for img in images.repaired %}
+                <img src="{{ img.image.url }}" alt="修理後画像" onclick="openModal(this.src)">
+                {% empty %}
+                <p class="no-image">画像なし</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 審査アクション（審査中のみ表示） -->
+    {% if claim.insurance_claim_status.insurance_claim_status_id == 1 %}
+    <div class="action-buttons">
+        <button type="button" class="btn btn-approve" id="approveBtn" onclick="submitClaimReview('approve')">
+            承認
+        </button>
+        <button type="button" class="btn btn-reject" id="rejectBtn" onclick="openRejectModal()">
+            却下
+        </button>
+    </div>
+    {% endif %}
+
+    <!-- 審査結果（承認済み） -->
+    {% if claim.insurance_claim_status.insurance_claim_status_id == 2 %}
+    <div class="info-card result-card result-approved">
+        <h2>審査結果</h2>
+        <div class="info-row">
+            <span class="info-label">結果</span>
+            <span class="info-value"><span class="status-badge approved">承認</span></span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">承認日時</span>
+            <span class="info-value">{{ claim.approval_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 審査結果（却下） -->
+    {% if claim.insurance_claim_status.insurance_claim_status_id == 3 %}
+    <div class="info-card result-card result-rejected">
+        <h2>審査結果</h2>
+        <div class="info-row">
+            <span class="info-label">結果</span>
+            <span class="info-value"><span class="status-badge rejected">却下</span></span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">却下日時</span>
+            <span class="info-value">{{ claim.rejection_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        {% if claim.rejection_reason %}
+        <div class="info-row">
+            <span class="info-label">却下理由</span>
+            <span class="info-value">{{ claim.rejection_reason }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'admin_insurance_claims' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            一覧に戻る
+        </a>
+    </p>
+</div>
+
+<!-- 一覧URLをJSに渡す -->
+<input type="hidden" id="claimListUrl" value="{% url 'admin_insurance_claims' %}">
+
+<!-- 画像拡大モーダル -->
+<div class="modal-overlay" id="imageModal" onclick="closeModal()">
+    <span class="modal-close">&times;</span>
+    <div class="modal-content">
+        <img id="modalImage" src="" alt="拡大画像">
+    </div>
+</div>
+
+<!-- 却下理由モーダル -->
+<div class="modal-overlay" id="rejectModal">
+    <div class="reject-modal-content">
+        <h3>却下理由を入力</h3>
+        <textarea id="rejectReason" placeholder="却下理由を入力してください（任意）"></textarea>
+        <div class="reject-modal-actions">
+            <button type="button" class="btn btn-cancel-modal" onclick="closeRejectModal()">キャンセル</button>
+            <button type="button" class="btn btn-reject" onclick="submitClaimReview('reject')">却下する</button>
+        </div>
+    </div>
+</div>
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_insurance.js' %}"></script>
+{% endblock %}
