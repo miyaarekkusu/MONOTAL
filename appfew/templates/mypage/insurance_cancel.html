@@ -1,0 +1,512 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}保険解約確認 | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+.cancel-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 24px 16px;
+}
+
+.page-header {
+    margin-bottom: 32px;
+}
+
+.page-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #18181b;
+    margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+    font-size: 14px;
+    color: #71717a;
+    margin: 0;
+}
+
+/* プランサマリー */
+.plan-summary {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    margin-bottom: 24px;
+}
+
+.plan-icon {
+    width: 56px;
+    height: 56px;
+    background: #fdf2f8;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    color: #ec4899;
+}
+
+.plan-info {
+    flex: 1;
+}
+
+.plan-info h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 12px 0;
+}
+
+.plan-details-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.detail-row {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+}
+
+.detail-label {
+    color: #71717a;
+    min-width: 80px;
+    flex-shrink: 0;
+}
+
+.detail-value {
+    color: #18181b;
+    font-weight: 500;
+}
+
+/* セクション */
+.section {
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 16px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.section-title .iconify {
+    color: #ec4899;
+}
+
+/* 選択リスト */
+.option-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.option-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 2px solid #e4e4e7;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-item:hover {
+    border-color: #d4d4d8;
+}
+
+.option-item.selected {
+    border-color: #ec4899;
+    background: #fdf2f8;
+}
+
+.option-item input[type="radio"] {
+    margin-top: 2px;
+    accent-color: #ec4899;
+}
+
+.option-content {
+    flex: 1;
+}
+
+.option-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0;
+}
+
+/* その他自由記入 */
+.other-input {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border: 1px solid #d4d4d8;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #18181b;
+    background: white;
+    resize: none;
+    display: none;
+}
+
+.other-input:focus {
+    outline: none;
+    border-color: #ec4899;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.1);
+}
+
+/* 注意事項 */
+.notice-box {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 8px;
+}
+
+.notice-box .notice-icon {
+    color: #3b82f6;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.notice-list li {
+    font-size: 13px;
+    color: #1e40af;
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+.notice-list li .iconify {
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.error-text {
+    font-size: 12px;
+    color: #dc2626;
+    margin: 8px 0 0 0;
+    display: none;
+}
+
+/* アクションボタン */
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #71717a;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: #f4f4f5;
+}
+
+.btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 32px;
+    font-size: 14px;
+    font-weight: 600;
+    color: white;
+    background: #dc2626;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #b91c1c;
+}
+
+.btn-cancel:disabled {
+    background: #a1a1aa;
+    cursor: not-allowed;
+}
+
+/* トースト */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    padding: 14px 24px;
+    background: #16a34a;
+    color: white;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    z-index: 50;
+    transform: translateX(120%);
+    opacity: 0;
+    transition: all 0.3s;
+}
+
+.toast.show {
+    transform: translateX(0);
+    opacity: 1;
+}
+
+@media (max-width: 640px) {
+    .plan-summary {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .detail-row {
+        justify-content: center;
+    }
+
+    .form-actions {
+        flex-direction: column;
+    }
+
+    .btn-back, .btn-cancel {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="cancel-container">
+    <div class="page-header">
+        <h1 class="page-title">保険解約確認</h1>
+        <p class="page-subtitle">解約理由をお聞かせください</p>
+    </div>
+
+    <!-- プランサマリー -->
+    <div class="plan-summary">
+        <div class="plan-icon">
+            <span class="iconify" data-icon="lucide:shield-check" data-width="28"></span>
+        </div>
+        <div class="plan-info">
+            <h3>{{ enrollment.insurance.insurance_name }}</h3>
+            <div class="plan-details-list">
+                <div class="detail-row">
+                    <span class="detail-label">加入日</span>
+                    <span class="detail-value">{{ enrollment.insurance_start_datetime|date:"Y年m月d日" }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">月額料金</span>
+                    <span class="detail-value">¥{{ enrollment.insurance.insurance_fee|floatformat:0 }}/月</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">補償上限</span>
+                    <span class="detail-value">¥{{ enrollment.insurance.coverage_limit|floatformat:0 }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <form id="cancelForm">
+        {% csrf_token %}
+
+        <!-- 解約理由選択 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:message-circle" data-width="20"></span>
+                解約理由
+            </h2>
+            <div class="option-list" id="reasonList">
+                <label class="option-item" data-reason="料金が高い">
+                    <input type="radio" name="cancel_reason" value="料金が高い">
+                    <div class="option-content">
+                        <p class="option-label">料金が高い</p>
+                    </div>
+                </label>
+                <label class="option-item" data-reason="補償を使う機会がない">
+                    <input type="radio" name="cancel_reason" value="補償を使う機会がない">
+                    <div class="option-content">
+                        <p class="option-label">補償を使う機会がない</p>
+                    </div>
+                </label>
+                <label class="option-item" data-reason="サービスに不満">
+                    <input type="radio" name="cancel_reason" value="サービスに不満">
+                    <div class="option-content">
+                        <p class="option-label">サービスに不満</p>
+                    </div>
+                </label>
+                <label class="option-item" data-reason="その他">
+                    <input type="radio" name="cancel_reason" value="その他">
+                    <div class="option-content">
+                        <p class="option-label">その他</p>
+                        <textarea id="otherReason" class="other-input" name="cancel_reason_other" rows="3" placeholder="解約理由をご記入ください" maxlength="400"></textarea>
+                    </div>
+                </label>
+            </div>
+            <p class="error-text" id="reasonError">解約理由を選択してください</p>
+        </div>
+
+        <!-- 注意事項 -->
+        <div class="section">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:info" data-width="20"></span>
+                注意事項
+            </h2>
+            <div class="notice-box">
+                <span class="iconify notice-icon" data-icon="lucide:info" data-width="20"></span>
+                <ul class="notice-list">
+                    <li>
+                        <span class="iconify" data-icon="lucide:alert-circle" data-width="14"></span>
+                        解約後は補償申請ができなくなります
+                    </li>
+                    <li>
+                        <span class="iconify" data-icon="lucide:check" data-width="14"></span>
+                        審査中の補償申請は引き続き審査されます
+                    </li>
+                    <li>
+                        <span class="iconify" data-icon="lucide:alert-circle" data-width="14"></span>
+                        解約後は再度加入できますが、新たに月額料金が発生します
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- アクションボタン -->
+        <div class="form-actions">
+            <a href="{% url 'insurance_page' %}" class="btn-back">
+                <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span>
+                戻る
+            </a>
+            <button type="submit" class="btn-cancel" id="submitBtn">
+                <span class="iconify" data-icon="lucide:shield-off" data-width="18"></span>
+                解約する
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- トースト -->
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function() {
+    // 理由選択のハイライト
+    var reasonItems = document.querySelectorAll('.option-item');
+    var otherInput = document.getElementById('otherReason');
+
+    reasonItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+            reasonItems.forEach(function(el) { el.classList.remove('selected'); });
+            this.classList.add('selected');
+            this.querySelector('input[type="radio"]').checked = true;
+            document.getElementById('reasonError').style.display = 'none';
+
+            // 「その他」の場合のみテキストエリアを表示
+            if (this.dataset.reason === 'その他') {
+                otherInput.style.display = 'block';
+                otherInput.focus();
+            } else {
+                otherInput.style.display = 'none';
+            }
+        });
+    });
+
+    // トースト表示
+    function showToast(message, isSuccess) {
+        var toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.style.background = isSuccess ? '#16a34a' : '#dc2626';
+        toast.classList.add('show');
+        setTimeout(function() { toast.classList.remove('show'); }, 3000);
+    }
+
+    // フォーム送信
+    document.getElementById('cancelForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        // 理由選択チェック
+        var selectedReason = document.querySelector('input[name="cancel_reason"]:checked');
+        if (!selectedReason) {
+            document.getElementById('reasonError').style.display = 'block';
+            return;
+        }
+
+        var btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.textContent = '処理中...';
+
+        var formData = new FormData();
+        formData.append('cancel_reason', selectedReason.value);
+        if (selectedReason.value === 'その他') {
+            formData.append('cancel_reason_other', otherInput.value);
+        }
+
+        try {
+            var response = await fetch('{% url "insurance_cancel" %}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: formData
+            });
+            var data = await response.json();
+
+            if (data.success) {
+                showToast('解約予約を受け付けました', true);
+                setTimeout(function() {
+                    window.location.href = '{% url "insurance_page" %}';
+                }, 1500);
+            } else {
+                showToast(data.error || '解約に失敗しました', false);
+                btn.disabled = false;
+                btn.textContent = '解約する';
+            }
+        } catch (error) {
+            showToast('ネットワークエラーが発生しました', false);
+            btn.disabled = false;
+            btn.textContent = '解約する';
+        }
+    });
+})();
+</script>
+{% endblock %}

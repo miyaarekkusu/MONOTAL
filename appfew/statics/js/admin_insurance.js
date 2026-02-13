@@ -1,5 +1,5 @@
 /**
- * 管理者用保険クレーム審査画面JavaScript
+ * 管理者用補償申請審査画面JavaScript
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -85,7 +85,7 @@ function showToast(message, isSuccess) {
 }
 
 /**
- * クレーム審査処理を送信
+ * 補償申請審査処理を送信
  */
 async function submitClaimReview(action) {
     const approveBtn = document.getElementById('approveBtn');

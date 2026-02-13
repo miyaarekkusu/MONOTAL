@@ -83,12 +83,14 @@ urlpatterns = [
 
     # 保険関連
     path('mypage/insurance/', views.insurance_page, name='insurance_page'),
-    path('mypage/insurance/enroll/', views.insurance_enroll, name='insurance_enroll'),
+    path('mypage/insurance/enroll/', views.insurance_enroll_confirm, name='insurance_enroll_confirm'),
+    path('mypage/insurance/enroll/submit/', views.insurance_enroll, name='insurance_enroll'),
     path('mypage/insurance/cancel/', views.insurance_cancel, name='insurance_cancel'),
+    path('mypage/insurance/cancel/confirm/', views.insurance_cancel_confirm, name='insurance_cancel_confirm'),
     path('mypage/insurance/claim/', views.insurance_claim_page, name='insurance_claim'),
     path('mypage/insurance/claim/submit/', views.insurance_claim_submit, name='insurance_claim_submit'),
 
-    # 管理者：保険クレーム管理
+    # 管理者：補償申請管理
     path('admin/insurance/claims/', views.admin_insurance_claims, name='admin_insurance_claims'),
     path('admin/insurance/claims/<int:claim_id>/', views.admin_insurance_claim_detail, name='admin_insurance_claim_detail'),
     path('admin/insurance/claims/<int:claim_id>/approve/', views.insurance_claim_approve, name='insurance_claim_approve'),

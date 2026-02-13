@@ -44,13 +44,62 @@
                         <p><span class="font-medium">補償上限:</span> ¥{{ enrollment.insurance.coverage_limit|floatformat:0 }}</p>
                     </div>
 
+                    <!-- 補償残枠情報 -->
+                    {% if monthly_remaining is not None %}
+                    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="iconify text-pink-600" data-icon="lucide:calendar" data-width="16"></span>
+                                <span class="text-sm font-bold text-zinc-900">今月の補償残枠</span>
+                            </div>
+                            <span class="text-lg font-bold {% if monthly_remaining > 0 %}text-pink-600{% else %}text-red-600{% endif %}">
+                                ¥{{ monthly_remaining|floatformat:0 }} <span class="text-xs font-normal text-zinc-500">/ ¥{{ coverage_limit|floatformat:0 }}</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-4 mt-2">
+                            <div class="flex items-center gap-1">
+                                <span class="iconify text-zinc-400" data-icon="lucide:calendar-range" data-width="12"></span>
+                                <span class="text-xs text-zinc-500">補償期間: {{ period_start|date:"m/d" }} 〜 {{ reset_date|date:"m/d" }}</span>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                <span class="iconify text-zinc-400" data-icon="lucide:refresh-cw" data-width="12"></span>
+                                <span class="text-xs text-zinc-500">次回リセット: {{ reset_date|date:"Y年m月d日" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- 審査中の補償申請 -->
+                    {% if pending_claims %}
+                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="iconify text-amber-600" data-icon="lucide:clock" data-width="18"></span>
+                            <h3 class="text-sm font-bold text-zinc-900">審査中の補償申請</h3>
+                        </div>
+                        <div class="space-y-3">
+                            {% for claim in pending_claims %}
+                            <div class="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-100">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-zinc-900 truncate">{{ claim.product.product_name }}</p>
+                                    <p class="text-xs text-zinc-500 mt-0.5">申請日: {{ claim.claim_datetime|date:"Y/m/d" }}</p>
+                                </div>
+                                <div class="flex items-center gap-3 ml-4">
+                                    <span class="text-sm font-bold text-zinc-900">¥{{ claim.repair_cost|floatformat:0 }}</span>
+                                    <span class="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-bold text-amber-700">審査中</span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <div class="flex gap-3">
                         <a href="{% url 'insurance_claim' %}" class="flex-1 rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white text-center hover:bg-pink-700 transition-colors">
-                            クレームを申請する
+                            補償申請する
                         </a>
-                        <button id="cancelBtn" onclick="cancelInsurance()" class="flex-1 rounded-lg border border-zinc-300 px-6 py-3 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                        <a href="{% url 'insurance_cancel_confirm' %}" class="flex-1 rounded-lg border border-zinc-300 px-6 py-3 text-sm font-bold text-zinc-700 text-center hover:bg-zinc-50 transition-colors">
                             保険を解約する
-                        </button>
+                        </a>
                     </div>
                 </div>
             {% else %}
@@ -99,9 +148,9 @@
                         </ul>
                     </div>
 
-                    <button id="enrollBtn" onclick="enrollInsurance()" class="w-full rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors">
+                    <a href="{% url 'insurance_enroll_confirm' %}" class="block w-full rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white text-center hover:bg-pink-700 transition-colors">
                         月額¥2,000で加入する
-                    </button>
+                    </a>
                 </div>
             {% endif %}
         </div>
@@ -110,27 +159,6 @@
 
 <!-- トースト通知 -->
 <div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all duration-300 translate-x-[120%] opacity-0" style="display:none;"></div>
-
-<!-- 解約確認モーダル -->
-{% if enrollment %}
-<div id="cancelModal" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center transition-opacity duration-200 opacity-0 pointer-events-none">
-    <div class="bg-white rounded-xl p-6 w-[90%] max-w-[400px] shadow-2xl">
-        <div class="flex items-center gap-3 mb-4">
-            <span class="iconify text-amber-500" data-icon="lucide:alert-triangle" data-width="24"></span>
-            <h3 class="text-base font-bold text-zinc-900">保険を解約しますか？</h3>
-        </div>
-        <p class="text-sm text-zinc-600 mb-6">解約後は再度加入できますが、新たに月額料金が発生します。</p>
-        <div class="flex gap-3">
-            <button onclick="closeCancelModal()" class="flex-1 rounded-lg border border-zinc-300 px-4 py-2.5 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
-                キャンセル
-            </button>
-            <button id="confirmCancelBtn" onclick="confirmCancel()" class="flex-1 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-red-700 transition-colors">
-                解約する
-            </button>
-        </div>
-    </div>
-</div>
-{% endif %}
 
 <script>
 function showToast(message, isSuccess) {
@@ -149,90 +177,5 @@ function showToast(message, isSuccess) {
     }, 3000);
 }
 
-function setButtonLoading(btn, loading) {
-    if (!btn) return;
-    btn.disabled = loading;
-    if (loading) {
-        btn.dataset.originalText = btn.textContent;
-        btn.textContent = '処理中...';
-        btn.style.opacity = '0.6';
-        btn.style.cursor = 'not-allowed';
-    } else {
-        btn.textContent = btn.dataset.originalText || btn.textContent;
-        btn.style.opacity = '';
-        btn.style.cursor = '';
-    }
-}
-
-async function enrollInsurance() {
-    var btn = document.getElementById('enrollBtn');
-    setButtonLoading(btn, true);
-
-    try {
-        var response = await fetch('{% url "insurance_enroll" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json',
-            }
-        });
-        var data = await response.json();
-
-        if (data.success) {
-            showToast('保険に加入しました', true);
-            setTimeout(function() { location.reload(); }, 1500);
-        } else {
-            showToast(data.error || '加入に失敗しました', false);
-            setButtonLoading(btn, false);
-        }
-    } catch (error) {
-        showToast('ネットワークエラーが発生しました', false);
-        setButtonLoading(btn, false);
-    }
-}
-
-function cancelInsurance() {
-    var modal = document.getElementById('cancelModal');
-    modal.style.opacity = '1';
-    modal.style.pointerEvents = 'auto';
-}
-
-function closeCancelModal() {
-    var modal = document.getElementById('cancelModal');
-    modal.style.opacity = '0';
-    modal.style.pointerEvents = 'none';
-}
-
-async function confirmCancel() {
-    var btn = document.getElementById('confirmCancelBtn');
-    var cancelBtn = document.getElementById('cancelBtn');
-    setButtonLoading(btn, true);
-
-    try {
-        var response = await fetch('{% url "insurance_cancel" %}', {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': '{{ csrf_token }}',
-                'Content-Type': 'application/json',
-            }
-        });
-        var data = await response.json();
-
-        closeCancelModal();
-
-        if (data.success) {
-            showToast('保険を解約しました', true);
-            if (cancelBtn) cancelBtn.disabled = true;
-            setTimeout(function() { location.reload(); }, 1500);
-        } else {
-            showToast(data.error || '解約に失敗しました', false);
-            setButtonLoading(btn, false);
-        }
-    } catch (error) {
-        closeCancelModal();
-        showToast('ネットワークエラーが発生しました', false);
-        setButtonLoading(btn, false);
-    }
-}
 </script>
 {% endblock %}

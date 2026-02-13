@@ -4854,8 +4854,10 @@ search_autocomplete = SearchAutocompleteView.as_view()
 
 from .views_insurance import (
     insurance_page,
+    insurance_enroll_confirm,
     insurance_enroll,
     insurance_cancel,
+    insurance_cancel_confirm,
     insurance_claim_page,
     insurance_claim_submit,
     admin_insurance_claims,

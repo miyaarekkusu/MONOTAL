@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}マイページ - 保険クレーム申請 | MONOTAL{% endblock %}
+{% block title %}マイページ - 補償申請 | MONOTAL{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/mypage.css' %}">
@@ -17,7 +17,7 @@
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
             <li><a href="{% url 'insurance_page' %}" class="hover:underline hover:text-pink-600">保険</a></li>
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
-            <li class="text-zinc-900">クレーム申請</li>
+            <li class="text-zinc-900">補償申請</li>
         </ol>
     </nav>
 
@@ -28,10 +28,47 @@
         <!-- Main Area -->
         <div class="lg:col-span-9">
             <div class="mb-6">
-                <h1 class="text-xl font-bold tracking-tight text-zinc-900">保険クレーム申請</h1>
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">補償申請</h1>
                 <p class="text-sm text-zinc-600 mt-2">破損した商品の修理費用を請求できます。</p>
             </div>
 
+            <!-- 月間補償残枠 -->
+            <div class="bg-white border border-zinc-200 rounded-lg p-4 mb-6">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="iconify text-pink-600" data-icon="lucide:calendar" data-width="16"></span>
+                        <span class="text-sm font-bold text-zinc-900">今月の補償残枠</span>
+                    </div>
+                    <span class="text-lg font-bold {% if monthly_remaining > 0 %}text-pink-600{% else %}text-red-600{% endif %}">
+                        ¥{{ monthly_remaining|floatformat:0 }} <span class="text-xs font-normal text-zinc-500">/ ¥{{ coverage_limit|floatformat:0 }}</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-4 mt-2">
+                    <div class="flex items-center gap-1">
+                        <span class="iconify text-zinc-400" data-icon="lucide:calendar-range" data-width="12"></span>
+                        <span class="text-xs text-zinc-500">補償期間: {{ period_start|date:"m/d" }} 〜 {{ reset_date|date:"m/d" }}</span>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <span class="iconify text-zinc-400" data-icon="lucide:refresh-cw" data-width="12"></span>
+                        <span class="text-xs text-zinc-500">次回リセット: {{ reset_date|date:"Y年m月d日" }}</span>
+                    </div>
+                </div>
+                {% if monthly_remaining <= 0 %}
+                <p class="text-xs text-red-600 mt-1">今月の補償上限に達しました。</p>
+                {% endif %}
+            </div>
+
+            {% if monthly_remaining <= 0 %}
+            <!-- 上限到達メッセージ -->
+            <div class="bg-white border border-zinc-200 rounded-lg p-6 text-center">
+                <span class="iconify text-zinc-400 mx-auto mb-3" data-icon="lucide:shield-off" data-width="48"></span>
+                <p class="text-sm font-bold text-zinc-700 mb-2">今月の補償申請はできません</p>
+                <p class="text-xs text-zinc-500 mb-4">月間補償上限（¥{{ coverage_limit|floatformat:0 }}）に達しています。</p>
+                <a href="{% url 'insurance_page' %}" class="inline-block rounded-lg border border-zinc-300 px-6 py-2 text-sm font-bold text-zinc-700 hover:bg-zinc-50 transition-colors">
+                    保険ページに戻る
+                </a>
+            </div>
+            {% else %}
             <form id="claimForm" method="POST" action="{% url 'insurance_claim_submit' %}" enctype="multipart/form-data" class="bg-white border border-zinc-200 rounded-lg p-6" novalidate>
                 {% csrf_token %}
 
@@ -70,7 +107,7 @@
                         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500">¥</span>
                         <input type="text" inputmode="numeric" name="repair_cost" id="repairCostInput" class="w-full rounded-lg border border-zinc-300 pl-8 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-500" placeholder="0">
                     </div>
-                    <p class="text-xs text-zinc-500 mt-1">※補償上限: ¥50,000</p>
+                    <p class="text-xs text-zinc-500 mt-1">※今月の補償残枠: ¥{{ monthly_remaining|floatformat:0 }}</p>
                     <p class="field-error hidden mt-1 text-xs text-red-600" id="error-cost"></p>
                 </div>
 
@@ -120,10 +157,11 @@
                         キャンセル
                     </a>
                     <button id="submitBtn" type="submit" class="flex-1 rounded-lg bg-pink-600 px-6 py-3 text-sm font-bold text-white hover:bg-pink-700 transition-colors">
-                        クレームを申請する
+                        補償を申請する
                     </button>
                 </div>
             </form>
+            {% endif %}
         </div>
     </div>
 </main>
@@ -131,9 +169,11 @@
 <!-- トースト通知 -->
 <div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all duration-300 translate-x-[120%] opacity-0" style="display:none;"></div>
 
+{% if monthly_remaining > 0 %}
 <script>
 (function() {
     var MAX_FILE_SIZE = 5 * 1024 * 1024;
+    var MONTHLY_REMAINING = {{ monthly_remaining }};
     var BORDER_DEFAULT = 'border-zinc-300';
     var BORDER_ERROR = 'border-red-400';
 
@@ -234,8 +274,8 @@
             showFieldError(el, err, '修理費用は1円以上で入力してください');
             return false;
         }
-        if (cost > 50000) {
-            showFieldError(el, err, '修理費用は補償上限の¥50,000以下で入力してください');
+        if (cost > MONTHLY_REMAINING) {
+            showFieldError(el, err, '今月の補償残枠（¥' + MONTHLY_REMAINING.toLocaleString() + '）を超えています');
             return false;
         }
         clearFieldError(el, err);
@@ -342,7 +382,7 @@
             var data = await response.json();
 
             if (data.success) {
-                showToast('クレームを申請しました', true);
+                showToast('補償を申請しました', true);
                 setTimeout(function() {
                     window.location.href = '{% url "insurance_page" %}';
                 }, 1500);
@@ -377,4 +417,5 @@
     });
 })();
 </script>
+{% endif %}
 {% endblock %}

@@ -1452,7 +1452,10 @@ class Insurance(models.Model):
 class InsuranceEnrollmentStatus(models.Model):
     """
     保険加入ステータスマスター
-    例: 未加入、加入中、解約済み
+    1: 未加入
+    2: 加入中
+    3: 解約済み
+    4: 解約予約
     """
     insurance_enrollment_status_id = models.AutoField(primary_key=True)
     status_name = models.CharField(max_length=50, unique=True)
@@ -1484,8 +1487,16 @@ class InsuranceEnrollment(models.Model):
         db_column='insurance_id'
     )
 
+    insurance_enrollment_status = models.ForeignKey(
+        InsuranceEnrollmentStatus,
+        on_delete=models.PROTECT,
+        db_column='insurance_enrollment_status_id',
+        default=2  # 加入中
+    )
+
     insurance_start_datetime = models.DateTimeField()
     insurance_end_datetime = models.DateTimeField(null=True, blank=True)
+    cancel_reason = models.CharField(max_length=500, null=True, blank=True)
 
     class Meta:
         db_table = 'T_InsuranceEnrollment'
@@ -1493,13 +1504,45 @@ class InsuranceEnrollment(models.Model):
         verbose_name_plural = '保険加入'
 
 
+class InsuranceCoveragePeriod(models.Model):
+    """
+    補償残枠管理テーブル
+    InsuranceEnrollment と一対一の関係を持ち、
+    補償期間と使用済み金額を直接管理する
+    """
+    coverage_period_id = models.AutoField(primary_key=True)
+    insurance_enrollment = models.OneToOneField(
+        InsuranceEnrollment,
+        on_delete=models.CASCADE,
+        related_name='coverage_period',
+        db_column='insurance_enrollment_id'
+    )
+    period_start_datetime = models.DateTimeField()
+    period_end_datetime = models.DateTimeField()
+    coverage_limit = models.DecimalField(max_digits=10, decimal_places=0)  # 補償上限
+    used_amount = models.DecimalField(max_digits=10, decimal_places=0, default=0)  # 使用済み金額
+
+    class Meta:
+        db_table = 'T_InsuranceCoveragePeriod'
+        verbose_name = '補償残枠管理'
+        verbose_name_plural = '補償残枠管理'
+
+    @property
+    def remaining(self):
+        """補償残枠 = 上限 - 使用済み"""
+        return max(0, int(self.coverage_limit) - int(self.used_amount))
+
+    def __str__(self):
+        return f"補償期間 {self.period_start_datetime:%Y/%m/%d} 〜 {self.period_end_datetime:%Y/%m/%d} (残枠: ¥{self.remaining:,})"
+
+
 # ────────────────────────────────────────────────────────────────────────────────
-# 保険クレーム / Insurance Claim
+# 補償申請 / Insurance Claim
 # ────────────────────────────────────────────────────────────────────────────────
 
 class InsuranceClaimStatus(models.Model):
     """
-    保険クレームステータスマスター
+    補償申請ステータスマスター
     1: 審査中
     2: 承認
     3: 却下
@@ -1509,8 +1552,8 @@ class InsuranceClaimStatus(models.Model):
 
     class Meta:
         db_table = 'M_InsuranceClaimStatus'
-        verbose_name = '保険クレームステータス'
-        verbose_name_plural = '保険クレームステータス'
+        verbose_name = '補償申請ステータス'
+        verbose_name_plural = '補償申請ステータス'
 
     def __str__(self):
         return self.status_name
@@ -1518,7 +1561,7 @@ class InsuranceClaimStatus(models.Model):
 
 class InsuranceClaim(models.Model):
     """
-    保険クレームテーブル
+    補償申請テーブル
     商品破損時の保険請求を管理
     """
     claim_id = models.AutoField(primary_key=True)
@@ -1559,8 +1602,8 @@ class InsuranceClaim(models.Model):
 
     class Meta:
         db_table = 'T_InsuranceClaim'
-        verbose_name = '保険クレーム'
-        verbose_name_plural = '保険クレーム'
+        verbose_name = '補償申請'
+        verbose_name_plural = '補償申請'
 
     def __str__(self):
         return f"{self.user.display_name} - {self.product.product_name} (¥{self.repair_cost})"
@@ -1568,8 +1611,8 @@ class InsuranceClaim(models.Model):
 
 class InsuranceClaimImage(models.Model):
     """
-    保険クレーム画像テーブル
-    クレーム申請時の添付画像を管理
+    補償申請画像テーブル
+    補償申請時の添付画像を管理
 
     【画像タイプ】
     - 1: 破損した商品の画像
@@ -1597,8 +1640,8 @@ class InsuranceClaimImage(models.Model):
 
     class Meta:
         db_table = 'T_InsuranceClaimImage'
-        verbose_name = '保険クレーム画像'
-        verbose_name_plural = '保険クレーム画像'
+        verbose_name = '補償申請画像'
+        verbose_name_plural = '補償申請画像'
 
     def __str__(self):
         return f"Claim {self.claim_id} - {self.get_image_type_display()}"

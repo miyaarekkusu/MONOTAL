@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}保険クレーム管理 - 管理者{% endblock %}
+{% block title %}補償申請管理 - 管理者{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
@@ -11,7 +11,7 @@
 {% block content %}
 <div class="admin-container">
     <div class="page-header">
-        <h1 class="page-title">保険クレーム管理</h1>
+        <h1 class="page-title">補償申請管理</h1>
         {% if pending_count > 0 %}
         <span class="total-count">未審査: {{ pending_count }}件</span>
         {% endif %}
@@ -76,10 +76,10 @@
     <div class="empty-message">
         <span class="iconify empty-icon" data-icon="lucide:check-circle" data-width="48"></span>
         <p>
-            {% if current_filter == 'pending' %}審査待ちのクレームはありません
-            {% elif current_filter == 'approved' %}承認済みのクレームはありません
-            {% elif current_filter == 'rejected' %}却下されたクレームはありません
-            {% else %}クレーム申請はありません
+            {% if current_filter == 'pending' %}審査待ちの補償申請はありません
+            {% elif current_filter == 'approved' %}承認済みの補償申請はありません
+            {% elif current_filter == 'rejected' %}却下された補償申請はありません
+            {% else %}補償申請はありません
             {% endif %}
         </p>
     </div>

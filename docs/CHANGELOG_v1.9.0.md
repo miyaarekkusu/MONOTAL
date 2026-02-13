@@ -4,7 +4,7 @@
 2026-02-09
 
 ## 概要
-保険加入機能・保険クレーム（請求）機能の実装。ユーザーが月額料金で保険に加入し、レンタル商品の破損時に修理費用の補償を受けられる機能を追加。管理者向けのクレーム審査画面も実装。
+保険加入機能・補償申請（請求）機能の実装。ユーザーが月額料金で保険に加入し、レンタル商品の破損時に修理費用の補償を受けられる機能を追加。管理者向けの補償申請審査画面も実装。
 
 ---
 
@@ -36,17 +36,17 @@
 
 ---
 
-### 2. 保険クレーム（請求）機能
+### 2. 補償申請（請求）機能
 
-#### 2.1 クレーム申請フロー
-1. 保険加入済みユーザーがマイページから「クレームを申請する」
-2. レンタル履歴を選択（キャンセル済み・クレーム済みは除外）
+#### 2.1 補償申請フロー
+1. 保険加入済みユーザーがマイページから「補償を申請する」
+2. レンタル履歴を選択（キャンセル済み・補償申請済みは除外）
 3. 破損内容と修理費用（1〜50,000円）を入力
 4. 3種類の画像をアップロード:
    - **破損した商品の画像** (image_type=1)
    - **修理費用の領収書** (image_type=2)
    - **修理後の商品の画像** (image_type=3)
-5. クレーム申請完了（status=1: 審査中）
+5. 補償申請完了（status=1: 審査中）
 
 #### 2.2 リアルタイムバリデーション
 - 各フィールドごとにインラインエラーメッセージ表示（赤文字 + 赤枠）
@@ -57,7 +57,7 @@
 - サーバー側も `field` キー付きJSONでフィールド特定エラーを返却
 
 #### 2.3 管理者審査フロー
-1. `/admin/insurance/claims/` でクレーム一覧を確認
+1. `/admin/insurance/claims/` で補償申請一覧を確認
 2. ステータスフィルタータブで絞り込み（すべて/審査中/承認済み/却下）
 3. 詳細ページで申請者情報・レンタル情報・破損内容・画像を確認
 4. Ajax承認/却下処理（ページ遷移なし）
@@ -65,9 +65,9 @@
 6. トースト通知で結果表示後、自動で一覧に遷移
 
 #### 2.4 審査結果通知
-- 承認/却下時にクレーム申請者へシステム通知を送信
-- 承認: 「保険クレームが承認されました」+ 商品名・補償金額
-- 却下: 「保険クレームが却下されました」+ 却下理由（ある場合）
+- 承認/却下時に補償申請者へシステム通知を送信
+- 承認: 「補償申請が承認されました」+ 商品名・補償金額
+- 却下: 「補償申請が却下されました」+ 却下理由（ある場合）
 - 通知リンク先: 保険ページ（`/mypage/insurance/`）
 
 ---
@@ -84,9 +84,9 @@
 
 | モデル | テーブル名 | 説明 |
 |-------|-----------|------|
-| InsuranceClaimStatus | M_InsuranceClaimStatus | クレームステータスマスター |
-| InsuranceClaim | T_InsuranceClaim | クレーム本体 |
-| InsuranceClaimImage | T_InsuranceClaimImage | クレーム添付画像 |
+| InsuranceClaimStatus | M_InsuranceClaimStatus | 補償申請ステータスマスター |
+| InsuranceClaim | T_InsuranceClaim | 補償申請本体 |
+| InsuranceClaimImage | T_InsuranceClaimImage | 補償申請添付画像 |
 
 #### マスターデータ
 
@@ -115,12 +115,12 @@
 - `insurance_page` - 保険加入ページ表示
 - `insurance_enroll` - 保険加入処理（POST/Ajax）
 - `insurance_cancel` - 保険解約処理（POST/Ajax）
-- `insurance_claim_page` - クレーム申請ページ表示
-- `insurance_claim_submit` - クレーム申請処理（POST/Ajax + fieldバリデーション）
+- `insurance_claim_page` - 補償申請ページ表示
+- `insurance_claim_submit` - 補償申請処理（POST/Ajax + fieldバリデーション）
 
 **管理者側ビュー**:
-- `admin_insurance_claims` - クレーム一覧（フィルター機能付き）
-- `admin_insurance_claim_detail` - クレーム詳細（GET/POST Ajax承認・却下）
+- `admin_insurance_claims` - 補償申請一覧（フィルター機能付き）
+- `admin_insurance_claim_detail` - 補償申請詳細（GET/POST Ajax承認・却下）
 - `insurance_claim_approve` - 承認処理（フォールバック）
 - `insurance_claim_reject` - 却下処理（フォールバック）
 - `_send_claim_notification` - 審査結果通知ヘルパー
@@ -129,9 +129,9 @@
 | ファイル | 内容 |
 |---------|------|
 | `templates/mypage/insurance.html` | 保険加入/解約ページ（トースト通知、解約確認モーダル） |
-| `templates/mypage/insurance_claim.html` | クレーム申請フォーム（リアルタイムバリデーション） |
-| `templates/admin/insurance_claims.html` | クレーム一覧（ステータスフィルタータブ） |
-| `templates/admin/insurance_claim_detail.html` | クレーム詳細（Ajax承認/却下、画像モーダル、却下理由モーダル） |
+| `templates/mypage/insurance_claim.html` | 補償申請フォーム（リアルタイムバリデーション） |
+| `templates/admin/insurance_claims.html` | 補償申請一覧（ステータスフィルタータブ） |
+| `templates/admin/insurance_claim_detail.html` | 補償申請詳細（Ajax承認/却下、画像モーダル、却下理由モーダル） |
 
 ### 静的ファイル
 | ファイル | 内容 |
@@ -163,7 +163,7 @@ admin/insurance/claims/<id>/reject/  → insurance_claim_reject
 - Tailwind CSSベースのマイページ統一デザイン
 - 保険加入: ボタンローディング状態 + トースト通知
 - 保険解約: 確認モーダル（注意アイコン + 説明文）→ トースト通知
-- クレーム申請: リアルタイムフィールドバリデーション + サーバーエラー表示
+- 補償申請: リアルタイムフィールドバリデーション + サーバーエラー表示
 
 ### 管理者側
 - 本人確認審査ページと統一されたUI（`admin_verification.css` ベース）
@@ -191,5 +191,5 @@ admin/insurance/claims/<id>/reject/  → insurance_claim_reject
 2. **権限**: 管理者ビューで `is_staff` チェック（GET/POST両方）
 3. **CSRF**: Ajax通信時に `X-CSRFToken` ヘッダー送信
 4. **バリデーション**: クライアント側 + サーバー側の二重チェック
-5. **重複防止**: 同一レンタル履歴への二重クレーム防止
+5. **重複防止**: 同一レンタル履歴への二重補償申請防止
 6. **通知失敗**: 通知送信失敗は例外を握りつぶし、本体処理に影響させない

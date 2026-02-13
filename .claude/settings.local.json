@@ -21,7 +21,8 @@
       "Bash(python manage.py shell:*)",
       "Bash(python:*)",
       "Bash(sqlite3:*)",
-      "Bash(tree:*)"
+      "Bash(tree:*)",
+      "Bash(PYTHONIOENCODING=utf-8 python:*)"
     ]
   }
 }
