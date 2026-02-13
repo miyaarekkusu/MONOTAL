@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import *
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
@@ -68,7 +68,43 @@ monotal
 
 class IndexView(View):
     def get(self, request, *args, **kwargs):
-        return render(request, 'home.html')
+        context = {}
+
+        # 閲覧履歴（ログインユーザーのみ）
+        if request.user.is_authenticated:
+            browsing_histories = BrowsingHistory.objects.filter(
+                user=request.user,
+                product__delete_datetime__isnull=True
+            ).exclude(
+                product__product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+            ).select_related(
+                'product', 'product__product_status'
+            ).prefetch_related(
+                'product__images', 'product__rental_plans'
+            ).order_by('-register_datetime')[:20]
+            context['browsing_histories'] = browsing_histories
+
+        # おすすめ商品（公開中、新着順）
+        recommended_products = Product.objects.filter(
+            delete_datetime__isnull=True
+        ).exclude(
+            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+        ).select_related(
+            'product_category', 'product_status'
+        ).prefetch_related(
+            'images', 'rental_plans'
+        ).annotate(
+            bookmark_count=Count('bookmark')
+        ).order_by('-register_datetime')[:40]
+        context['recommended_products'] = recommended_products
+
+        # カテゴリー一覧（親カテゴリーのみ、Nav用）
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).order_by('product_category_id')
+        context['categories'] = categories
+
+        return render(request, 'home.html', context)
 
 
 class LoginView(View):
