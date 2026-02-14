@@ -316,7 +316,7 @@
             <!-- 次のステップ案内 -->
             {% if rental_history.rental_status_id != 6 %}
             <section class="panel-section guide-panel">
-                <h3><span class="iconify" data-icon="lucide:info" data-width="16"></span> {% if rental_history.rental_status_id == 5 %}取引について{% else %}次のステップ{% endif %}</h3>
+                <h3><span class="iconify" data-icon="lucide:info" data-width="16"></span> 次のステップ</h3>
                 <div class="guide-content">
                     {% if rental_history.rental_status_id == 1 %}
                         {% if is_lender %}
@@ -344,9 +344,9 @@
                         {% endif %}
                     {% elif rental_history.rental_status_id == 5 %}
                         {% if not my_review %}
-                        <p>取引相手の評価をお願いします。評価は今後の取引の参考になります。</p>
+                        <p>「取引を完了」ボタンから取引相手の評価をしてください。評価が完了すると取引が完了になります。</p>
                         {% else %}
-                        <p>取引は正常に完了しました。ご利用ありがとうございました。</p>
+                        <p>評価が完了しました。取引は正常に完了しています。ご利用ありがとうございました。</p>
                         {% endif %}
                     {% endif %}
                 </div>
