@@ -414,6 +414,7 @@
                 <label class="form-label">追跡番号（任意）</label>
                 <input type="text" id="shipTrackingNumber" class="form-input" placeholder="追跡番号を入力" maxlength="50">
             </div>
+            <div id="shipError" class="modal-error hidden"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" data-modal="shipModal">閉じる</button>
                 <button type="button" class="btn-primary-action" id="shipConfirmBtn">発送を通知する</button>
@@ -448,6 +449,7 @@
                 <label class="form-label">追跡番号（任意）</label>
                 <input type="text" id="returnTrackingNumber" class="form-input" placeholder="追跡番号を入力" maxlength="50">
             </div>
+            <div id="returnShipError" class="modal-error hidden"></div>
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" data-modal="returnShipModal">閉じる</button>
                 <button type="button" class="btn-primary-action" id="returnShipConfirmBtn">返送を通知する</button>

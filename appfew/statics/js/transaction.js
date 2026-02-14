@@ -256,7 +256,9 @@ const TransactionPage = {
         const trackingNumber = document.getElementById('shipTrackingNumber')?.value.trim() || '';
         const carrierCode = document.getElementById('shipCarrierCode')?.value || '';
         const confirmBtn = document.getElementById('shipConfirmBtn');
+        const errorEl = document.getElementById('shipError');
 
+        if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
 
         try {
@@ -277,7 +279,12 @@ const TransactionPage = {
                 alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '発送通知に失敗しました');
+                if (errorEl) {
+                    errorEl.textContent = data.message || '発送通知に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '発送通知に失敗しました');
+                }
             }
         } catch (error) {
             console.error('発送通知に失敗しました:', error);
@@ -312,7 +319,9 @@ const TransactionPage = {
         const trackingNumber = document.getElementById('returnTrackingNumber')?.value.trim() || '';
         const carrierCode = document.getElementById('returnCarrierCode')?.value || '';
         const confirmBtn = document.getElementById('returnShipConfirmBtn');
+        const errorEl = document.getElementById('returnShipError');
 
+        if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
 
         try {
@@ -333,7 +342,12 @@ const TransactionPage = {
                 alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '返送通知に失敗しました');
+                if (errorEl) {
+                    errorEl.textContent = data.message || '返送通知に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '返送通知に失敗しました');
+                }
             }
         } catch (error) {
             console.error('返送通知に失敗しました:', error);

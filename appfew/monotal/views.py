@@ -4660,6 +4660,14 @@ class TransactionShipView(LoginRequiredMixin, View):
             tracking_number = body.get('tracking_number', '').strip()
             carrier_code = body.get('carrier_code', '').strip()
 
+            # 追跡番号がある場合、17trackに事前登録を試みる
+            if tracking_number:
+                if not _register_tracking_17track(tracking_number, carrier_code):
+                    return JsonResponse({
+                        'success': False,
+                        'message': '発送業者または追跡番号が正しくありません。'
+                    }, status=400)
+
             with transaction.atomic():
                 rental_history.rental_status_id = RENTAL_STATUS_SHIPPING
                 rental_history.shipping_completed_datetime = timezone.now()
@@ -4670,10 +4678,6 @@ class TransactionShipView(LoginRequiredMixin, View):
                     rental_history.shipping_carrier_code = carrier_code
 
                 rental_history.save()
-
-                # 17trackに追跡番号を登録
-                if tracking_number:
-                    _register_tracking_17track(tracking_number, carrier_code)
 
                 # 借り手に通知を送信
                 self._send_notification(
@@ -4780,6 +4784,14 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
             tracking_number = body.get('tracking_number', '').strip()
             carrier_code = body.get('carrier_code', '').strip()
 
+            # 追跡番号がある場合、17trackに事前登録を試みる
+            if tracking_number:
+                if not _register_tracking_17track(tracking_number, carrier_code):
+                    return JsonResponse({
+                        'success': False,
+                        'message': '発送業者または追跡番号が正しくありません。'
+                    }, status=400)
+
             with transaction.atomic():
                 rental_history.rental_status_id = RENTAL_STATUS_RETURNING
                 rental_history.rental_end_datetime = timezone.now()
@@ -4790,10 +4802,6 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
                     rental_history.return_carrier_code = carrier_code
 
                 rental_history.save()
-
-                # 17trackに追跡番号を登録
-                if tracking_number:
-                    _register_tracking_17track(tracking_number, carrier_code)
 
                 # 貸主に通知を送信
                 self._send_notification(
@@ -5085,13 +5093,13 @@ class TransactionReviewView(LoginRequiredMixin, View):
 
 # 取引関連ビュー
 def _register_tracking_17track(tracking_number, carrier_code=''):
-    """17track APIに追跡番号を登録する"""
+    """17track APIに追跡番号を登録する。成功時True、失敗時False。"""
     import urllib.request
     import urllib.error
 
     api_key = settings.SEVENTEEN_TRACK_API_KEY
     if not api_key or not tracking_number:
-        return
+        return True  # APIキー未設定時はスキップ（エラーにしない）
 
     try:
         payload = json.dumps([{
@@ -5106,9 +5114,14 @@ def _register_tracking_17track(tracking_number, carrier_code=''):
                 'Content-Type': 'application/json'
             }
         )
-        urllib.request.urlopen(req, timeout=10)
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode('utf-8'))
+            rejected = data.get('data', {}).get('rejected', [])
+            if rejected:
+                return False
+        return True
     except Exception:
-        pass  # 登録失敗は無視（追跡表示時に再試行）
+        return True  # 通信エラー時はブロックしない
 
 
 class TransactionTrackingView(LoginRequiredMixin, View):

@@ -1006,6 +1006,15 @@
     cursor: not-allowed;
 }
 
+.modal-error {
+    font-size: 13px;
+    color: #dc2626;
+    background: #fef2f2;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #fecaca;
+}
+
 /* アニメーション */
 .animate-spin {
     animation: spin 1s linear infinite;
