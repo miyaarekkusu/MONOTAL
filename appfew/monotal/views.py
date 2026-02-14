@@ -4671,6 +4671,10 @@ class TransactionShipView(LoginRequiredMixin, View):
 
                 rental_history.save()
 
+                # 17trackに追跡番号を登録
+                if tracking_number:
+                    _register_tracking_17track(tracking_number, carrier_code)
+
                 # 借り手に通知を送信
                 self._send_notification(
                     rental_history.renter_user,
@@ -4786,6 +4790,10 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
                     rental_history.return_carrier_code = carrier_code
 
                 rental_history.save()
+
+                # 17trackに追跡番号を登録
+                if tracking_number:
+                    _register_tracking_17track(tracking_number, carrier_code)
 
                 # 貸主に通知を送信
                 self._send_notification(
@@ -5076,6 +5084,33 @@ class TransactionReviewView(LoginRequiredMixin, View):
 
 
 # 取引関連ビュー
+def _register_tracking_17track(tracking_number, carrier_code=''):
+    """17track APIに追跡番号を登録する"""
+    import urllib.request
+    import urllib.error
+
+    api_key = settings.SEVENTEEN_TRACK_API_KEY
+    if not api_key or not tracking_number:
+        return
+
+    try:
+        payload = json.dumps([{
+            'number': tracking_number,
+            'carrier': int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
+        }])
+        req = urllib.request.Request(
+            'https://api.17track.net/track/v2.2/register',
+            data=payload.encode('utf-8'),
+            headers={
+                '17token': api_key,
+                'Content-Type': 'application/json'
+            }
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception:
+        pass  # 登録失敗は無視（追跡表示時に再試行）
+
+
 class TransactionTrackingView(LoginRequiredMixin, View):
     """配送追跡情報API（17track連携）"""
     login_url = '/monotal/login/'
@@ -5143,15 +5178,41 @@ class TransactionTrackingView(LoginRequiredMixin, View):
 
             # レスポンスを整形
             events = []
+            latest_status = ''
             accepted = api_data.get('data', {}).get('accepted', [])
+            rejected = api_data.get('data', {}).get('rejected', [])
+
             if accepted:
                 track = accepted[0]
-                track_info = track.get('track', {})
-                for event in track_info.get('z0', {}).get('z', []):
-                    events.append({
-                        'date': event.get('a', ''),
-                        'status': event.get('z', ''),
-                        'location': event.get('c', ''),
+                track_info = track.get('track_info', {})
+
+                # 最新ステータス
+                ls = track_info.get('latest_status', {})
+                latest_status = ls.get('status', '')
+
+                # イベント一覧（tracking.providers内のevents）
+                tracking = track_info.get('tracking', {})
+                providers = tracking.get('providers', [])
+                for provider in providers:
+                    for event in provider.get('events', []):
+                        events.append({
+                            'date': event.get('time_iso', ''),
+                            'status': event.get('description', ''),
+                            'location': event.get('location', ''),
+                        })
+
+            # 未登録の場合は自動登録を試みる
+            if rejected:
+                error_msg = rejected[0].get('error', {}).get('message', '')
+                if 'register' in error_msg.lower():
+                    _register_tracking_17track(tracking_number, carrier_code or '')
+                    return JsonResponse({
+                        'success': True,
+                        'tracking_number': tracking_number,
+                        'carrier_code': carrier_code or '',
+                        'events': [],
+                        'latest_status': '',
+                        'message': '追跡番号を登録しました。しばらくしてから再度ご確認ください。'
                     })
 
             return JsonResponse({
@@ -5159,6 +5220,7 @@ class TransactionTrackingView(LoginRequiredMixin, View):
                 'tracking_number': tracking_number,
                 'carrier_code': carrier_code or '',
                 'events': events,
+                'latest_status': latest_status,
             })
 
         except RentalHistory.DoesNotExist:

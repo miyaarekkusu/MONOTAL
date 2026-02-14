@@ -373,6 +373,10 @@ const TransactionPage = {
             let html = `<div class="tracking-info">`;
             html += `<div class="tracking-number-display"><strong>追跡番号:</strong> ${this.escapeHtml(data.tracking_number)}</div>`;
 
+            if (data.latest_status) {
+                html += `<div class="tracking-status-badge"><strong>ステータス:</strong> ${this.escapeHtml(data.latest_status)}</div>`;
+            }
+
             if (data.message) {
                 html += `<div class="tracking-notice">${this.escapeHtml(data.message)}</div>`;
             }

@@ -902,6 +902,14 @@
     border-radius: 8px;
 }
 
+.tracking-status-badge {
+    font-size: 13px;
+    color: #1d4ed8;
+    padding: 8px 12px;
+    background: #eff6ff;
+    border-radius: 8px;
+}
+
 .tracking-notice {
     font-size: 13px;
     color: #71717a;
