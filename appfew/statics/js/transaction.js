@@ -90,6 +90,16 @@ const TransactionPage = {
         return div.innerHTML;
     },
 
+    formatDateJST(isoStr) {
+        if (!isoStr) return '';
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        } catch {
+            return this.escapeHtml(isoStr);
+        }
+    },
+
     /**
      * チャット入力初期化
      */
@@ -386,7 +396,7 @@ const TransactionPage = {
                 data.events.forEach(event => {
                     html += `
                         <div class="tracking-event">
-                            <div class="tracking-event-date">${this.escapeHtml(event.date)}</div>
+                            <div class="tracking-event-date">${this.formatDateJST(event.date)}</div>
                             <div class="tracking-event-status">${this.escapeHtml(event.status)}</div>
                             ${event.location ? `<div class="tracking-event-location">${this.escapeHtml(event.location)}</div>` : ''}
                         </div>
