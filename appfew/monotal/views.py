@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import *
 from django.core.paginator import Paginator
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Avg
 from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
@@ -444,6 +444,22 @@ class ProfileView(View):
             user=user
         ).select_related('product_category').order_by('product_category_id')
 
+        # レビュー関連データ
+        review_qs = UserReview.objects.filter(reviewed_user=user)
+        review_count = review_qs.count()
+        review_avg_data = review_qs.aggregate(avg=Avg('review_score'))
+        review_avg = review_avg_data['avg']  # None if no reviews
+
+        # レビューソート
+        sort_param = request.GET.get('sort', '-register_datetime')
+        valid_sorts = ['-register_datetime', 'register_datetime', '-review_score', 'review_score']
+        if sort_param not in valid_sorts:
+            sort_param = '-register_datetime'
+
+        reviews = review_qs.select_related(
+            'reviewer_user', 'rental_history__product'
+        ).order_by(sort_param)
+
         context = {
             'profile_user': user,
             'user_products': user_products,
@@ -456,6 +472,10 @@ class ProfileView(View):
             'following_count': following_count,
             'is_following': is_following,
             'user_hobbies': user_hobbies,
+            'review_count': review_count,
+            'review_avg': review_avg,
+            'reviews': reviews,
+            'review_sort': sort_param,
         }
 
         return render(request, 'profile.html', context)
@@ -1118,6 +1138,11 @@ class ProductDetailView(View):
                 rental_request_status_id__in=[RENTAL_REQUEST_STATUS_PENDING, RENTAL_REQUEST_STATUS_APPROVED]
             ).exists()
 
+        # 出品者のレビュー情報
+        seller_review_qs = UserReview.objects.filter(reviewed_user=product.user)
+        seller_review_count = seller_review_qs.count()
+        seller_review_avg = seller_review_qs.aggregate(avg=Avg('review_score'))['avg']
+
         context = {
             'product': product,
             'product_images': product_images,
@@ -1127,6 +1152,8 @@ class ProductDetailView(View):
             'message_count': message_count,
             'is_seller': is_seller,
             'has_pending_request': has_pending_request,
+            'seller_review_count': seller_review_count,
+            'seller_review_avg': seller_review_avg,
         }
 
         return render(request, self.template_name, context)
@@ -3490,6 +3517,11 @@ class RentalRequestView(LoginRequiredMixin, View):
             messages.error(request, '自分の商品はレンタルできません')
             return redirect('product_detail', product_id=product_id)
 
+        # 貸出中の商品は申請できない
+        if product.product_status_id == PRODUCT_STATUS_RENTING:
+            messages.error(request, 'この商品は現在貸出中のため申請できません')
+            return redirect('product_detail', product_id=product_id)
+
         # 既に申請中または承認済みかチェック（キャンセル・完了・拒否以外）
         existing_request = RentalRequest.objects.filter(
             product=product,
@@ -3508,12 +3540,25 @@ class RentalRequestView(LoginRequiredMixin, View):
                 defaults={'status_name': '申請中'}
             )
 
+            # 選択されたプランを取得
+            plan_id = request.POST.get('plan_id')
+            selected_plan = None
+            if plan_id:
+                try:
+                    selected_plan = ProductRentalPlan.objects.get(
+                        product_rental_plan_id=plan_id,
+                        product=product
+                    )
+                except ProductRentalPlan.DoesNotExist:
+                    pass
+
             # レンタル申請を作成
             rental_request = RentalRequest.objects.create(
                 product=product,
                 requester_user=request.user,
                 requested_user=product.user,
-                rental_request_status=pending_status
+                rental_request_status=pending_status,
+                product_rental_plan=selected_plan
             )
 
             # 出品者に通知を送信
@@ -3567,7 +3612,8 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
         received_base = RentalRequest.objects.filter(
             requested_user=request.user
         ).select_related(
-            'product', 'product__product_status', 'requester_user', 'rental_request_status'
+            'product', 'product__product_status', 'requester_user', 'rental_request_status',
+            'product_rental_plan'
         ).prefetch_related(
             'product__images'
         ).order_by('-register_datetime')
@@ -3594,7 +3640,8 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
         sent_base = RentalRequest.objects.filter(
             requester_user=request.user
         ).select_related(
-            'product', 'product__product_status', 'requested_user', 'rental_request_status'
+            'product', 'product__product_status', 'requested_user', 'rental_request_status',
+            'product_rental_plan'
         ).prefetch_related(
             'product__images'
         ).order_by('-register_datetime')
@@ -3617,28 +3664,15 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             Q(product__product_status_id=PRODUCT_STATUS_DELETED)
         )
 
-        # 取引中（RentalHistory）: 貸主として
-        transactions_as_lender = RentalHistory.objects.filter(
-            lender_user=request.user,
+        # 取引中（RentalHistory）: 出品者・購入者まとめて取得
+        transactions_all = RentalHistory.objects.filter(
+            Q(lender_user=request.user) | Q(renter_user=request.user),
             rental_status_id__in=[
                 RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
                 RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
             ]
         ).select_related(
-            'product', 'renter_user', 'rental_status'
-        ).prefetch_related(
-            'product__images'
-        ).order_by('-register_datetime')
-
-        # 取引中（RentalHistory）: 借り手として
-        transactions_as_renter = RentalHistory.objects.filter(
-            renter_user=request.user,
-            rental_status_id__in=[
-                RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
-                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
-            ]
-        ).select_related(
-            'product', 'lender_user', 'rental_status'
+            'product', 'lender_user', 'renter_user', 'rental_status'
         ).prefetch_related(
             'product__images'
         ).order_by('-register_datetime')
@@ -3649,15 +3683,15 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             'received_rejected': received_rejected,
             'received_cancelled': received_cancelled,
             'received_pending_count': received_pending.count(),
+            'received_approved_count': received_approved.filter(rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED).count(),
             'sent_pending': sent_pending,
             'sent_approved': sent_approved,
             'sent_rejected': sent_rejected,
             'sent_cancelled': sent_cancelled,
             'sent_pending_count': sent_pending.count(),
-            'transactions_as_lender': transactions_as_lender,
-            'transactions_as_renter': transactions_as_renter,
-            'transactions_lender_count': transactions_as_lender.count(),
-            'transactions_renter_count': transactions_as_renter.count(),
+            'sent_approved_count': sent_approved.filter(rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED).count(),
+            'transactions_all': transactions_all,
+            'transactions_count': transactions_all.count(),
             'current_page': 'rental_management',
         }
         return render(request, 'mypage/rental_management.html', context)
@@ -4067,13 +4101,18 @@ class RentalRequestStartView(LoginRequiredMixin, View):
                     rental_status_id=1,
                     defaults={'status_name': '発送準備中'}
                 )
+                # レンタル日数をプランからコピー
+                rental_days = None
+                if rental_request.product_rental_plan:
+                    rental_days = rental_request.product_rental_plan.rental_days
+
                 rental_history = RentalHistory.objects.create(
                     product=rental_request.product,
                     lender_user=rental_request.requested_user,
                     renter_user=request.user,
                     rental_status=rental_status,
                     renter_address=address,
-                    rental_start_datetime=timezone.now()
+                    rental_days=rental_days
                 )
 
                 # 3. 商品のステータスをレンタル中に変更
@@ -4099,6 +4138,28 @@ class RentalRequestStartView(LoginRequiredMixin, View):
                 ChatRoomParticipant.objects.create(
                     chat_room=chat_room,
                     user=request.user  # 借り手（購入者）
+                )
+
+                # 6. 両ユーザーに取引開始の通知を送信
+                tx_url = f'/monotal/transaction/{rental_history.rental_history_id}/'
+                product_name = rental_request.product.product_name
+
+                # 出品者（貸し手）への通知
+                create_notification(
+                    notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                    title='取引が開始されました',
+                    detail=f'「{product_name}」の取引が開始されました。商品の発送準備をお願いします。',
+                    link_url=tx_url,
+                    target_users=[rental_request.requested_user],
+                )
+
+                # 購入者（借り手）への通知
+                create_notification(
+                    notification_type_id=NOTIFICATION_TYPE_RENTAL,
+                    title='取引が開始されました',
+                    detail=f'「{product_name}」の取引が開始されました。出品者からの発送をお待ちください。',
+                    link_url=tx_url,
+                    target_users=[request.user],
                 )
 
             messages.success(request, 'レンタルを開始しました')
@@ -4412,6 +4473,14 @@ class TransactionView(LoginRequiredMixin, View):
             # 返品理由マスターを取得
             return_reasons = ReturnReason.objects.all()
 
+            # レビュー情報を取得
+            my_review = UserReview.objects.filter(
+                reviewer_user=request.user, rental_history=rental_history
+            ).first()
+            partner_review = UserReview.objects.filter(
+                reviewer_user=partner_user, rental_history=rental_history
+            ).first()
+
             context = {
                 'rental_history': rental_history,
                 'product': rental_history.product,
@@ -4422,10 +4491,30 @@ class TransactionView(LoginRequiredMixin, View):
                 'partner_verified': partner_verified,
                 'partner_personal_info': partner_personal_info,
                 'return_reasons': return_reasons,
+                'my_review': my_review,
+                'partner_review': partner_review,
                 # 貸主向け: 借り手の配送先住所
                 'renter_address': rental_history.renter_address if is_lender else None,
                 # 借り手向け: 発送元住所
                 'shipping_address': rental_history.product.shipping_address if is_renter else None,
+                # 配送追跡
+                'has_shipping_tracking': bool(rental_history.shipping_tracking_number),
+                'has_return_tracking': bool(rental_history.return_tracking_number),
+                # レンタル期間
+                'rental_days': rental_history.rental_days,
+                'rental_deadline': rental_history.rental_deadline,
+                'rental_deadline_iso': rental_history.rental_deadline.isoformat() if rental_history.rental_deadline else None,
+                'return_shipping_deadline': rental_history.return_shipping_deadline,
+                'is_rental_overdue': (
+                    rental_history.rental_status_id == RENTAL_STATUS_RENTING
+                    and rental_history.rental_deadline
+                    and timezone.now() > rental_history.rental_deadline
+                ),
+                'is_return_overdue': (
+                    rental_history.rental_status_id == RENTAL_STATUS_RENTING
+                    and rental_history.return_shipping_deadline
+                    and timezone.now() > rental_history.return_shipping_deadline
+                ),
             }
 
             return render(request, 'transaction.html', context)
@@ -4552,9 +4641,23 @@ class TransactionShipView(LoginRequiredMixin, View):
                 rental_status_id=RENTAL_STATUS_PREPARING
             )
 
+            # 追跡情報を取得（任意）
+            try:
+                body = json.loads(request.body) if request.body else {}
+            except json.JSONDecodeError:
+                body = {}
+            tracking_number = body.get('tracking_number', '').strip()
+            carrier_code = body.get('carrier_code', '').strip()
+
             with transaction.atomic():
                 rental_history.rental_status_id = RENTAL_STATUS_SHIPPING
                 rental_history.shipping_completed_datetime = timezone.now()
+
+                if tracking_number:
+                    rental_history.shipping_tracking_number = tracking_number
+                if carrier_code:
+                    rental_history.shipping_carrier_code = carrier_code
+
                 rental_history.save()
 
                 # 借り手に通知を送信
@@ -4605,6 +4708,12 @@ class TransactionReceiveView(LoginRequiredMixin, View):
             with transaction.atomic():
                 rental_history.rental_status_id = RENTAL_STATUS_RENTING
                 rental_history.rental_start_datetime = timezone.now()
+
+                # レンタル期限・返送期限を計算
+                if rental_history.rental_days:
+                    rental_history.rental_deadline = timezone.now() + timedelta(days=rental_history.rental_days)
+                    rental_history.return_shipping_deadline = rental_history.rental_deadline + timedelta(days=3)
+
                 rental_history.save()
 
                 # 貸主に通知を送信
@@ -4648,9 +4757,23 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
                 rental_status_id=RENTAL_STATUS_RENTING
             )
 
+            # 追跡情報を取得（任意）
+            try:
+                body = json.loads(request.body) if request.body else {}
+            except json.JSONDecodeError:
+                body = {}
+            tracking_number = body.get('tracking_number', '').strip()
+            carrier_code = body.get('carrier_code', '').strip()
+
             with transaction.atomic():
                 rental_history.rental_status_id = RENTAL_STATUS_RETURNING
                 rental_history.rental_end_datetime = timezone.now()
+
+                if tracking_number:
+                    rental_history.return_tracking_number = tracking_number
+                if carrier_code:
+                    rental_history.return_carrier_code = carrier_code
+
                 rental_history.save()
 
                 # 貸主に通知を送信
@@ -4704,15 +4827,15 @@ class TransactionReturnReceiveView(LoginRequiredMixin, View):
                 product.product_status_id = PRODUCT_STATUS_LISTED
                 product.save()
 
-                # 借り手に通知を送信
+                # 借り手に通知を送信（返却確認＋評価依頼）
                 self._send_notification(
                     rental_history.renter_user,
-                    '取引が完了しました',
-                    f'「{rental_history.product.product_name}」の取引が完了しました。ご利用ありがとうございました。',
+                    '返却が確認されました - 取引の評価をお願いします',
+                    f'「{rental_history.product.product_name}」の返却が確認されました。取引画面から相手の評価をお願いします。',
                     f'/monotal/transaction/{rental_history_id}/'
                 )
 
-            return JsonResponse({'success': True, 'message': '返却を確認しました。取引が完了しました。'})
+            return JsonResponse({'success': True, 'message': '返却を確認しました。取引の評価をお願いします。'})
 
         except RentalHistory.DoesNotExist:
             return JsonResponse({'success': False, 'message': '取引が見つからないか、返却確認できる状態ではありません'}, status=400)
@@ -4820,7 +4943,217 @@ class TransactionCancelView(LoginRequiredMixin, View):
             pass
 
 
+class TransactionReviewView(LoginRequiredMixin, View):
+    """取引レビュー画面"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related(
+                'product', 'product__user', 'lender_user', 'renter_user', 'rental_status'
+            ).prefetch_related('product__images').get(rental_history_id=rental_history_id)
+
+            is_lender = request.user == rental_history.lender_user
+            is_renter = request.user == rental_history.renter_user
+
+            if not is_lender and not is_renter:
+                messages.error(request, 'この取引にアクセスする権限がありません')
+                return redirect('mypage_rental_management')
+
+            if rental_history.rental_status_id != RENTAL_STATUS_COMPLETED:
+                messages.error(request, '返却済みの取引のみ評価できます')
+                return redirect('transaction', rental_history_id=rental_history_id)
+
+            # 既にレビュー済みか確認
+            existing_review = UserReview.objects.filter(
+                reviewer_user=request.user, rental_history=rental_history
+            ).first()
+            if existing_review:
+                messages.info(request, 'この取引は既に評価済みです')
+                return redirect('transaction', rental_history_id=rental_history_id)
+
+            partner_user = rental_history.renter_user if is_lender else rental_history.lender_user
+
+            context = {
+                'rental_history': rental_history,
+                'product': rental_history.product,
+                'partner_user': partner_user,
+                'is_lender': is_lender,
+            }
+            return render(request, 'transaction_review.html', context)
+
+        except RentalHistory.DoesNotExist:
+            messages.error(request, '取引が見つかりません')
+            return redirect('mypage_rental_management')
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related(
+                'product', 'lender_user', 'renter_user'
+            ).get(rental_history_id=rental_history_id)
+
+            is_lender = request.user == rental_history.lender_user
+            is_renter = request.user == rental_history.renter_user
+
+            if not is_lender and not is_renter:
+                return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
+
+            if rental_history.rental_status_id != RENTAL_STATUS_COMPLETED:
+                return JsonResponse({'success': False, 'message': '返却済みの取引のみ評価できます'}, status=400)
+
+            # 二重レビュー防止
+            if UserReview.objects.filter(reviewer_user=request.user, rental_history=rental_history).exists():
+                return JsonResponse({'success': False, 'message': 'この取引は既に評価済みです'}, status=400)
+
+            try:
+                data = json.loads(request.body)
+            except json.JSONDecodeError:
+                return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=400)
+
+            review_score = data.get('review_score')
+            review_content = data.get('review_content', '').strip()
+
+            # バリデーション
+            try:
+                review_score = int(review_score)
+                if review_score < 1 or review_score > 5:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return JsonResponse({'success': False, 'message': '評価は1〜5の整数で入力してください'}, status=400)
+
+            if len(review_content) > 1000:
+                return JsonResponse({'success': False, 'message': 'コメントは1000文字以内で入力してください'}, status=400)
+
+            partner_user = rental_history.renter_user if is_lender else rental_history.lender_user
+
+            with transaction.atomic():
+                UserReview.objects.create(
+                    reviewer_user=request.user,
+                    reviewed_user=partner_user,
+                    rental_history=rental_history,
+                    review_score=review_score,
+                    review_content=review_content if review_content else None
+                )
+
+                # 相手に通知
+                self._send_notification(
+                    partner_user,
+                    '取引の評価が届きました',
+                    f'「{rental_history.product.product_name}」の取引であなたへの評価が送信されました。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '評価を送信しました。ありがとうございました。'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
 # 取引関連ビュー
+class TransactionTrackingView(LoginRequiredMixin, View):
+    """配送追跡情報API（17track連携）"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, rental_history_id, tracking_type, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.get(rental_history_id=rental_history_id)
+
+            # アクセス権チェック（貸主 or 借り手のみ）
+            if request.user != rental_history.lender_user and request.user != rental_history.renter_user:
+                return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
+
+            # 追跡番号と業者コードを取得
+            if tracking_type == 'shipping':
+                tracking_number = rental_history.shipping_tracking_number
+                carrier_code = rental_history.shipping_carrier_code
+            elif tracking_type == 'return':
+                tracking_number = rental_history.return_tracking_number
+                carrier_code = rental_history.return_carrier_code
+            else:
+                return JsonResponse({'success': False, 'message': '不正なタイプです'}, status=400)
+
+            if not tracking_number:
+                return JsonResponse({'success': False, 'message': '追跡番号が登録されていません'}, status=404)
+
+            # 17track API呼び出し
+            api_key = settings.SEVENTEEN_TRACK_API_KEY
+            if not api_key:
+                return JsonResponse({
+                    'success': True,
+                    'tracking_number': tracking_number,
+                    'carrier_code': carrier_code or '',
+                    'events': [],
+                    'message': 'API KEYが未設定のため追跡情報を取得できません'
+                })
+
+            import urllib.request
+            import urllib.error
+
+            payload = json.dumps([{
+                'number': tracking_number,
+                'carrier': int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
+            }])
+
+            req = urllib.request.Request(
+                'https://api.17track.net/track/v2.2/gettrackinfo',
+                data=payload.encode('utf-8'),
+                headers={
+                    '17token': api_key,
+                    'Content-Type': 'application/json'
+                }
+            )
+
+            try:
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    api_data = json.loads(resp.read().decode('utf-8'))
+            except (urllib.error.URLError, urllib.error.HTTPError):
+                return JsonResponse({
+                    'success': True,
+                    'tracking_number': tracking_number,
+                    'carrier_code': carrier_code or '',
+                    'events': [],
+                    'message': '追跡情報の取得に失敗しました'
+                })
+
+            # レスポンスを整形
+            events = []
+            accepted = api_data.get('data', {}).get('accepted', [])
+            if accepted:
+                track = accepted[0]
+                track_info = track.get('track', {})
+                for event in track_info.get('z0', {}).get('z', []):
+                    events.append({
+                        'date': event.get('a', ''),
+                        'status': event.get('z', ''),
+                        'location': event.get('c', ''),
+                    })
+
+            return JsonResponse({
+                'success': True,
+                'tracking_number': tracking_number,
+                'carrier_code': carrier_code or '',
+                'events': events,
+            })
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
+
+
 transaction_view = TransactionView.as_view()
 transaction_messages = TransactionMessagesView.as_view()
 transaction_ship = TransactionShipView.as_view()
@@ -4828,6 +5161,8 @@ transaction_receive = TransactionReceiveView.as_view()
 transaction_return_ship = TransactionReturnShipView.as_view()
 transaction_return_receive = TransactionReturnReceiveView.as_view()
 transaction_cancel = TransactionCancelView.as_view()
+transaction_review = TransactionReviewView.as_view()
+transaction_tracking = TransactionTrackingView.as_view()
 
 
 class SearchAutocompleteView(View):

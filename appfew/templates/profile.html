@@ -98,6 +98,12 @@
                         <div class="text-zinc-500">
                             <span class="font-bold text-zinc-900">{{ following_count }}</span> フォロー中
                         </div>
+                        {% if review_avg %}
+                        <div class="text-zinc-500 flex items-center gap-1">
+                            <span style="color: #f59e0b; font-size: 14px; line-height: 1;">★</span>
+                            <span class="font-bold text-zinc-900">{{ review_avg|floatformat:1 }}</span>
+                        </div>
+                        {% endif %}
                     </div>
                 </div>
 
@@ -152,6 +158,11 @@
                 出品リスト
                 <span class="text-xs ml-1" style="color: #a1a1aa;">({{ user_products_count }})</span>
                 <span class="tab-indicator absolute bottom-0 left-0 h-0.5 w-full rounded-t-full" style="background-color: #db2777; opacity: 1;"></span>
+            </button>
+            <button class="profile-tab relative px-6 py-3 text-sm font-semibold" data-tab="reviews">
+                レビュー
+                <span class="text-xs ml-1" style="color: #a1a1aa;">({{ review_count }})</span>
+                <span class="tab-indicator absolute bottom-0 left-0 h-0.5 w-full rounded-t-full" style="background-color: #db2777; opacity: 0;"></span>
             </button>
             {% if is_own_profile %}
             <button class="profile-tab relative px-6 py-3 text-sm font-semibold" data-tab="bookmarks">
@@ -218,6 +229,81 @@
                     もっと見る
                     <span class="iconify" data-icon="lucide:chevron-down" data-width="16"></span>
                 </button>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- レビューリスト -->
+        <div id="reviews-tab" class="tab-content hidden">
+            {% if reviews %}
+            <!-- 平均評価サマリー -->
+            <div class="review-summary">
+                <div class="review-avg-stars">
+                    <span class="star-rating star-rating-lg" style="--star-percent: {% widthratio review_avg 5 100 %}%;">★★★★★</span>
+                </div>
+                <p class="text-lg font-bold text-zinc-900 mt-1">{{ review_avg|floatformat:1 }}</p>
+                <p class="text-sm text-zinc-500">{{ review_count }}件のレビュー</p>
+            </div>
+
+            <!-- ソートセレクト -->
+            <div class="review-sort">
+                <select id="review-sort-select" class="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                    <option value="-register_datetime" {% if review_sort == '-register_datetime' %}selected{% endif %}>新しい順</option>
+                    <option value="register_datetime" {% if review_sort == 'register_datetime' %}selected{% endif %}>古い順</option>
+                    <option value="-review_score" {% if review_sort == '-review_score' %}selected{% endif %}>評価が高い順</option>
+                    <option value="review_score" {% if review_sort == 'review_score' %}selected{% endif %}>評価が低い順</option>
+                </select>
+            </div>
+
+            <!-- レビューリスト -->
+            <div class="review-list">
+                {% for review in reviews %}
+                <div class="review-item">
+                    <div class="flex items-start gap-3">
+                        <!-- レビュアーアバター -->
+                        <a href="{% url 'profile' username=review.reviewer_user.user_name %}" class="flex-shrink-0">
+                            <div class="h-10 w-10 rounded-full overflow-hidden bg-zinc-100 border border-zinc-200">
+                                {% if review.reviewer_user.user_image %}
+                                <img src="{{ review.reviewer_user.user_image.url }}" alt="{{ review.reviewer_user.display_name }}" class="h-full w-full object-cover">
+                                {% else %}
+                                <div class="h-full w-full flex items-center justify-center text-zinc-400">
+                                    <span class="iconify" data-icon="lucide:user" data-width="20"></span>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </a>
+                        <div class="flex-1 min-w-0">
+                            <!-- レビュアー名 & 星 -->
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <a href="{% url 'profile' username=review.reviewer_user.user_name %}" class="text-sm font-semibold text-zinc-900 hover:text-pink-600 transition-colors">
+                                    {{ review.reviewer_user.display_name }}
+                                </a>
+                                <span class="star-rating star-rating-sm" style="--star-percent: {% widthratio review.review_score 5 100 %}%;">★★★★★</span>
+                            </div>
+                            <!-- コメント -->
+                            {% if review.review_content %}
+                            <p class="text-sm text-zinc-600 mt-1 leading-relaxed">{{ review.review_content }}</p>
+                            {% endif %}
+                            <!-- 日時 & 商品名 -->
+                            <div class="flex items-center gap-2 mt-2 text-xs text-zinc-400">
+                                <span>{{ review.register_datetime|date:"Y/m/d" }}</span>
+                                {% if review.rental_history and review.rental_history.product %}
+                                <span>-</span>
+                                <a href="{% url 'product_detail' product_id=review.rental_history.product.product_id %}" class="hover:text-pink-600 transition-colors truncate">
+                                    {{ review.rental_history.product.product_name }}
+                                </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- レビューなし -->
+            <div class="text-center py-16 text-zinc-400">
+                <span class="iconify" data-icon="lucide:message-square" data-width="48" data-height="48"></span>
+                <p class="mt-4 text-sm">まだレビューはありません</p>
             </div>
             {% endif %}
         </div>

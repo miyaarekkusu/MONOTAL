@@ -23,7 +23,8 @@
       "Bash(git push)",
       "WebSearch",
       "WebFetch(domain:jp.mercari.com)",
-      "Bash(python manage.py:*)"
+      "Bash(python manage.py:*)",
+      "Bash(sqlite3:*)"
     ],
     "deny": [],
     "ask": []

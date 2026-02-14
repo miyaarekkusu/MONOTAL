@@ -1,23 +1,34 @@
-// MyPage JavaScript
+﻿// MyPage JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
-    initUnfollowButtons();
+    initFollowToggleButtons();
 });
 
 /**
- * Initialize unfollow buttons on follow list page
+ * Initialize follow toggle buttons on follow list page
  */
-function initUnfollowButtons() {
-    const unfollowBtns = document.querySelectorAll('.follow-unfollow-btn');
+function initFollowToggleButtons() {
+    const btns = document.querySelectorAll('.follow-toggle-btn');
 
-    unfollowBtns.forEach(btn => {
+    btns.forEach(btn => {
+        const label = btn.querySelector('.btn-label');
+
+        btn.addEventListener('mouseenter', function() {
+            if (this.dataset.following === 'true') {
+                label.textContent = '解除する';
+                this.classList.remove('border-zinc-300', 'bg-white', 'text-zinc-600');
+                this.classList.add('border-red-300', 'bg-red-50', 'text-red-600');
+            }
+        });
+
+        btn.addEventListener('mouseleave', function() {
+            updateFollowUI(this, label);
+        });
+
         btn.addEventListener('click', async function(e) {
             e.preventDefault();
 
             const userId = this.dataset.userId;
-            const userCard = this.closest('.flex');
-
-            // Disable button during request
             this.disabled = true;
 
             try {
@@ -35,49 +46,36 @@ function initUnfollowButtons() {
                 const data = await response.json();
 
                 if (data.success) {
-                    if (!data.is_following) {
-                        // User was unfollowed - remove from list with animation
-                        userCard.style.transition = 'opacity 0.3s, transform 0.3s';
-                        userCard.style.opacity = '0';
-                        userCard.style.transform = 'translateX(20px)';
+                    this.dataset.following = data.is_following ? 'true' : 'false';
+                    updateFollowUI(this, label);
 
-                        setTimeout(() => {
-                            userCard.remove();
-
-                            // Update count in header
-                            const countBadge = document.querySelector('.text-xs.font-medium.text-zinc-500.bg-zinc-100');
-                            if (countBadge) {
-                                const currentCount = parseInt(countBadge.textContent.match(/\d+/)[0]);
-                                countBadge.textContent = `${currentCount - 1}人をフォロー中`;
-                            }
-
-                            // Check if list is now empty
-                            const userList = document.querySelector('.divide-y');
-                            if (userList && userList.children.length === 0) {
-                                userList.innerHTML = `
-                                    <div class="p-8 text-center text-zinc-400">
-                                        <span class="iconify mx-auto mb-4" data-icon="lucide:users" data-width="48"></span>
-                                        <p class="text-sm">フォローしているユーザーがいません</p>
-                                        <a href="/monotal/shop/" class="mt-4 inline-flex items-center gap-2 text-pink-600 hover:text-pink-700 text-sm font-medium">
-                                            商品を探す
-                                            <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
-                                        </a>
-                                    </div>
-                                `;
-                            }
-                        }, 300);
+                    const followerCountEl = this.parentElement.querySelector('.follower-count');
+                    if (followerCountEl) {
+                        followerCountEl.textContent = 'フォロワー ' + data.follower_count;
                     }
                 } else {
                     alert(data.error || 'エラーが発生しました');
-                    this.disabled = false;
                 }
             } catch (error) {
-                console.error('Unfollow error:', error);
+                console.error('Follow toggle error:', error);
                 alert('エラーが発生しました');
+            } finally {
                 this.disabled = false;
             }
         });
     });
+}
+
+function updateFollowUI(btn, label) {
+    if (btn.dataset.following === 'true') {
+        label.textContent = 'フォロー中';
+        btn.classList.remove('border-pink-600', 'bg-pink-600', 'text-white', 'border-red-300', 'bg-red-50', 'text-red-600');
+        btn.classList.add('border-zinc-300', 'bg-white', 'text-zinc-600');
+    } else {
+        label.textContent = 'フォローする';
+        btn.classList.remove('border-zinc-300', 'bg-white', 'text-zinc-600', 'border-red-300', 'bg-red-50', 'text-red-600');
+        btn.classList.add('border-pink-600', 'bg-pink-600', 'text-white');
+    }
 }
 
 /**

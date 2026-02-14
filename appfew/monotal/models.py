@@ -541,16 +541,25 @@ class UserReview(models.Model):
         related_name='reviews_received',
         db_column='reviewed_user_id'
     )
-    
+    rental_history = models.ForeignKey(
+        'RentalHistory',
+        on_delete=models.PROTECT,
+        related_name='reviews',
+        db_column='rental_history_id',
+        null=True,
+        blank=True
+    )
+
     review_content = models.CharField(max_length=1000, null=True, blank=True)
     review_score = models.DecimalField(max_digits=3, decimal_places=2)
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = 'T_UserReview'
         verbose_name = 'ユーザー評価'
         verbose_name_plural = 'ユーザー評価'
+        unique_together = [['reviewer_user', 'rental_history']]
     
     def __str__(self):
         return f"{self.reviewer_user.display_name} → {self.reviewed_user.display_name}: {self.review_score}"
@@ -985,7 +994,15 @@ class RentalRequest(models.Model):
         on_delete=models.PROTECT,
         db_column='rental_request_status_id'
     )
-    
+    product_rental_plan = models.ForeignKey(
+        ProductRentalPlan,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='rental_requests',
+        db_column='product_rental_plan_id'
+    )
+
     approval_datetime = models.DateTimeField(null=True, blank=True)
     rejection_datetime = models.DateTimeField(null=True, blank=True)
     register_datetime = models.DateTimeField(auto_now_add=True)
@@ -1099,10 +1116,26 @@ class RentalHistory(models.Model):
     rental_start_datetime = models.DateTimeField(null=True, blank=True)
     rental_end_datetime = models.DateTimeField(null=True, blank=True)
     receipt_completed_datetime = models.DateTimeField(null=True, blank=True)
-    
+
+    # レンタル期間
+    rental_days = models.IntegerField(null=True, blank=True)
+    rental_deadline = models.DateTimeField(null=True, blank=True)
+    return_shipping_deadline = models.DateTimeField(null=True, blank=True)
+
+    # 発送追跡（貸主→借り手）
+    shipping_tracking_number = models.CharField(max_length=50, null=True, blank=True)
+    shipping_carrier_code = models.CharField(max_length=20, null=True, blank=True)
+
+    # 返送追跡（借り手→貸主）
+    return_tracking_number = models.CharField(max_length=50, null=True, blank=True)
+    return_carrier_code = models.CharField(max_length=20, null=True, blank=True)
+
+    # 超過通知済みフラグ（バッチ重複防止）
+    overdue_notified_datetime = models.DateTimeField(null=True, blank=True)
+
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         db_table = 'T_RentalHistory'
         verbose_name = 'レンタル履歴'

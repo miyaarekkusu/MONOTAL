@@ -49,6 +49,7 @@ function initRentalPlanSelector() {
     const totalPriceValue = document.getElementById('totalPriceValue');
     const mobilePriceValue = document.getElementById('mobilePriceValue');
     const mobileDaysValue = document.getElementById('mobileDaysValue');
+    const selectedPlanIdInput = document.getElementById('selectedPlanId');
 
     let selectedDays = null;
     let selectedPrice = null;
@@ -58,6 +59,9 @@ function initRentalPlanSelector() {
         const firstBtn = planBtns[0];
         selectedDays = parseInt(firstBtn.dataset.days);
         selectedPrice = parseInt(firstBtn.dataset.price);
+        if (selectedPlanIdInput) {
+            selectedPlanIdInput.value = firstBtn.dataset.planId || '';
+        }
         updateDisplay();
     }
 
@@ -73,6 +77,11 @@ function initRentalPlanSelector() {
             // Store selected values
             selectedDays = parseInt(this.dataset.days);
             selectedPrice = parseInt(this.dataset.price);
+
+            // Update hidden input for form submission
+            if (selectedPlanIdInput) {
+                selectedPlanIdInput.value = this.dataset.planId || '';
+            }
 
             // Update display
             updateDisplay();
@@ -171,11 +180,11 @@ function initBookmarkButton() {
 
         if (bookmarked) {
             bookmarkBtn.classList.add('liked');
-            icon.style.fill = '#db2777';
+            icon.setAttribute('data-icon', 'mdi:heart');
             icon.style.color = '#db2777';
         } else {
             bookmarkBtn.classList.remove('liked');
-            icon.style.fill = 'none';
+            icon.setAttribute('data-icon', 'lucide:heart');
             icon.style.color = '';
         }
     }

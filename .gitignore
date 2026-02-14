@@ -98,3 +98,7 @@ Temporary Items
 # Claude Code
 .claude/
 tmpclaude-*-cwd
+/.claude/settings.local.json
+/appfew/.claude/settings.local.json
+/appfew/media/product_images
+/appfew/db.sqlite3

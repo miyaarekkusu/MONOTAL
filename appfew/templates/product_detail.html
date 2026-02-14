@@ -148,7 +148,7 @@
                             <button id="bookmarkBtn" class="like-btn {% if is_bookmarked %}liked{% endif %}"
                                     data-product-id="{{ product.product_id }}"
                                     data-bookmarked="{{ is_bookmarked|yesno:'true,false' }}">
-                                <span class="iconify" data-icon="lucide:heart" data-width="24"></span>
+                                <span class="iconify" data-icon="{% if is_bookmarked %}mdi:heart{% else %}lucide:heart{% endif %}" data-width="28"></span>
                                 <span class="like-count" id="bookmarkCount">{{ bookmark_count }}</span>
                             </button>
                         </div>
@@ -163,6 +163,7 @@
                     <div class="rental-plan-list" id="rentalPlanList">
                         {% for plan in rental_plans %}
                         <button type="button" class="rental-plan-btn {% if forloop.first %}active{% endif %}"
+                                data-plan-id="{{ plan.product_rental_plan_id }}"
                                 data-days="{{ plan.rental_days }}"
                                 data-price="{{ plan.rental_fee }}">
                             <span class="plan-days">{{ plan.rental_days }}日</span>
@@ -188,7 +189,12 @@
                     商品を編集する
                 </a>
                 {% else %}
-                {% if has_pending_request %}
+                {% if product.product_status.product_status_id == 2 %}
+                <button class="rental-cta-btn rental-pending" disabled>
+                    <span class="iconify" data-icon="lucide:package-x" data-width="18"></span>
+                    現在貸出中です
+                </button>
+                {% elif has_pending_request %}
                 <button class="rental-cta-btn rental-pending" disabled>
                     <span class="iconify" data-icon="lucide:clock" data-width="18"></span>
                     申請中です
@@ -196,6 +202,7 @@
                 {% else %}
                 <form action="{% url 'rental_request' product_id=product.product_id %}" method="post" style="margin: 0;" onsubmit="return confirm('この商品のレンタルを申請しますか？');">
                     {% csrf_token %}
+                    <input type="hidden" name="plan_id" id="selectedPlanId" value="">
                     <button type="submit" class="rental-cta-btn">
                         レンタル申請
                     </button>
@@ -222,14 +229,14 @@
                             </div>
                             <!-- Rating Stars -->
                             <div class="seller-rating">
+                                {% if seller_review_count > 0 %}
                                 <div class="rating-stars">
-                                    <span class="iconify star-filled" data-icon="lucide:star" data-width="14"></span>
-                                    <span class="iconify star-filled" data-icon="lucide:star" data-width="14"></span>
-                                    <span class="iconify star-filled" data-icon="lucide:star" data-width="14"></span>
-                                    <span class="iconify star-filled" data-icon="lucide:star" data-width="14"></span>
-                                    <span class="iconify star-filled" data-icon="lucide:star" data-width="14"></span>
+                                    <span class="star-rating star-rating-sm" style="--star-percent: {% widthratio seller_review_avg 5 100 %}%;">★★★★★</span>
                                 </div>
-                                <span class="rating-count">156</span>
+                                <span class="rating-count">{{ seller_review_count }}</span>
+                                {% else %}
+                                <span class="text-xs text-zinc-400">まだ評価はありません</span>
+                                {% endif %}
                             </div>
                         </div>
                     </a>
@@ -302,7 +309,9 @@
             <span class="mobile-price-value">価格未設定</span>
             {% endif %}
         </div>
-        {% if has_pending_request %}
+        {% if product.product_status.product_status_id == 2 %}
+        <button class="mobile-cta-btn mobile-cta-pending" disabled>貸出中</button>
+        {% elif has_pending_request %}
         <button class="mobile-cta-btn mobile-cta-pending" disabled>申請中です</button>
         {% else %}
         <button class="mobile-cta-btn">申請へ</button>

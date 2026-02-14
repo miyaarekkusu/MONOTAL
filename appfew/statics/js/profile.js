@@ -1,4 +1,4 @@
-// Profile Page JavaScript
+﻿// Profile Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching functionality
@@ -12,6 +12,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Load more button
     initLoadMoreButton();
+
+    // Review sort functionality
+    initReviewSort();
+
+    // URLハッシュによるタブ自動選択
+    if (window.location.hash === '#reviews') {
+        const reviewsTab = document.querySelector('.profile-tab[data-tab="reviews"]');
+        if (reviewsTab) reviewsTab.click();
+    }
 });
 
 /**
@@ -170,6 +179,21 @@ function initShareButton() {
                 alert('URLをコピーしました');
             });
         }
+    });
+}
+
+/**
+ * Initialize review sort select
+ */
+function initReviewSort() {
+    const sortSelect = document.getElementById('review-sort-select');
+    if (!sortSelect) return;
+
+    sortSelect.addEventListener('change', function() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('sort', this.value);
+        url.hash = 'reviews';
+        window.location.href = url.toString();
     });
 }
 

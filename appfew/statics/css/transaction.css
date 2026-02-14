@@ -16,7 +16,7 @@
     padding: 12px 24px;
     position: sticky;
     top: 64px;
-    z-index: 100;
+    z-index: 10;
 }
 
 .header-content {
@@ -592,6 +592,44 @@
     color: #71717a;
 }
 
+/* レビューボタン */
+.review-btn {
+    background: #f59e0b;
+    color: white;
+    text-decoration: none;
+}
+
+.review-btn:hover {
+    background: #d97706;
+}
+
+/* レビューステータスボックス */
+.review-status-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 24px 16px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.review-status-box.waiting {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.review-status-box p {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+}
+
+.review-status-box small {
+    font-size: 12px;
+    opacity: 0.8;
+}
+
 /* ガイドパネル */
 .guide-panel {
     background: #f9fafb;
@@ -745,6 +783,209 @@
 
 .btn-danger:hover {
     background: #b91c1c;
+}
+
+/* 返送期限超過警告 */
+.overdue-warning {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 13px;
+    font-weight: 600;
+    border-bottom: 1px solid #fecaca;
+}
+
+/* 配送追跡リンク */
+.tracking-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    background: #eff6ff;
+    color: #2563eb;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.tracking-link:hover {
+    background: #dbeafe;
+}
+
+/* レンタルカウントダウン */
+.rental-countdown {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.rental-countdown.overdue {
+    background: #fef2f2;
+    border-color: #fecaca;
+}
+
+.countdown-timer {
+    font-size: 16px;
+    font-weight: 700;
+    color: #059669;
+    text-align: center;
+    padding: 8px 0;
+}
+
+.rental-countdown.overdue .countdown-timer {
+    color: #dc2626;
+}
+
+.countdown-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #d1fae5;
+}
+
+.rental-countdown.overdue .countdown-details {
+    border-top-color: #fecaca;
+}
+
+.countdown-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+}
+
+.countdown-label {
+    color: #71717a;
+}
+
+.countdown-value {
+    color: #18181b;
+    font-weight: 500;
+}
+
+/* 追跡モーダル */
+.tracking-modal-body {
+    padding: 20px 24px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.tracking-info {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tracking-number-display {
+    font-size: 14px;
+    color: #18181b;
+    padding: 10px 12px;
+    background: #f9fafb;
+    border-radius: 8px;
+}
+
+.tracking-notice {
+    font-size: 13px;
+    color: #71717a;
+    text-align: center;
+    padding: 12px;
+}
+
+.tracking-error {
+    font-size: 13px;
+    color: #dc2626;
+    text-align: center;
+    padding: 24px;
+}
+
+.tracking-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.tracking-event {
+    padding: 10px 0;
+    border-bottom: 1px solid #f4f4f5;
+}
+
+.tracking-event:last-child {
+    border-bottom: none;
+}
+
+.tracking-event-date {
+    font-size: 11px;
+    color: #71717a;
+    margin-bottom: 2px;
+}
+
+.tracking-event-status {
+    font-size: 13px;
+    color: #18181b;
+    font-weight: 500;
+}
+
+.tracking-event-location {
+    font-size: 12px;
+    color: #a1a1aa;
+    margin-top: 2px;
+}
+
+/* 発送/返送モーダルフォーム */
+.modal-body-form {
+    padding: 20px 24px;
+}
+
+.modal-description {
+    font-size: 13px;
+    color: #52525b;
+    line-height: 1.6;
+    margin: 0 0 20px 0;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #ec4899;
+}
+
+.btn-primary-action {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #ec4899;
+    color: white;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-primary-action:hover {
+    background: #db2777;
+}
+
+.btn-primary-action:disabled {
+    background: #e4e4e7;
+    color: #a1a1aa;
+    cursor: not-allowed;
 }
 
 /* アニメーション */
