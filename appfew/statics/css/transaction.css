@@ -92,6 +92,16 @@
 .role-badge.lender { background: #fdf2f8; color: #ec4899; }
 .role-badge.renter { background: #eff6ff; color: #3b82f6; }
 
+.plan-badge {
+    display: inline-flex;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
 /* 進捗バー（コンパクト版） */
 .progress-bar {
     display: flex;

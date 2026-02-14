@@ -881,6 +881,9 @@
                                         <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
                                     </h3>
                                     <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
+                                    {% if tx.rental_days %}
+                                    <span class="request-plan">{{ tx.rental_days }}日間</span>
+                                    {% endif %}
                                     <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
                                 </div>
                             </div>

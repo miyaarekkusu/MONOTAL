@@ -4470,6 +4470,16 @@ class TransactionView(LoginRequiredMixin, View):
                 except UserPersonalInfo.DoesNotExist:
                     pass
 
+            # レンタル金額を取得（ProductRentalPlanから直接検索）
+            rental_fee = None
+            if rental_history.rental_days:
+                plan = ProductRentalPlan.objects.filter(
+                    product=rental_history.product,
+                    rental_days=rental_history.rental_days
+                ).first()
+                if plan:
+                    rental_fee = plan.rental_fee
+
             # 返品理由マスターを取得
             return_reasons = ReturnReason.objects.all()
 
@@ -4502,6 +4512,7 @@ class TransactionView(LoginRequiredMixin, View):
                 'has_return_tracking': bool(rental_history.return_tracking_number),
                 # レンタル期間
                 'rental_days': rental_history.rental_days,
+                'rental_fee': rental_fee,
                 'rental_deadline': rental_history.rental_deadline,
                 'rental_deadline_iso': rental_history.rental_deadline.isoformat() if rental_history.rental_deadline else None,
                 'return_shipping_deadline': rental_history.return_shipping_deadline,

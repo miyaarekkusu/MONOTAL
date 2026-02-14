@@ -28,6 +28,9 @@
                     <span class="role-badge {% if is_lender %}lender{% else %}renter{% endif %}">
                         {% if is_lender %}出品者{% else %}購入者{% endif %}
                     </span>
+                    {% if rental_days %}
+                    <span class="plan-badge">{{ rental_days }}日間{% if rental_fee %} / ¥{{ rental_fee|floatformat:0 }}{% endif %}</span>
+                    {% endif %}
                 </div>
             </div>
             <!-- 進捗インジケーター -->
