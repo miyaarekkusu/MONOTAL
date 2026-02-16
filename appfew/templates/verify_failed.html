@@ -1,17 +1,19 @@
-{% extends 'base_simple.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block style %}
+{% block title %}認証失敗 - MONOTAL{% endblock %}
+
+{% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
 {% endblock %}
 
-{% block main %}
+{% block content %}
 <div class="register-container">
     <h1 class="register-title">認証に失敗しました</h1>
 
-    <div class="error-message-box">
-        <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f44336; margin-bottom: 20px;"></i>
-        <p>{{ message }}</p>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <i class="fas fa-exclamation-circle" style="font-size: 48px; color: #f44336; margin-bottom: 20px; display: block;"></i>
+        <p style="color: #666; font-size: 14px;">{{ message }}</p>
     </div>
 
     <p class="back-link">

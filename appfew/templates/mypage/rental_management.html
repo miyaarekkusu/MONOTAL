@@ -400,14 +400,14 @@
                 <div class="tab-list">
                     <button class="tab-btn active" data-tab="received">
                         受け取った申請
-                        {% if received_pending_count > 0 %}
-                        <span class="badge">{{ received_pending_count }}</span>
+                        {% if received_total_count > 0 %}
+                        <span class="badge">{{ received_total_count }}</span>
                         {% endif %}
                     </button>
                     <button class="tab-btn" data-tab="sent">
                         送った申請
-                        {% if sent_pending_count > 0 %}
-                        <span class="badge">{{ sent_pending_count }}</span>
+                        {% if sent_total_count > 0 %}
+                        <span class="badge">{{ sent_total_count }}</span>
                         {% endif %}
                     </button>
                     <button class="tab-btn" data-tab="transactions">
