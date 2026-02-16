@@ -89,12 +89,12 @@
             {% if current_page == 'interest_selection' %}
             <a href="{% url 'interest_selection' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
                 <span class="iconify text-pink-600" data-icon="lucide:sparkles" data-width="20"></span>
-                興味のあるジャンル
+                興味のある趣味
             </a>
             {% else %}
             <a href="{% url 'interest_selection' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
                 <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:sparkles" data-width="20"></span>
-                興味のあるジャンル
+                興味のある趣味
             </a>
             {% endif %}
 
@@ -153,7 +153,7 @@
     <!-- Group: Interests -->
     {% if user_hobbies %}
     <div>
-        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">興味のあるジャンル</h3>
+        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">興味のある趣味</h3>
         <div class="px-3 flex flex-wrap gap-1.5">
             {% for hobby in user_hobbies %}
             <span class="inline-flex items-center gap-1 rounded-full bg-pink-50 px-2.5 py-1 text-xs font-medium text-pink-700 ring-1 ring-inset ring-pink-200">

@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}会員登録完了 - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="register-container">
+    <div class="register-done-icon">
+        <i class="fas fa-check-circle"></i>
+    </div>
+    <h1 class="register-title">会員登録が完了しました</h1>
+    <p class="register-subtitle">以下の項目もご確認ください。</p>
+
+    <div class="register-done-links">
+        <a href="#" class="register-done-link">
+            <i class="fas fa-file-alt"></i>
+            利用規約
+        </a>
+        <a href="#" class="register-done-link">
+            <i class="fas fa-book"></i>
+            モノタルの使い方
+        </a>
+    </div>
+
+    <a href="{% url 'interest_selection' %}" class="register-done-cta">
+        興味のある趣味を選ぶ
+    </a>
+</div>
+{% endblock %}

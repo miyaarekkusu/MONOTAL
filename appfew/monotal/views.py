@@ -371,13 +371,21 @@ class EmailVerifyView(View):
             # ログイン
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
 
-            messages.success(request, '会員登録が完了しました。興味のあるジャンルを選んでください。')
-            return redirect('interest_selection')
+            messages.success(request, '会員登録が完了しました。興味のある趣味を選んでください。')
+            return redirect('register_done')
 
         except EmailVerificationToken.DoesNotExist:
             return render(request, 'verify_failed.html', {
                 'message': '無効な認証リンクです。'
             })
+
+
+class RegisterDoneView(LoginRequiredMixin, View):
+    """会員登録完了ページ"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        return render(request, 'register_done.html')
 
 
 class ProfileView(View):
@@ -2401,6 +2409,7 @@ register_form = RegisterFormView.as_view()
 register_complete = RegisterCompleteView.as_view()
 register_sent = RegisterSentView.as_view()
 email_verify = EmailVerifyView.as_view()
+register_done = RegisterDoneView.as_view()
 profile = ProfileView.as_view()
 profile_setting = ProfileSettingView.as_view()
 create_sell = CreateSellView.as_view()

@@ -10,6 +10,7 @@ urlpatterns = [
     path('register/complete/', views.register_complete, name='register_complete'),
     path('register/sent/', views.register_sent, name='register_sent'),
     path('verify/<uuid:token>/', views.email_verify, name='email_verify'),
+    path('register/done/', views.register_done, name='register_done'),
     path('profile/<str:username>/', views.profile, name='profile'),
     path('profile/profile_setting/<str:username>/', views.profile_setting, name='profile_setting'),
     path('sell/', views.create_sell, name='create_sell'),
