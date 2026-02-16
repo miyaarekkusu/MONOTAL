@@ -26,7 +26,7 @@
         <!-- Main Area -->
         <div class="lg:col-span-9">
             <div class="mb-6">
-                <h1 class="text-xl font-bold tracking-tight text-zinc-900">保険</h1>
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">補償保険</h1>
             </div>
 
             {% if enrollment %}
@@ -34,14 +34,14 @@
                 <div class="bg-white border border-zinc-200 rounded-lg p-6 mb-6">
                     <div class="flex items-center gap-3 mb-4">
                         <span class="iconify text-green-600" data-icon="lucide:shield-check" data-width="28"></span>
-                        <h2 class="text-lg font-bold text-zinc-900">現在、保険に加入中です</h2>
+                        <h2 class="text-lg font-bold text-zinc-900">現在、補償保険に加入中です</h2>
                     </div>
 
                     <div class="space-y-2 text-sm text-zinc-700 mb-6">
-                        <p><span class="font-medium">保険プラン:</span> {{ enrollment.insurance.insurance_name }}</p>
+                        <p><span class="font-medium">保険プラン:</span> MONOTAL補償保険制度</p>
                         <p><span class="font-medium">加入日:</span> {{ enrollment.insurance_start_datetime|date:"Y年m月d日" }}</p>
-                        <p><span class="font-medium">月額料金:</span> ¥{{ enrollment.insurance.insurance_fee|floatformat:0 }}</p>
-                        <p><span class="font-medium">補償上限:</span> ¥{{ enrollment.insurance.coverage_limit|floatformat:0 }}</p>
+                        <p><span class="font-medium">月額料金:</span> ¥2,000</p>
+                        <p><span class="font-medium">補償上限:</span> ¥50,000</p>
                     </div>
 
                     <!-- 補償残枠情報 -->
@@ -107,7 +107,7 @@
                 <div class="bg-white border border-zinc-200 rounded-lg p-6">
                     <div class="flex items-center gap-3 mb-4">
                         <span class="iconify text-pink-600" data-icon="lucide:shield" data-width="28"></span>
-                        <h2 class="text-lg font-bold text-zinc-900">MONOTALあんしん補償</h2>
+                        <h2 class="text-lg font-bold text-zinc-900">MONOTAL補償保険制度</h2>
                     </div>
 
                     <p class="text-sm text-zinc-600 mb-6">レンタル中の商品が破損した場合、修理費用を補償します。</p>

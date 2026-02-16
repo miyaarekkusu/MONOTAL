@@ -195,6 +195,22 @@
             </div>
         </section>
 
+        <!-- Insurance Banner -->
+        {% if not has_insurance %}
+        <section class="form-section">
+            <div style="display: flex; align-items: center; gap: 16px; padding: 16px 20px; background: linear-gradient(135deg, #fdf2f8, #eff6ff); border: 1px solid #e4e4e7; border-radius: 12px;">
+                <span class="iconify" data-icon="lucide:shield-check" data-width="32" style="color: #ec4899; flex-shrink: 0;"></span>
+                <div style="flex: 1;">
+                    <p style="font-size: 14px; font-weight: 600; color: #18181b; margin: 0 0 4px 0;">MONOTAL補償保険制度に加入しませんか？</p>
+                    <p style="font-size: 12px; color: #71717a; margin: 0;">レンタル中の商品破損・故障を補償。月額¥2,000で最大¥50,000まで補償されます。</p>
+                </div>
+                <a href="{% url 'insurance_page' %}" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; color: white; background: #ec4899; border-radius: 8px; text-decoration: none; white-space: nowrap; transition: background 0.2s;" onmouseover="this.style.background='#db2777'" onmouseout="this.style.background='#ec4899'">
+                    詳しく見る
+                </a>
+            </div>
+        </section>
+        {% endif %}
+
         <!-- Submit Action -->
         <div class="submit-section">
             <div class="terms-box">

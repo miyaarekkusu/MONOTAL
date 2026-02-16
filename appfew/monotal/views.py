@@ -622,6 +622,12 @@ class CreateSellView(View):
         # ユーザーの受取口座を取得
         has_bank_account = BankAccount.objects.filter(user=request.user).exists()
 
+        # 保険加入状態を取得
+        has_insurance = InsuranceEnrollment.objects.filter(
+            user=request.user,
+            insurance_end_datetime__isnull=True
+        ).exists()
+
         context = {
             'categories': categories,
             'conditions': conditions,
@@ -631,6 +637,7 @@ class CreateSellView(View):
             'user_addresses': user_addresses,
             'default_address': default_address,
             'has_bank_account': has_bank_account,
+            'has_insurance': has_insurance,
         }
 
         return render(request, 'create_sell.html', context)

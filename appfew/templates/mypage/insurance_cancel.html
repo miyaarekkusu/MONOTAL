@@ -317,7 +317,7 @@
 {% block content %}
 <div class="cancel-container">
     <div class="page-header">
-        <h1 class="page-title">保険解約確認</h1>
+        <h1 class="page-title">補償保険 解約確認</h1>
         <p class="page-subtitle">解約理由をお聞かせください</p>
     </div>
 
@@ -327,7 +327,7 @@
             <span class="iconify" data-icon="lucide:shield-check" data-width="28"></span>
         </div>
         <div class="plan-info">
-            <h3>{{ enrollment.insurance.insurance_name }}</h3>
+            <h3>MONOTAL補償保険制度</h3>
             <div class="plan-details-list">
                 <div class="detail-row">
                     <span class="detail-label">加入日</span>
@@ -335,11 +335,11 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">月額料金</span>
-                    <span class="detail-value">¥{{ enrollment.insurance.insurance_fee|floatformat:0 }}/月</span>
+                    <span class="detail-value">¥2,000/月</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">補償上限</span>
-                    <span class="detail-value">¥{{ enrollment.insurance.coverage_limit|floatformat:0 }}</span>
+                    <span class="detail-value">¥50,000</span>
                 </div>
             </div>
         </div>
