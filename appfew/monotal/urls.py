@@ -75,6 +75,8 @@ urlpatterns = [
     path('transaction/<int:rental_history_id>/return-ship/', views.transaction_return_ship, name='transaction_return_ship'),
     path('transaction/<int:rental_history_id>/return-receive/', views.transaction_return_receive, name='transaction_return_receive'),
     path('transaction/<int:rental_history_id>/cancel/', views.transaction_cancel, name='transaction_cancel'),
+    path('transaction/<int:rental_history_id>/review/', views.transaction_review, name='transaction_review'),
+    path('transaction/<int:rental_history_id>/tracking/<str:tracking_type>/', views.transaction_tracking, name='transaction_tracking'),
 
     # 通知関連
     path('notifications/', views.notification_list, name='notification_list'),

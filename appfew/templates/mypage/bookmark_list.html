@@ -73,10 +73,12 @@
                         </div>
                         {% endif %}
 
-                        <!-- Bookmark icon -->
-                        <div class="absolute top-2 right-2">
-                            <span class="iconify text-pink-500" data-icon="lucide:heart" data-width="20" style="fill: currentColor;"></span>
-                        </div>
+                        <!-- Bookmark icon (toggle) -->
+                        <button class="bookmark-toggle absolute top-2 right-2 transition-all"
+                                data-product-id="{{ product.product_id }}"
+                                onclick="event.preventDefault(); event.stopPropagation(); toggleBookmark(this);">
+                            <span class="iconify text-pink-500 drop-shadow" data-icon="mdi:heart" data-width="24"></span>
+                        </button>
                     </div>
                     <div class="p-3">
                         <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
@@ -140,4 +142,45 @@
 
 {% block extra_js %}
 <script src="{% static 'js/mypage.js' %}"></script>
+<script>
+function getCSRFToken() {
+    const cookie = document.cookie.split('; ').find(c => c.startsWith('csrftoken='));
+    return cookie ? cookie.split('=')[1] : '';
+}
+
+async function toggleBookmark(btn) {
+    const productId = btn.dataset.productId;
+    btn.disabled = true;
+
+    try {
+        const response = await fetch(`/monotal/product/${productId}/bookmark/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCSRFToken(),
+                'Content-Type': 'application/json',
+            },
+        });
+        const data = await response.json();
+
+        if (data.success) {
+            const icon = btn.querySelector('.iconify');
+            const card = btn.closest('a');
+
+            if (data.is_bookmarked) {
+                icon.setAttribute('data-icon', 'mdi:heart');
+                icon.classList.remove('text-zinc-400');
+                icon.classList.add('text-pink-500');
+            } else {
+                icon.setAttribute('data-icon', 'lucide:heart');
+                icon.classList.remove('text-pink-500');
+                icon.classList.add('text-zinc-400');
+            }
+        }
+    } catch (err) {
+        console.error('Bookmark toggle failed:', err);
+    } finally {
+        btn.disabled = false;
+    }
+}
+</script>
 {% endblock %}

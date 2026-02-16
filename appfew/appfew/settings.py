@@ -10,10 +10,14 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / '.env')
 
 
 # Quick-start development settings - unsuitable for production
@@ -176,3 +180,6 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nishidakohtata@icloud.com'
 EMAIL_HOST_PASSWORD = 'vpby-lopp-ectx-tofg'
 DEFAULT_FROM_EMAIL = 'nishidakohtata@icloud.com'
+
+# 17track API
+SEVENTEEN_TRACK_API_KEY = os.environ.get('SEVENTEEN_TRACK_API_KEY', '')

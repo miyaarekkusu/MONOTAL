@@ -28,6 +28,9 @@
                     <span class="role-badge {% if is_lender %}lender{% else %}renter{% endif %}">
                         {% if is_lender %}出品者{% else %}購入者{% endif %}
                     </span>
+                    {% if rental_days %}
+                    <span class="plan-badge">{{ rental_days }}日間{% if rental_fee %} / ¥{{ rental_fee|floatformat:0 }}{% endif %}</span>
+                    {% endif %}
                 </div>
             </div>
             <!-- 進捗インジケーター -->
@@ -60,6 +63,14 @@
         </div>
         {% endif %}
     </header>
+
+    <!-- 返送期限超過警告バナー -->
+    {% if is_return_overdue %}
+    <div class="overdue-warning">
+        <span class="iconify" data-icon="lucide:alert-triangle" data-width="18"></span>
+        返送期限を過ぎています。早急に商品を返送してください。
+    </div>
+    {% endif %}
 
     <!-- 3カラムレイアウト -->
     <div class="transaction-body">
@@ -156,6 +167,53 @@
                     {% endif %}
                 </div>
             </section>
+
+            <!-- 配送追跡リンク -->
+            {% if has_shipping_tracking %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:package-search" data-width="16"></span> 配送追跡</h3>
+                <a href="#" class="tracking-link" data-tracking-type="shipping">
+                    <span class="iconify" data-icon="lucide:external-link" data-width="14"></span>
+                    発送の追跡情報を確認
+                </a>
+            </section>
+            {% endif %}
+
+            {% if has_return_tracking %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:package-search" data-width="16"></span> 返送追跡</h3>
+                <a href="#" class="tracking-link" data-tracking-type="return">
+                    <span class="iconify" data-icon="lucide:external-link" data-width="14"></span>
+                    返送の追跡情報を確認
+                </a>
+            </section>
+            {% endif %}
+
+            <!-- レンタル期間カウントダウン -->
+            {% if rental_history.rental_status_id == 3 and rental_deadline %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:timer" data-width="16"></span> レンタル期間</h3>
+                <div class="rental-countdown {% if is_rental_overdue %}overdue{% endif %}" id="rentalCountdown">
+                    <div class="countdown-timer" id="countdownTimer">
+                        --
+                    </div>
+                    <div class="countdown-details">
+                        <div class="countdown-row">
+                            <span class="countdown-label">レンタル日数</span>
+                            <span class="countdown-value">{{ rental_days }}日間</span>
+                        </div>
+                        <div class="countdown-row">
+                            <span class="countdown-label">返却期限</span>
+                            <span class="countdown-value">{{ rental_deadline|date:"m/d H:i" }}</span>
+                        </div>
+                        <div class="countdown-row">
+                            <span class="countdown-label">返送期限</span>
+                            <span class="countdown-value">{{ return_shipping_deadline|date:"m/d H:i" }}</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            {% endif %}
         </aside>
 
         <!-- 中央: チャット -->
@@ -224,11 +282,27 @@
                 {% endif %}
 
                 {% if rental_history.rental_status_id == 5 %}
-                <div class="completed-box">
-                    <span class="iconify" data-icon="lucide:party-popper" data-width="32"></span>
-                    <p>取引完了</p>
-                    <small>{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</small>
-                </div>
+                    {% if not my_review %}
+                    <a href="{% url 'transaction_review' rental_history_id=rental_history.rental_history_id %}" class="action-btn review-btn">
+                        <span style="font-size: 20px; line-height: 1;">★</span>
+                        <span class="action-text">
+                            <strong>取引を完了</strong>
+                            <small>評価をして完了</small>
+                        </span>
+                    </a>
+                    {% elif my_review and not partner_review %}
+                    <div class="review-status-box waiting">
+                        <span class="iconify" data-icon="lucide:clock" data-width="24"></span>
+                        <p>評価済み</p>
+                        <small>相手の評価を待っています</small>
+                    </div>
+                    {% else %}
+                    <div class="completed-box">
+                        <span class="iconify" data-icon="lucide:party-popper" data-width="32"></span>
+                        <p>取引完了</p>
+                        <small>{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</small>
+                    </div>
+                    {% endif %}
                 {% endif %}
 
                 {% if rental_history.rental_status_id in '1234'|make_list %}
@@ -240,7 +314,7 @@
             </section>
 
             <!-- 次のステップ案内 -->
-            {% if rental_history.rental_status_id < 5 and rental_history.rental_status_id != 6 %}
+            {% if rental_history.rental_status_id != 6 %}
             <section class="panel-section guide-panel">
                 <h3><span class="iconify" data-icon="lucide:info" data-width="16"></span> 次のステップ</h3>
                 <div class="guide-content">
@@ -267,6 +341,12 @@
                         <p>商品が届いたら内容を確認し、「返却を確認」ボタンを押して取引を完了してください。</p>
                         {% else %}
                         <p>出品者が商品を受け取るまでお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 5 %}
+                        {% if not my_review %}
+                        <p>「取引を完了」ボタンから取引相手の評価をしてください。評価が完了すると取引が完了になります。</p>
+                        {% else %}
+                        <p>評価が完了しました。取引は正常に完了しています。ご利用ありがとうございました。</p>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -307,12 +387,101 @@
         </form>
     </div>
 </div>
+
+<!-- 発送モーダル -->
+<div id="shipModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>発送を通知</h2>
+            <button class="modal-close" data-modal="shipModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="modal-body-form">
+            <p class="modal-description">商品を発送しましたか？追跡番号を入力すると、配送状況を確認できます。</p>
+            <div class="form-group">
+                <label class="form-label">配送業者（任意）</label>
+                <select id="shipCarrierCode" class="form-select">
+                    <option value="">選択してください</option>
+                    <option value="100062">ヤマト運輸</option>
+                    <option value="100040">佐川急便</option>
+                    <option value="10021">日本郵便</option>
+                    <option value="100171">西濃運輸</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">追跡番号（任意）</label>
+                <input type="text" id="shipTrackingNumber" class="form-input" placeholder="追跡番号を入力" maxlength="50">
+            </div>
+            <div id="shipError" class="modal-error hidden"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" data-modal="shipModal">閉じる</button>
+                <button type="button" class="btn-primary-action" id="shipConfirmBtn">発送を通知する</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 返送モーダル -->
+<div id="returnShipModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>返送を通知</h2>
+            <button class="modal-close" data-modal="returnShipModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="modal-body-form">
+            <p class="modal-description">商品を返送しましたか？追跡番号を入力すると、配送状況を確認できます。</p>
+            <div class="form-group">
+                <label class="form-label">配送業者（任意）</label>
+                <select id="returnCarrierCode" class="form-select">
+                    <option value="">選択してください</option>
+                    <option value="100062">ヤマト運輸</option>
+                    <option value="100040">佐川急便</option>
+                    <option value="10021">日本郵便</option>
+                    <option value="100171">西濃運輸</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">追跡番号（任意）</label>
+                <input type="text" id="returnTrackingNumber" class="form-input" placeholder="追跡番号を入力" maxlength="50">
+            </div>
+            <div id="returnShipError" class="modal-error hidden"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" data-modal="returnShipModal">閉じる</button>
+                <button type="button" class="btn-primary-action" id="returnShipConfirmBtn">返送を通知する</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 追跡情報モーダル -->
+<div id="trackingModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>配送追跡</h2>
+            <button class="modal-close" data-modal="trackingModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="tracking-modal-body" id="trackingModalBody">
+            <div class="chat-loading">
+                <span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="24"></span>
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
     const RENTAL_HISTORY_ID = {{ rental_history.rental_history_id }};
     const CSRF_TOKEN = '{{ csrf_token }}';
+    const RENTAL_DEADLINE_ISO = {% if rental_deadline_iso %}'{{ rental_deadline_iso }}'{% else %}null{% endif %};
 </script>
 <script src="{% static 'js/transaction.js' %}"></script>
 {% endblock %}

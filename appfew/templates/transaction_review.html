@@ -1,0 +1,88 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}取引の評価 - {{ product.product_name }} | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/transaction_review.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="review-page">
+    <div class="review-container">
+        <!-- 戻るリンク -->
+        <a href="{% url 'transaction' rental_history_id=rental_history.rental_history_id %}" class="back-link">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span>
+            取引画面に戻る
+        </a>
+
+        <!-- ヘッダー -->
+        <div class="review-header">
+            <h1>取引の評価</h1>
+            <p>「{{ product.product_name }}」の取引相手を評価してください</p>
+        </div>
+
+        <!-- 取引相手情報 -->
+        <div class="partner-card">
+            <div class="partner-avatar">
+                {% if partner_user.user_image %}
+                <img src="{{ partner_user.user_image.url }}" alt="{{ partner_user.display_name }}">
+                {% else %}
+                <span class="iconify" data-icon="lucide:user" data-width="28"></span>
+                {% endif %}
+            </div>
+            <div class="partner-info">
+                <span class="partner-name">{{ partner_user.display_name }}</span>
+                <span class="partner-role">{% if is_lender %}借り手{% else %}出品者{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- 評価フォーム -->
+        <form id="reviewForm" class="review-form">
+            <!-- 星評価 -->
+            <div class="form-section">
+                <label class="form-label">評価 <span class="required">*</span></label>
+                <div class="star-rating" id="starRating">
+                    {% for i in "12345" %}
+                    <button type="button" class="star-btn" data-value="{{ i }}">
+                        <span class="star-icon">★</span>
+                    </button>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="review_score" id="reviewScore" value="">
+                <p class="rating-label" id="ratingLabel"></p>
+            </div>
+
+            <!-- コメント -->
+            <div class="form-section">
+                <label class="form-label" for="reviewContent">コメント（任意）</label>
+                <textarea
+                    id="reviewContent"
+                    name="review_content"
+                    maxlength="1000"
+                    rows="5"
+                    placeholder="取引相手への感想やメッセージを入力してください"
+                    class="review-textarea"
+                ></textarea>
+                <div class="char-count">
+                    <span id="charCount">0</span> / 1000
+                </div>
+            </div>
+
+            <!-- 送信ボタン -->
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                <span class="iconify" data-icon="lucide:send" data-width="18"></span>
+                評価を送信する
+            </button>
+        </form>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const RENTAL_HISTORY_ID = {{ rental_history.rental_history_id }};
+    const CSRF_TOKEN = '{{ csrf_token }}';
+</script>
+<script src="{% static 'js/transaction_review.js' %}"></script>
+{% endblock %}

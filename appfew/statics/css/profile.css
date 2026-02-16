@@ -1,4 +1,4 @@
-/* Profile Page Styles */
+﻿/* Profile Page Styles */
 
 /* Additional custom styles for profile page */
 .safe-area-bottom {
@@ -122,3 +122,73 @@
 .text-zinc-600 {
     color: #52525b;
 }
+
+/* Review Styles */
+.review-summary {
+    text-align: center;
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #e4e4e7;
+    border-radius: 1rem;
+    margin-bottom: 1rem;
+}
+
+.review-avg-stars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 小数対応の星表示（グラデーション方式） */
+.star-rating {
+    display: inline-block;
+    line-height: 1;
+    letter-spacing: 3px;
+    -webkit-text-stroke: 1.5px #f59e0b;
+    background: linear-gradient(90deg, #f59e0b var(--star-percent), #fff var(--star-percent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.star-rating-lg {
+    font-size: 24px;
+}
+
+.star-rating-sm {
+    font-size: 14px;
+}
+
+.review-sort {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 1rem;
+}
+
+.review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.review-item {
+    padding: 1rem 0;
+    border-bottom: 1px solid #f4f4f5;
+}
+
+.review-item:last-child {
+    border-bottom: none;
+}
+
+.review-stars {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+}
+
+/* 星の塗りつぶし */
+.review-item .review-stars .iconify {
+    fill: currentColor;
+}
+

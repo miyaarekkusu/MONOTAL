@@ -38,7 +38,10 @@
       "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python -c \"\"import sqlite3; c=sqlite3.connect\\(''db.sqlite3''\\).cursor\\(\\); c.execute\\(''SELECT user_id, user_name, email, user_status_id, is_staff, is_superuser FROM T_User''\\); [print\\(r\\) for r in c.fetchall\\(\\)]\"\"\")",
       "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python -c \"\"import sqlite3; conn=sqlite3.connect\\(''db.sqlite3''\\); c=conn.cursor\\(\\); c.execute\\(''UPDATE T_User SET user_status_id=2, is_staff=1, is_superuser=1 WHERE user_id=1''\\); conn.commit\\(\\); print\\(''Updated:'', c.rowcount\\)\"\"\")",
       "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python -c \"\"import sqlite3; conn=sqlite3.connect\\(''db.sqlite3''\\); c=conn.cursor\\(\\); c.execute\\(''SELECT user_id, user_name, email, user_status_id FROM T_User WHERE user_id != 1''\\); [print\\(r\\) for r in c.fetchall\\(\\)]; c.execute\\(''UPDATE T_User SET user_status_id=2 WHERE user_id != 1 AND user_status_id != 2''\\); conn.commit\\(\\); print\\(''Updated:'', c.rowcount\\)\"\"\")",
-      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python _tmp.py; Remove-Item _tmp.py\")"
+      "Bash(powershell.exe -Command \"cd ''C:\\\\Users\\\\alexm\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew''; python _tmp.py; Remove-Item _tmp.py\")",
+      "Bash(git checkout:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }

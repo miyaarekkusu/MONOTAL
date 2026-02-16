@@ -6,6 +6,7 @@ const TransactionPage = {
     rentalHistoryId: null,
     pollInterval: null,
     lastMessageId: 0,
+    countdownInterval: null,
 
     /**
      * 初期化
@@ -16,6 +17,10 @@ const TransactionPage = {
         this.initChatInput();
         this.initActionButtons();
         this.initCancelModal();
+        this.initShipModal();
+        this.initReturnShipModal();
+        this.initTrackingModal();
+        this.initCountdown();
         this.startPolling();
     },
 
@@ -83,6 +88,16 @@ const TransactionPage = {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    formatDateJST(isoStr) {
+        if (!isoStr) return '';
+        try {
+            const d = new Date(isoStr);
+            return d.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo' });
+        } catch {
+            return this.escapeHtml(isoStr);
+        }
     },
 
     /**
@@ -171,10 +186,10 @@ const TransactionPage = {
      * アクションボタン初期化
      */
     initActionButtons() {
-        // 発送通知
+        // 発送通知 → モーダルを開く
         const shipBtn = document.getElementById('shipBtn');
         if (shipBtn) {
-            shipBtn.addEventListener('click', () => this.notifyShipping());
+            shipBtn.addEventListener('click', () => this.openModal('shipModal'));
         }
 
         // 受取通知
@@ -183,10 +198,10 @@ const TransactionPage = {
             receiveBtn.addEventListener('click', () => this.notifyReceipt());
         }
 
-        // 返送通知
+        // 返送通知 → モーダルを開く
         const returnShipBtn = document.getElementById('returnShipBtn');
         if (returnShipBtn) {
-            returnShipBtn.addEventListener('click', () => this.notifyReturnShip());
+            returnShipBtn.addEventListener('click', () => this.openModal('returnShipModal'));
         }
 
         // 返却受取
@@ -202,16 +217,61 @@ const TransactionPage = {
         }
     },
 
-    /**
-     * 発送通知
-     */
-    async notifyShipping() {
-        if (!confirm('商品を発送しましたか？\n発送通知を送信します。')) return;
+    // ==========================================
+    // モーダル共通
+    // ==========================================
+
+    openModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.remove('hidden');
+    },
+
+    closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) modal.classList.add('hidden');
+    },
+
+    // ==========================================
+    // 発送モーダル
+    // ==========================================
+
+    initShipModal() {
+        const modal = document.getElementById('shipModal');
+        if (!modal) return;
+
+        // 閉じるボタン
+        modal.querySelectorAll('[data-modal="shipModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('shipModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('shipModal'));
+
+        // 発送確認ボタン
+        const confirmBtn = document.getElementById('shipConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.submitShipping());
+        }
+    },
+
+    async submitShipping() {
+        const trackingNumber = document.getElementById('shipTrackingNumber')?.value.trim() || '';
+        const carrierCode = document.getElementById('shipCarrierCode')?.value || '';
+        const confirmBtn = document.getElementById('shipConfirmBtn');
+        const errorEl = document.getElementById('shipError');
+
+        if (errorEl) errorEl.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/ship/`, {
                 method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tracking_number: trackingNumber,
+                    carrier_code: carrierCode
+                })
             });
             const data = await response.json();
 
@@ -219,13 +279,196 @@ const TransactionPage = {
                 alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '発送通知に失敗しました');
+                if (errorEl) {
+                    errorEl.textContent = data.message || '発送通知に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '発送通知に失敗しました');
+                }
             }
         } catch (error) {
             console.error('発送通知に失敗しました:', error);
             alert('発送通知に失敗しました');
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
         }
     },
+
+    // ==========================================
+    // 返送モーダル
+    // ==========================================
+
+    initReturnShipModal() {
+        const modal = document.getElementById('returnShipModal');
+        if (!modal) return;
+
+        // 閉じるボタン
+        modal.querySelectorAll('[data-modal="returnShipModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('returnShipModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('returnShipModal'));
+
+        // 返送確認ボタン
+        const confirmBtn = document.getElementById('returnShipConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.submitReturnShipping());
+        }
+    },
+
+    async submitReturnShipping() {
+        const trackingNumber = document.getElementById('returnTrackingNumber')?.value.trim() || '';
+        const carrierCode = document.getElementById('returnCarrierCode')?.value || '';
+        const confirmBtn = document.getElementById('returnShipConfirmBtn');
+        const errorEl = document.getElementById('returnShipError');
+
+        if (errorEl) errorEl.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-ship/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tracking_number: trackingNumber,
+                    carrier_code: carrierCode
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                if (errorEl) {
+                    errorEl.textContent = data.message || '返送通知に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '返送通知に失敗しました');
+                }
+            }
+        } catch (error) {
+            console.error('返送通知に失敗しました:', error);
+            alert('返送通知に失敗しました');
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
+        }
+    },
+
+    // ==========================================
+    // 追跡情報モーダル
+    // ==========================================
+
+    initTrackingModal() {
+        // 追跡リンククリック
+        document.querySelectorAll('.tracking-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const type = link.dataset.trackingType;
+                this.showTracking(type);
+            });
+        });
+
+        // 閉じるボタン
+        const modal = document.getElementById('trackingModal');
+        if (!modal) return;
+        modal.querySelectorAll('[data-modal="trackingModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('trackingModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('trackingModal'));
+    },
+
+    async showTracking(type) {
+        const body = document.getElementById('trackingModalBody');
+        body.innerHTML = '<div class="chat-loading"><span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="24"></span></div>';
+        this.openModal('trackingModal');
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/tracking/${type}/`);
+            const data = await response.json();
+
+            if (!data.success) {
+                body.innerHTML = `<div class="tracking-error">${this.escapeHtml(data.message)}</div>`;
+                return;
+            }
+
+            let html = `<div class="tracking-info">`;
+            html += `<div class="tracking-number-display"><strong>追跡番号:</strong> ${this.escapeHtml(data.tracking_number)}</div>`;
+
+            if (data.latest_status) {
+                html += `<div class="tracking-status-badge"><strong>ステータス:</strong> ${this.escapeHtml(data.latest_status)}</div>`;
+            }
+
+            if (data.message) {
+                html += `<div class="tracking-notice">${this.escapeHtml(data.message)}</div>`;
+            }
+
+            if (data.events && data.events.length > 0) {
+                html += '<div class="tracking-events">';
+                data.events.forEach(event => {
+                    html += `
+                        <div class="tracking-event">
+                            <div class="tracking-event-date">${this.formatDateJST(event.date)}</div>
+                            <div class="tracking-event-status">${this.escapeHtml(event.status)}</div>
+                            ${event.location ? `<div class="tracking-event-location">${this.escapeHtml(event.location)}</div>` : ''}
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            } else if (!data.message) {
+                html += '<div class="tracking-notice">追跡情報はまだありません</div>';
+            }
+
+            html += '</div>';
+            body.innerHTML = html;
+
+        } catch (error) {
+            console.error('追跡情報の取得に失敗しました:', error);
+            body.innerHTML = '<div class="tracking-error">追跡情報の取得に失敗しました</div>';
+        }
+    },
+
+    // ==========================================
+    // カウントダウン
+    // ==========================================
+
+    initCountdown() {
+        if (typeof RENTAL_DEADLINE_ISO === 'undefined' || !RENTAL_DEADLINE_ISO) return;
+
+        const deadline = new Date(RENTAL_DEADLINE_ISO);
+        this.updateCountdown(deadline);
+        this.countdownInterval = setInterval(() => this.updateCountdown(deadline), 60000);
+    },
+
+    updateCountdown(deadline) {
+        const timerEl = document.getElementById('countdownTimer');
+        const countdownEl = document.getElementById('rentalCountdown');
+        if (!timerEl) return;
+
+        const now = new Date();
+        const diff = deadline - now;
+
+        if (diff <= 0) {
+            timerEl.textContent = '期限超過';
+            if (countdownEl) countdownEl.classList.add('overdue');
+            return;
+        }
+
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+
+        let text = '';
+        if (days > 0) text += `${days}日 `;
+        text += `${hours}時間 ${minutes}分`;
+        timerEl.textContent = `残り ${text}`;
+    },
+
+    // ==========================================
+    // 既存: 受取・返却受取・キャンセル
+    // ==========================================
 
     /**
      * 受取通知
@@ -253,35 +496,10 @@ const TransactionPage = {
     },
 
     /**
-     * 返送通知
-     */
-    async notifyReturnShip() {
-        if (!confirm('商品を返送しましたか？\n返送通知を送信します。')) return;
-
-        try {
-            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-ship/`, {
-                method: 'POST',
-                headers: { 'X-CSRFToken': CSRF_TOKEN }
-            });
-            const data = await response.json();
-
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert(data.message || '返送通知に失敗しました');
-            }
-        } catch (error) {
-            console.error('返送通知に失敗しました:', error);
-            alert('返送通知に失敗しました');
-        }
-    },
-
-    /**
      * 返却受取
      */
     async notifyReturnReceive() {
-        if (!confirm('商品が届きましたか？\n取引完了を確定します。')) return;
+        if (!confirm('商品が届きましたか？\n返却を確認し、評価に進みます。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-receive/`, {
@@ -395,4 +613,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ページ離脱時にポーリング停止
 window.addEventListener('beforeunload', () => {
     TransactionPage.stopPolling();
+    if (TransactionPage.countdownInterval) {
+        clearInterval(TransactionPage.countdownInterval);
+    }
 });

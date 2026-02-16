@@ -297,6 +297,19 @@
     font-size: 14px;
 }
 
+.request-plan {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6d28d9;
+    background: #ede9fe;
+    border-radius: 10px;
+    margin-left: 6px;
+}
+
 .request-date {
     font-size: 11px;
     color: #a1a1aa;
@@ -399,8 +412,8 @@
                     </button>
                     <button class="tab-btn" data-tab="transactions">
                         取引中
-                        {% if transactions_lender_count > 0 or transactions_renter_count > 0 %}
-                        <span class="badge">{{ transactions_lender_count|add:transactions_renter_count }}</span>
+                        {% if transactions_count > 0 %}
+                        <span class="badge">{{ transactions_count }}</span>
                         {% endif %}
                     </button>
                 </div>
@@ -418,6 +431,9 @@
                     </button>
                     <button class="sub-tab-btn" data-subtab="received-approved">
                         承認済み/完了
+                        {% if received_approved_count > 0 %}
+                        <span class="sub-badge">{{ received_approved_count }}</span>
+                        {% endif %}
                     </button>
                     <button class="sub-tab-btn" data-subtab="received-rejected">
                         拒否
@@ -449,6 +465,9 @@
                                             <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
                                         </h3>
                                         <span class="request-status pending">{{ req.rental_request_status.status_name }}</span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -500,6 +519,9 @@
                                             {% endif %}">
                                             {{ req.rental_request_status.status_name }}
                                         </span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -544,6 +566,9 @@
                                             <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
                                         </h3>
                                         <span class="request-status rejected">拒否</span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -621,6 +646,9 @@
                     </button>
                     <button class="sub-tab-btn" data-subtab="sent-approved">
                         承認済み/完了
+                        {% if sent_approved_count > 0 %}
+                        <span class="sub-badge">{{ sent_approved_count }}</span>
+                        {% endif %}
                     </button>
                     <button class="sub-tab-btn" data-subtab="sent-rejected">
                         拒否
@@ -652,6 +680,9 @@
                                             <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
                                         </h3>
                                         <span class="request-status pending">{{ req.rental_request_status.status_name }}</span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -699,6 +730,9 @@
                                             {% endif %}">
                                             {{ req.rental_request_status.status_name }}
                                         </span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -747,6 +781,9 @@
                                             <a href="{% url 'product_detail' product_id=req.product.product_id %}" class="request-product-link">{{ req.product.product_name }}</a>
                                         </h3>
                                         <span class="request-status rejected">拒否</span>
+                                        {% if req.product_rental_plan %}
+                                        <span class="request-plan">{{ req.product_rental_plan.rental_days }}日間 / ¥{{ req.product_rental_plan.rental_fee|floatformat:0 }}</span>
+                                        {% endif %}
                                         <p class="request-date">{{ req.register_datetime|date:"Y/m/d H:i" }}</p>
                                     </div>
                                 </div>
@@ -814,105 +851,57 @@
 
             <!-- 取引中 -->
             <div class="tab-content" id="tab-transactions">
-                <!-- Sub Tabs -->
-                <div class="sub-tab-container">
-                    <button class="sub-tab-btn active" data-subtab="transactions-lender">
-                        出品者として
-                        {% if transactions_lender_count > 0 %}
-                        <span class="sub-badge">{{ transactions_lender_count }}</span>
-                        {% endif %}
-                    </button>
-                    <button class="sub-tab-btn" data-subtab="transactions-renter">
-                        購入者として
-                        {% if transactions_renter_count > 0 %}
-                        <span class="sub-badge">{{ transactions_renter_count }}</span>
-                        {% endif %}
-                    </button>
-                </div>
-
-                <!-- 出品者として -->
-                <div class="sub-tab-content active" id="subtab-transactions-lender">
-                    {% if transactions_as_lender %}
-                        {% for tx in transactions_as_lender %}
-                        <div class="request-card">
-                            <div class="request-card-inner">
-                                <p class="request-user">借り手: <a href="{% url 'profile' username=tx.renter_user.user_name %}" class="request-user-link">{{ tx.renter_user.display_name }}</a></p>
-                                <div class="request-product-row">
-                                    <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-image-link">
-                                        {% if tx.product.images.all %}
-                                        <img src="{{ tx.product.images.all.0.image.url }}" alt="{{ tx.product.product_name }}" class="request-image">
-                                        {% else %}
-                                        <div class="request-image-placeholder">
-                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
-                                        </div>
-                                        {% endif %}
-                                    </a>
-                                    <div class="request-info">
-                                        <h3 class="request-product-name">
-                                            <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
-                                        </h3>
-                                        <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
-                                        <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
+                {% if transactions_all %}
+                    {% for tx in transactions_all %}
+                    <div class="request-card">
+                        <div class="request-card-inner">
+                            {% if tx.lender_user == request.user %}
+                            <p class="request-user">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded mr-1.5">出品者</span>
+                                借り手: <a href="{% url 'profile' username=tx.renter_user.user_name %}" class="request-user-link">{{ tx.renter_user.display_name }}</a>
+                            </p>
+                            {% else %}
+                            <p class="request-user">
+                                <span class="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 border border-pink-200 px-1.5 py-0.5 rounded mr-1.5">購入者</span>
+                                出品者: <a href="{% url 'profile' username=tx.lender_user.user_name %}" class="request-user-link">{{ tx.lender_user.display_name }}</a>
+                            </p>
+                            {% endif %}
+                            <div class="request-product-row">
+                                <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-image-link">
+                                    {% if tx.product.images.all %}
+                                    <img src="{{ tx.product.images.all.0.image.url }}" alt="{{ tx.product.product_name }}" class="request-image">
+                                    {% else %}
+                                    <div class="request-image-placeholder">
+                                        <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
                                     </div>
+                                    {% endif %}
+                                </a>
+                                <div class="request-info">
+                                    <h3 class="request-product-name">
+                                        <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
+                                    </h3>
+                                    <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
+                                    {% if tx.rental_days %}
+                                    <span class="request-plan">{{ tx.rental_days }}日間</span>
+                                    {% endif %}
+                                    <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
                                 </div>
                             </div>
-                            <div class="request-actions">
-                                <a href="{% url 'transaction' rental_history_id=tx.rental_history_id %}" class="btn-start">
-                                    <span class="iconify" data-icon="lucide:message-square" data-width="14"></span>
-                                    取引画面
-                                </a>
-                            </div>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <span class="iconify" data-icon="lucide:package" data-width="48"></span>
-                        <p>出品者として取引中の商品はありません</p>
-                    </div>
-                    {% endif %}
-                </div>
-
-                <!-- 購入者として -->
-                <div class="sub-tab-content" id="subtab-transactions-renter">
-                    {% if transactions_as_renter %}
-                        {% for tx in transactions_as_renter %}
-                        <div class="request-card">
-                            <div class="request-card-inner">
-                                <p class="request-user">出品者: <a href="{% url 'profile' username=tx.lender_user.user_name %}" class="request-user-link">{{ tx.lender_user.display_name }}</a></p>
-                                <div class="request-product-row">
-                                    <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-image-link">
-                                        {% if tx.product.images.all %}
-                                        <img src="{{ tx.product.images.all.0.image.url }}" alt="{{ tx.product.product_name }}" class="request-image">
-                                        {% else %}
-                                        <div class="request-image-placeholder">
-                                            <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
-                                        </div>
-                                        {% endif %}
-                                    </a>
-                                    <div class="request-info">
-                                        <h3 class="request-product-name">
-                                            <a href="{% url 'product_detail' product_id=tx.product.product_id %}" class="request-product-link">{{ tx.product.product_name }}</a>
-                                        </h3>
-                                        <span class="request-status status-{{ tx.rental_status_id }}">{{ tx.rental_status.status_name }}</span>
-                                        <p class="request-date">{{ tx.register_datetime|date:"Y/m/d H:i" }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="request-actions">
-                                <a href="{% url 'transaction' rental_history_id=tx.rental_history_id %}" class="btn-start">
-                                    <span class="iconify" data-icon="lucide:message-square" data-width="14"></span>
-                                    取引画面
-                                </a>
-                            </div>
+                        <div class="request-actions">
+                            <a href="{% url 'transaction' rental_history_id=tx.rental_history_id %}" class="btn-start">
+                                <span class="iconify" data-icon="lucide:message-square" data-width="14"></span>
+                                取引画面
+                            </a>
                         </div>
-                        {% endfor %}
-                    {% else %}
-                    <div class="empty-state">
-                        <span class="iconify" data-icon="lucide:shopping-bag" data-width="48"></span>
-                        <p>購入者として取引中の商品はありません</p>
                     </div>
-                    {% endif %}
+                    {% endfor %}
+                {% else %}
+                <div class="empty-state">
+                    <span class="iconify" data-icon="lucide:package" data-width="48"></span>
+                    <p>取引中の商品はありません</p>
                 </div>
+                {% endif %}
             </div>
 
         </div>
