@@ -32,7 +32,7 @@
         <!-- LEFT: Images & Details -->
         <div class="detail-left">
             <!-- Main Image -->
-            <div class="main-image-container">
+            <div class="main-image-container{% if is_blocked_relation %} blocked-grayscale{% endif %}">
                 {% if product_images %}
                     <img id="mainProductImage" src="{{ product_images.0.image.url }}" alt="{{ product.product_name }}" class="main-image">
                 {% else %}
@@ -189,7 +189,12 @@
                     商品を編集する
                 </a>
                 {% else %}
-                {% if product.product_status.product_status_id == 2 %}
+                {% if is_blocked_relation %}
+                <button class="rental-cta-btn rental-pending" disabled>
+                    <span class="iconify" data-icon="lucide:ban" data-width="18"></span>
+                    ブロックされています
+                </button>
+                {% elif product.product_status.product_status_id == 2 %}
                 <button class="rental-cta-btn rental-pending" disabled>
                     <span class="iconify" data-icon="lucide:package-x" data-width="18"></span>
                     現在貸出中です
@@ -309,7 +314,9 @@
             <span class="mobile-price-value">価格未設定</span>
             {% endif %}
         </div>
-        {% if product.product_status.product_status_id == 2 %}
+        {% if is_blocked_relation %}
+        <button class="mobile-cta-btn mobile-cta-pending" disabled>ブロックされています</button>
+        {% elif product.product_status.product_status_id == 2 %}
         <button class="mobile-cta-btn mobile-cta-pending" disabled>貸出中</button>
         {% elif has_pending_request %}
         <button class="mobile-cta-btn mobile-cta-pending" disabled>申請中です</button>

@@ -41,6 +41,18 @@
             </a>
             {% endif %}
 
+            {% if current_page == 'block_list' %}
+            <a href="{% url 'mypage_block_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:ban" data-width="20"></span>
+                ブロックリスト
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_block_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:ban" data-width="20"></span>
+                ブロックリスト
+            </a>
+            {% endif %}
+
             {% if current_page == 'listing' %}
             <a href="{% url 'mypage_listing' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
                 <span class="iconify text-pink-600" data-icon="lucide:store" data-width="20"></span>

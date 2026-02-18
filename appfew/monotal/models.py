@@ -490,6 +490,34 @@ class Follow(models.Model):
         return f"{self.follower_user.display_name}が{self.followed_user.display_name}をフォロー"
 
 
+class ListingNotification(models.Model):
+    """
+    出品通知購読テーブル
+    特定ユーザーの新規出品を通知で受け取る設定
+    """
+    listing_notification_id = models.AutoField(primary_key=True)
+    subscriber_user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='listing_subscriptions',
+        db_column='subscriber_user_id'
+    )
+    target_user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='listing_subscribers',
+        db_column='target_user_id'
+    )
+    register_datetime = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'T_ListingNotification'
+        verbose_name = '出品通知購読'
+        verbose_name_plural = '出品通知購読'
+        unique_together = [['subscriber_user', 'target_user']]
+
+    def __str__(self):
+        return f"{self.subscriber_user.display_name}が{self.target_user.display_name}の出品を購読"
+
+
 class Block(models.Model):
     """
     ブロックテーブル
@@ -1205,12 +1233,18 @@ class Report(models.Model):
     不適切なユーザーや商品の通報を管理
     """
     report_id = models.AutoField(primary_key=True)
-    
+
     reporter_user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='reports_made',
         db_column='reporter_user_id'
+    )
+    reported_user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='reports_received',
+        db_column='reported_user_id'
     )
     report_reason = models.ForeignKey(
         ReportReason,

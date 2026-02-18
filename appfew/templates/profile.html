@@ -11,11 +11,11 @@
 <main class="flex-1 w-full mx-auto max-w-[800px] px-4 lg:px-6 py-8 space-y-8">
 
     <!-- Profile Section -->
-    <section class="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-sm relative overflow-hidden">
+    <section class="bg-white rounded-2xl border border-zinc-200 p-6 md:p-8 shadow-sm relative">
         <!-- Background Pattern decoration -->
         <div class="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-gradient-to-br from-pink-50 to-zinc-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
 
-        <div class="flex flex-col md:flex-row gap-6 md:gap-8 relative z-10">
+        <div class="flex flex-col md:flex-row gap-6 md:gap-8 relative">
             <!-- Avatar -->
             <div class="flex-shrink-0 flex justify-center md:block">
                 <div class="relative">
@@ -135,15 +135,59 @@
                     </a>
                 </div>
                 {% elif request.user.is_authenticated %}
-                <!-- Follow Button for other users -->
+                <!-- Block Notice (自分がブロックした側) -->
+                <div id="block-notice" class="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700" {% if not is_blocked %}style="display: none;"{% endif %}>
+                    <span class="iconify flex-shrink-0" data-icon="lucide:ban" data-width="16"></span>
+                    <span>このユーザーをブロックしています</span>
+                </div>
+                <!-- Blocked-by Notice (相手にブロックされた側) -->
+                {% if is_blocked_by %}
+                <div class="flex items-center gap-2 rounded-lg bg-zinc-100 border border-zinc-300 px-3 py-2 text-sm text-zinc-600">
+                    <span class="iconify flex-shrink-0" data-icon="lucide:shield-off" data-width="16"></span>
+                    <span>このユーザーにブロックされています</span>
+                </div>
+                {% endif %}
+                <!-- Follow Button + More Menu for other users -->
                 <div class="flex items-center justify-center md:justify-start gap-3 pt-2">
                     <button id="follow-btn"
                             data-user-id="{{ profile_user.user_id }}"
                             data-following="{{ is_following|yesno:'true,false' }}"
-                            class="flex-1 md:flex-none w-full md:w-auto min-w-[160px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-all active:scale-[0.98] flex {% if is_following %}bg-zinc-100 text-zinc-700 border border-zinc-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200{% else %}bg-pink-600 text-white hover:bg-pink-700{% endif %}">
+                            class="flex-1 md:flex-none w-full md:w-auto min-w-[160px] items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold shadow-sm transition-all active:scale-[0.98] flex {% if is_following %}bg-zinc-100 text-zinc-700 border border-zinc-300 hover:bg-red-50 hover:text-red-600 hover:border-red-200{% else %}bg-pink-600 text-white hover:bg-pink-700{% endif %}"
+                            {% if is_blocked or is_blocked_by %}style="display: none;"{% endif %}>
                         <span class="iconify" data-icon="{% if is_following %}lucide:user-check{% else %}lucide:user-plus{% endif %}" data-width="16" id="follow-icon"></span>
                         <span id="follow-text">{% if is_following %}フォロー中{% else %}フォローする{% endif %}</span>
                     </button>
+                    <!-- Listing notification bell -->
+                    <button id="listing-notify-btn"
+                            data-user-id="{{ profile_user.user_id }}"
+                            data-subscribed="{{ is_listing_notified|yesno:'true,false' }}"
+                            class="flex items-center justify-center w-10 h-10 rounded-lg border transition-all active:scale-[0.98] {% if is_listing_notified %}border-pink-300 bg-pink-50 text-pink-600 hover:bg-pink-100{% else %}border-zinc-300 bg-white text-zinc-400 hover:bg-zinc-50{% endif %}"
+                            {% if is_blocked or is_blocked_by %}style="display: none;"{% endif %}
+                            aria-label="出品通知">
+                        <span class="iconify" data-icon="{% if is_listing_notified %}lucide:bell-ring{% else %}lucide:bell{% endif %}" data-width="20" id="listing-notify-icon"></span>
+                    </button>
+                    <!-- Three-dot menu -->
+                    <div class="profile-more-menu relative">
+                        <button id="more-menu-btn" class="flex items-center justify-center w-10 h-10 rounded-lg border border-zinc-300 bg-white text-zinc-500 hover:bg-zinc-50 transition-all active:scale-[0.98]" aria-label="その他のオプション">
+                            <span class="iconify" data-icon="lucide:more-horizontal" data-width="20"></span>
+                        </button>
+                        <div id="more-menu-dropdown" class="more-menu-dropdown hidden absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
+                            <button id="block-btn"
+                                    data-user-id="{{ profile_user.user_id }}"
+                                    data-blocked="{{ is_blocked|yesno:'true,false' }}"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 transition-colors flex items-center gap-2 text-red-600">
+                                <span class="iconify" data-icon="{% if is_blocked %}lucide:user-check{% else %}lucide:ban{% endif %}" data-width="16" id="block-icon"></span>
+                                <span id="block-text">{% if is_blocked %}ブロック解除{% else %}ブロックする{% endif %}</span>
+                            </button>
+                            <div class="border-t border-zinc-100 my-1"></div>
+                            <button id="report-btn"
+                                    data-user-id="{{ profile_user.user_id }}"
+                                    class="w-full text-left px-4 py-2.5 text-sm hover:bg-zinc-50 transition-colors flex items-center gap-2 text-amber-600">
+                                <span class="iconify" data-icon="lucide:flag" data-width="16"></span>
+                                <span>通報する</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
                 {% endif %}
             </div>
@@ -361,6 +405,46 @@
     </section>
 
 </main>
+
+{% if request.user.is_authenticated and request.user != profile_user %}
+<!-- 通報モーダル -->
+<div id="report-modal" class="report-modal-overlay hidden">
+    <div class="report-modal-card">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-zinc-900">ユーザーを通報</h3>
+            <button id="report-modal-close" class="flex items-center justify-center w-8 h-8 rounded-full hover:bg-zinc-100 transition-colors text-zinc-400 hover:text-zinc-600">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <p class="text-sm text-zinc-500 mb-4">{{ profile_user.display_name }} さんを通報する理由を選択してください。</p>
+        <form id="report-form">
+            <div class="mb-4">
+                <label for="report-reason" class="block text-sm font-medium text-zinc-700 mb-1">通報理由 <span class="text-red-500">*</span></label>
+                <select id="report-reason" class="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-sm bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                    <option value="">選択してください</option>
+                    {% for reason in report_reasons %}
+                    <option value="{{ reason.report_reason_id }}">{{ reason.report_reason_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-5">
+                <label for="report-detail" class="block text-sm font-medium text-zinc-700 mb-1">詳細（任意）</label>
+                <textarea id="report-detail" rows="4" maxlength="1000" placeholder="具体的な内容があれば記入してください..." class="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-sm bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500 resize-none"></textarea>
+                <p class="text-xs text-zinc-400 mt-1 text-right"><span id="report-detail-count">0</span>/1000</p>
+            </div>
+            <div class="flex gap-3">
+                <button type="button" id="report-cancel-btn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-zinc-700 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors">
+                    キャンセル
+                </button>
+                <button type="submit" id="report-submit-btn" class="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-pink-600 rounded-lg hover:bg-pink-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    送信する
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}

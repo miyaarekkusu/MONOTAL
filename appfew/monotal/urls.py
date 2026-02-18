@@ -42,8 +42,18 @@ urlpatterns = [
     # フォロー関連
     path('user/<int:user_id>/follow/', views.follow_toggle, name='follow_toggle'),
 
+    # 出品通知購読関連
+    path('user/<int:user_id>/listing-notification/', views.listing_notification_toggle, name='listing_notification_toggle'),
+
+    # ブロック関連
+    path('user/<int:user_id>/block/', views.block_toggle, name='block_toggle'),
+
+    # 通報関連
+    path('user/<int:user_id>/report/', views.report_create, name='report_create'),
+
     # マイページ
     path('mypage/follow-list/', views.mypage_follow_list, name='mypage_follow_list'),
+    path('mypage/block-list/', views.mypage_block_list, name='mypage_block_list'),
     path('mypage/bookmark-list/', views.mypage_bookmark_list, name='mypage_bookmark_list'),
     path('mypage/browsing-history/', views.mypage_browsing_history, name='mypage_browsing_history'),
     path('mypage/listing/', views.mypage_listing, name='mypage_listing'),

@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from datetime import timedelta
 from django.views import View
@@ -553,10 +553,28 @@ class ProfileView(View):
         follower_count = Follow.objects.filter(followed_user=user).count()  # フォロワー数
         following_count = Follow.objects.filter(follower_user=user).count()  # フォロー中
         is_following = False
+        is_blocked = False
+        is_blocked_by = False
         if request.user.is_authenticated and request.user != user:
             is_following = Follow.objects.filter(
                 follower_user=request.user,
                 followed_user=user
+            ).exists()
+            is_blocked = Block.objects.filter(
+                blocker_user=request.user,
+                blocked_user=user
+            ).exists()
+            is_blocked_by = Block.objects.filter(
+                blocker_user=user,
+                blocked_user=request.user
+            ).exists()
+
+        # 出品通知購読状態
+        is_listing_notified = False
+        if request.user.is_authenticated and request.user != user:
+            is_listing_notified = ListingNotification.objects.filter(
+                subscriber_user=request.user,
+                target_user=user
             ).exists()
 
         # ユーザーの趣味（登録済みカテゴリ）を取得
@@ -591,11 +609,15 @@ class ProfileView(View):
             'follower_count': follower_count,
             'following_count': following_count,
             'is_following': is_following,
+            'is_blocked': is_blocked,
+            'is_blocked_by': is_blocked_by,
+            'is_listing_notified': is_listing_notified,
             'user_hobbies': user_hobbies,
             'review_count': review_count,
             'review_avg': review_avg,
             'reviews': reviews,
             'review_sort': sort_param,
+            'report_reasons': ReportReason.objects.all(),
         }
 
         return render(request, 'profile.html', context)
@@ -1034,6 +1056,20 @@ class CreateSellView(View):
                     selected_address.is_default = True
                     selected_address.save()
 
+            # 出品通知を購読者に送信
+            subscribers = ListingNotification.objects.filter(
+                target_user=request.user
+            ).select_related('subscriber_user')
+            if subscribers.exists():
+                target_users = [s.subscriber_user for s in subscribers]
+                create_notification(
+                    notification_type_id=1,
+                    title=f'{request.user.display_name}さんが新しい商品を出品しました',
+                    detail=product.product_name,
+                    link_url=f'/monotal/product/{product.product_id}/',
+                    target_users=target_users
+                )
+
             if is_ajax:
                 return JsonResponse({
                     'success': True,
@@ -1261,11 +1297,17 @@ class ProductDetailView(View):
 
         # レンタル申請中または承認済みかチェック
         has_pending_request = False
+        is_blocked_relation = False
         if request.user.is_authenticated and not is_seller:
             has_pending_request = RentalRequest.objects.filter(
                 product=product,
                 requester_user=request.user,
                 rental_request_status_id__in=[RENTAL_REQUEST_STATUS_PENDING, RENTAL_REQUEST_STATUS_APPROVED]
+            ).exists()
+            # ブロック関係チェック（双方向）
+            is_blocked_relation = Block.objects.filter(
+                Q(blocker_user=request.user, blocked_user=product.user) |
+                Q(blocker_user=product.user, blocked_user=request.user)
             ).exists()
 
         # 出品者のレビュー情報
@@ -1282,6 +1324,7 @@ class ProductDetailView(View):
             'message_count': message_count,
             'is_seller': is_seller,
             'has_pending_request': has_pending_request,
+            'is_blocked_relation': is_blocked_relation,
             'seller_review_count': seller_review_count,
             'seller_review_avg': seller_review_avg,
         }
@@ -1980,6 +2023,16 @@ class FollowToggleView(View):
                 'error': '自分自身をフォローすることはできません'
             }, status=400)
 
+        # ブロック関係がある場合はフォロー不可（双方向）
+        if Block.objects.filter(
+            Q(blocker_user=request.user, blocked_user=target_user) |
+            Q(blocker_user=target_user, blocked_user=request.user)
+        ).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'ブロック関係があるためフォローできません'
+            }, status=400)
+
         # フォロー状態をトグル
         existing_follow = Follow.objects.filter(
             follower_user=request.user,
@@ -2006,6 +2059,191 @@ class FollowToggleView(View):
             'is_following': is_following,
             'follower_count': follower_count
         })
+
+
+class ListingNotificationToggleView(View):
+    """
+    出品通知購読のトグルAPI
+    POST: 出品通知を追加/解除
+    """
+    def post(self, request, user_id, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        try:
+            target_user = User.objects.get(user_id=user_id, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'ユーザーが見つかりません'
+            }, status=404)
+
+        if request.user == target_user:
+            return JsonResponse({
+                'success': False,
+                'error': '自分自身の出品通知は設定できません'
+            }, status=400)
+
+        if Block.objects.filter(
+            Q(blocker_user=request.user, blocked_user=target_user) |
+            Q(blocker_user=target_user, blocked_user=request.user)
+        ).exists():
+            return JsonResponse({
+                'success': False,
+                'error': 'ブロック関係があるため設定できません'
+            }, status=400)
+
+        existing = ListingNotification.objects.filter(
+            subscriber_user=request.user,
+            target_user=target_user
+        ).first()
+
+        if existing:
+            existing.delete()
+            is_subscribed = False
+        else:
+            ListingNotification.objects.create(
+                subscriber_user=request.user,
+                target_user=target_user
+            )
+            is_subscribed = True
+
+        return JsonResponse({
+            'success': True,
+            'is_subscribed': is_subscribed
+        })
+
+
+class BlockToggleView(View):
+    """
+    ブロックのトグルAPI
+    POST: ブロックを追加/解除
+    """
+    def post(self, request, user_id, *args, **kwargs):
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        # 対象ユーザーの存在確認
+        try:
+            target_user = User.objects.get(user_id=user_id, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'ユーザーが見つかりません'
+            }, status=404)
+
+        # 自分自身はブロックできない
+        if request.user == target_user:
+            return JsonResponse({
+                'success': False,
+                'error': '自分自身をブロックすることはできません'
+            }, status=400)
+
+        # ブロック状態をトグル
+        existing_block = Block.objects.filter(
+            blocker_user=request.user,
+            blocked_user=target_user
+        ).first()
+
+        if existing_block:
+            # ブロック解除
+            existing_block.delete()
+            is_blocked = False
+        else:
+            # ブロック追加
+            Block.objects.create(
+                blocker_user=request.user,
+                blocked_user=target_user
+            )
+            is_blocked = True
+
+            # ブロック時: 双方向のフォロー関係を削除
+            Follow.objects.filter(
+                follower_user=request.user,
+                followed_user=target_user
+            ).delete()
+            Follow.objects.filter(
+                follower_user=target_user,
+                followed_user=request.user
+            ).delete()
+
+        # フォロワー数を取得（フォロー解除後の最新値）
+        follower_count = Follow.objects.filter(followed_user=target_user).count()
+
+        return JsonResponse({
+            'success': True,
+            'is_blocked': is_blocked,
+            'follower_count': follower_count
+        })
+
+
+class ReportCreateView(View):
+    """
+    通報作成API
+    POST: ユーザーを通報する
+    """
+    def post(self, request, user_id, *args, **kwargs):
+        # ログインチェック
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'success': False,
+                'error': 'ログインが必要です'
+            }, status=401)
+
+        # 対象ユーザーの存在確認
+        try:
+            target_user = User.objects.get(user_id=user_id, user_status_id__in=[1, 2, 3])
+        except User.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': 'ユーザーが見つかりません'
+            }, status=404)
+
+        # 自分自身は通報できない
+        if request.user == target_user:
+            return JsonResponse({
+                'success': False,
+                'error': '自分自身を通報することはできません'
+            }, status=400)
+
+        # リクエストデータ取得
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({
+                'success': False,
+                'error': 'リクエストが不正です'
+            }, status=400)
+
+        report_reason_id = data.get('report_reason_id')
+        report_detail = data.get('report_detail', '').strip()
+
+        # 通報理由の存在確認
+        try:
+            report_reason = ReportReason.objects.get(report_reason_id=report_reason_id)
+        except ReportReason.DoesNotExist:
+            return JsonResponse({
+                'success': False,
+                'error': '通報理由を選択してください'
+            }, status=400)
+
+        # 通報を作成
+        Report.objects.create(
+            reporter_user=request.user,
+            reported_user=target_user,
+            report_reason=report_reason,
+            report_detail=report_detail if report_detail else None,
+            report_datetime=timezone.now()
+        )
+
+        return JsonResponse({'success': True})
 
 
 class MyPageFollowListView(LoginRequiredMixin, View):
@@ -2072,6 +2310,42 @@ class MyPageFollowListView(LoginRequiredMixin, View):
         }
 
         return render(request, 'mypage/follow_list.html', context)
+
+
+class MyPageBlockListView(LoginRequiredMixin, View):
+    """
+    マイページ - ブロックリスト
+    ログインユーザーがブロックしているユーザー一覧を表示
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        # ブロックしているユーザーを取得
+        blocked_users = User.objects.filter(
+            blocked_by__blocker_user=request.user,
+            user_status_id__in=[1, 2, 3]
+        ).order_by('-blocked_by__register_datetime')
+
+        block_list = []
+        for user in blocked_users:
+            block_list.append({
+                'user': user,
+            })
+
+        block_count = len(block_list)
+
+        # ページネーション
+        paginator = Paginator(block_list, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'block_list': page_obj,
+            'block_count': block_count,
+            'page_obj': page_obj,
+            'current_page': 'block_list',
+        }
+
+        return render(request, 'mypage/block_list.html', context)
 
 
 class MyPageBookmarkListView(LoginRequiredMixin, View):
@@ -2566,6 +2840,16 @@ verification_image = VerificationImageView.as_view()
 # フォロー関連
 follow_toggle = FollowToggleView.as_view()
 mypage_follow_list = MyPageFollowListView.as_view()
+
+# 出品通知購読関連
+listing_notification_toggle = ListingNotificationToggleView.as_view()
+
+# ブロック関連
+block_toggle = BlockToggleView.as_view()
+mypage_block_list = MyPageBlockListView.as_view()
+
+# 通報関連
+report_create = ReportCreateView.as_view()
 
 # マイページ関連
 mypage_bookmark_list = MyPageBookmarkListView.as_view()
@@ -3666,6 +3950,14 @@ class RentalRequestView(LoginRequiredMixin, View):
         # 自分の商品はレンタルできない
         if product.user == request.user:
             messages.error(request, '自分の商品はレンタルできません')
+            return redirect('product_detail', product_id=product_id)
+
+        # ブロック関係がある場合はレンタル申請不可（双方向）
+        if Block.objects.filter(
+            Q(blocker_user=request.user, blocked_user=product.user) |
+            Q(blocker_user=product.user, blocked_user=request.user)
+        ).exists():
+            messages.error(request, 'このユーザーの商品にはレンタル申請できません')
             return redirect('product_detail', product_id=product_id)
 
         # 貸出中の商品は申請できない

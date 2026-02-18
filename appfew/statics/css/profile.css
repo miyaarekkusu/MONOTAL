@@ -192,3 +192,65 @@
     fill: currentColor;
 }
 
+/* More Menu (Three-dot menu) */
+.profile-more-menu {
+    position: relative;
+}
+
+.more-menu-dropdown {
+    animation: menuFadeIn 0.15s ease;
+}
+
+.more-menu-dropdown.hidden {
+    display: none;
+}
+
+@keyframes menuFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-4px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Report Modal */
+.report-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    padding: 1rem;
+}
+
+.report-modal-overlay.hidden {
+    display: none;
+}
+
+.report-modal-card {
+    background: white;
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    padding: 1.5rem;
+    width: 100%;
+    max-width: 28rem;
+    animation: modalFadeIn 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+

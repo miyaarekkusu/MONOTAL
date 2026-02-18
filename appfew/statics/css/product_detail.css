@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    product_detail.css - 商品詳細ページ
    ============================================ */
 
@@ -688,6 +688,13 @@ body {
 .rental-cta-btn.rental-pending:hover {
     background: #a1a1aa;
     box-shadow: none;
+}
+
+/* Blocked grayscale overlay */
+.blocked-grayscale {
+    filter: grayscale(100%);
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 /* ============================================

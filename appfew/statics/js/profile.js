@@ -7,6 +7,18 @@ document.addEventListener('DOMContentLoaded', function() {
     // Follow button functionality
     initFollowButton();
 
+    // Listing notification bell
+    initListingNotificationButton();
+
+    // More menu (three-dot menu)
+    initMoreMenu();
+
+    // Block button functionality
+    initBlockButton();
+
+    // Report button functionality
+    initReportButton();
+
     // Share button functionality
     initShareButton();
 
@@ -137,6 +149,185 @@ function initFollowButton() {
 }
 
 /**
+ * Initialize listing notification bell button
+ */
+function initListingNotificationButton() {
+    const btn = document.getElementById('listing-notify-btn');
+    if (!btn) return;
+
+    btn.addEventListener('click', async function(e) {
+        e.preventDefault();
+
+        const userId = this.dataset.userId;
+        const icon = document.getElementById('listing-notify-icon');
+
+        this.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                              document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                              getCookie('csrftoken');
+
+            const response = await fetch(`/monotal/user/${userId}/listing-notification/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.dataset.subscribed = data.is_subscribed ? 'true' : 'false';
+
+                if (data.is_subscribed) {
+                    this.classList.remove('border-zinc-300', 'bg-white', 'text-zinc-400', 'hover:bg-zinc-50');
+                    this.classList.add('border-pink-300', 'bg-pink-50', 'text-pink-600', 'hover:bg-pink-100');
+                    icon.setAttribute('data-icon', 'lucide:bell-ring');
+                } else {
+                    this.classList.remove('border-pink-300', 'bg-pink-50', 'text-pink-600', 'hover:bg-pink-100');
+                    this.classList.add('border-zinc-300', 'bg-white', 'text-zinc-400', 'hover:bg-zinc-50');
+                    icon.setAttribute('data-icon', 'lucide:bell');
+                }
+            } else {
+                alert(data.error || 'エラーが発生しました');
+            }
+        } catch (error) {
+            console.error('Listing notification error:', error);
+            alert('エラーが発生しました');
+        } finally {
+            this.disabled = false;
+        }
+    });
+}
+
+/**
+ * Initialize more menu (three-dot menu)
+ */
+function initMoreMenu() {
+    const menuBtn = document.getElementById('more-menu-btn');
+    const dropdown = document.getElementById('more-menu-dropdown');
+
+    if (!menuBtn || !dropdown) return;
+
+    menuBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('hidden');
+    });
+
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.add('hidden');
+        }
+    });
+}
+
+/**
+ * Initialize block button
+ */
+function initBlockButton() {
+    const blockBtn = document.getElementById('block-btn');
+
+    if (!blockBtn) return;
+
+    blockBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+
+        const userId = this.dataset.userId;
+        const isBlocked = this.dataset.blocked === 'true';
+        const icon = document.getElementById('block-icon');
+        const text = document.getElementById('block-text');
+        const followBtn = document.getElementById('follow-btn');
+        const listingNotifyBtn = document.getElementById('listing-notify-btn');
+        const followerCountEl = document.getElementById('follower-count');
+        const dropdown = document.getElementById('more-menu-dropdown');
+        const blockNotice = document.getElementById('block-notice');
+
+        // Confirm action
+        const confirmMsg = isBlocked
+            ? 'このユーザーのブロックを解除しますか？'
+            : 'このユーザーをブロックしますか？\nブロックすると、お互いのフォローが解除されます。';
+        if (!confirm(confirmMsg)) return;
+
+        // Disable button during request
+        this.disabled = true;
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                              document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                              getCookie('csrftoken');
+
+            const response = await fetch(`/monotal/user/${userId}/block/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.dataset.blocked = data.is_blocked ? 'true' : 'false';
+
+                if (data.is_blocked) {
+                    // Blocked: hide follow button, show notice, update menu text
+                    icon.setAttribute('data-icon', 'lucide:user-check');
+                    text.textContent = 'ブロック解除';
+                    if (followBtn) followBtn.style.display = 'none';
+                    if (listingNotifyBtn) listingNotifyBtn.style.display = 'none';
+                    if (blockNotice) blockNotice.style.display = 'flex';
+                } else {
+                    // Unblocked: show follow button, hide notice, update menu text
+                    icon.setAttribute('data-icon', 'lucide:ban');
+                    text.textContent = 'ブロックする';
+                    if (blockNotice) blockNotice.style.display = 'none';
+                    if (listingNotifyBtn) {
+                        listingNotifyBtn.style.display = 'flex';
+                        // Reset to unsubscribed state
+                        listingNotifyBtn.dataset.subscribed = 'false';
+                        listingNotifyBtn.classList.remove('border-pink-300', 'bg-pink-50', 'text-pink-600', 'hover:bg-pink-100');
+                        listingNotifyBtn.classList.add('border-zinc-300', 'bg-white', 'text-zinc-400', 'hover:bg-zinc-50');
+                        const notifyIcon = document.getElementById('listing-notify-icon');
+                        if (notifyIcon) notifyIcon.setAttribute('data-icon', 'lucide:bell');
+                    }
+                    if (followBtn) {
+                        followBtn.style.display = 'flex';
+                        // Reset follow button to "not following" state
+                        followBtn.dataset.following = 'false';
+                        followBtn.classList.remove('bg-zinc-100', 'text-zinc-700', 'border', 'border-zinc-300', 'hover:bg-red-50', 'hover:text-red-600', 'hover:border-red-200');
+                        followBtn.classList.add('bg-pink-600', 'text-white', 'hover:bg-pink-700');
+                        const followIcon = document.getElementById('follow-icon');
+                        const followText = document.getElementById('follow-text');
+                        if (followIcon) followIcon.setAttribute('data-icon', 'lucide:user-plus');
+                        if (followText) followText.textContent = 'フォローする';
+                    }
+                }
+
+                // Update follower count
+                if (followerCountEl) {
+                    followerCountEl.textContent = data.follower_count;
+                }
+
+                // Close dropdown
+                if (dropdown) dropdown.classList.add('hidden');
+            } else {
+                alert(data.error || 'エラーが発生しました');
+            }
+        } catch (error) {
+            console.error('Block error:', error);
+            alert('エラーが発生しました');
+        } finally {
+            this.disabled = false;
+        }
+    });
+}
+
+/**
  * Get cookie value by name
  */
 function getCookie(name) {
@@ -195,6 +386,124 @@ function initReviewSort() {
         url.hash = 'reviews';
         window.location.href = url.toString();
     });
+}
+
+/**
+ * Initialize report button and modal
+ */
+function initReportButton() {
+    const reportBtn = document.getElementById('report-btn');
+    const reportModal = document.getElementById('report-modal');
+    const reportForm = document.getElementById('report-form');
+    const reportCloseBtn = document.getElementById('report-modal-close');
+    const reportCancelBtn = document.getElementById('report-cancel-btn');
+    const reportReason = document.getElementById('report-reason');
+    const reportDetail = document.getElementById('report-detail');
+    const reportDetailCount = document.getElementById('report-detail-count');
+    const reportSubmitBtn = document.getElementById('report-submit-btn');
+
+    if (!reportBtn || !reportModal) return;
+
+    // Open modal
+    reportBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Close dropdown menu
+        const dropdown = document.getElementById('more-menu-dropdown');
+        if (dropdown) dropdown.classList.add('hidden');
+        // Show modal
+        reportModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    });
+
+    // Close modal functions
+    function closeReportModal() {
+        reportModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        // Reset form
+        if (reportForm) reportForm.reset();
+        if (reportDetailCount) reportDetailCount.textContent = '0';
+        if (reportSubmitBtn) reportSubmitBtn.disabled = true;
+    }
+
+    if (reportCloseBtn) reportCloseBtn.addEventListener('click', closeReportModal);
+    if (reportCancelBtn) reportCancelBtn.addEventListener('click', closeReportModal);
+
+    // Close on overlay click
+    reportModal.addEventListener('click', function(e) {
+        if (e.target === reportModal) closeReportModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !reportModal.classList.contains('hidden')) {
+            closeReportModal();
+        }
+    });
+
+    // Enable/disable submit button based on reason selection
+    if (reportReason) {
+        reportReason.addEventListener('change', function() {
+            if (reportSubmitBtn) reportSubmitBtn.disabled = !this.value;
+        });
+    }
+
+    // Character count for detail textarea
+    if (reportDetail && reportDetailCount) {
+        reportDetail.addEventListener('input', function() {
+            reportDetailCount.textContent = this.value.length;
+        });
+    }
+
+    // Submit report
+    if (reportForm) {
+        reportForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const userId = reportBtn.dataset.userId;
+            const reasonId = reportReason ? reportReason.value : '';
+            const detail = reportDetail ? reportDetail.value : '';
+
+            if (!reasonId) {
+                alert('通報理由を選択してください');
+                return;
+            }
+
+            if (reportSubmitBtn) reportSubmitBtn.disabled = true;
+
+            try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                                  document.querySelector('[name=csrfmiddlewaretoken]')?.value ||
+                                  getCookie('csrftoken');
+
+                const response = await fetch(`/monotal/user/${userId}/report/`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        report_reason_id: parseInt(reasonId),
+                        report_detail: detail
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeReportModal();
+                    alert('通報を受け付けました。ご報告ありがとうございます。');
+                } else {
+                    alert(data.error || 'エラーが発生しました');
+                    if (reportSubmitBtn) reportSubmitBtn.disabled = !reasonId;
+                }
+            } catch (error) {
+                console.error('Report error:', error);
+                alert('エラーが発生しました');
+                if (reportSubmitBtn) reportSubmitBtn.disabled = !reasonId;
+            }
+        });
+    }
 }
 
 /**
