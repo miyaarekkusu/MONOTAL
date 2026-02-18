@@ -1,0 +1,305 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}利用規約 - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+    .legal-prose h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #18181b;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        scroll-margin-top: 80px;
+    }
+    .legal-prose h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #27272a;
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    .legal-prose p {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose li {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.25rem;
+    }
+    .legal-prose ol {
+        list-style: decimal;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[900px] px-4 py-8">
+    <!-- パンくずリスト -->
+    <nav class="flex items-center gap-1.5 text-xs text-zinc-400 mb-6">
+        <a href="{% url 'index' %}" class="hover:text-pink-600 transition-colors">ホーム</a>
+        <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
+        <span class="text-zinc-700 font-medium">利用規約</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-zinc-900 mb-2">利用規約</h1>
+    <p class="text-xs text-zinc-400 mb-8">最終更新日：2026年2月18日</p>
+
+    <!-- 目次 -->
+    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-5 mb-10">
+        <h2 class="text-sm font-semibold text-zinc-700 mb-3" style="border:none; margin:0 0 0.75rem 0; padding:0; font-size:0.875rem;">目次</h2>
+        <ol class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal pl-5">
+            <li><a href="#article-1" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">総則</a></li>
+            <li><a href="#article-2" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">定義</a></li>
+            <li><a href="#article-3" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">会員登録</a></li>
+            <li><a href="#article-4" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">本人確認</a></li>
+            <li><a href="#article-5" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">商品の出品</a></li>
+            <li><a href="#article-6" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">レンタル取引</a></li>
+            <li><a href="#article-7" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">返品・返金</a></li>
+            <li><a href="#article-8" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">支払い・決済</a></li>
+            <li><a href="#article-9" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">配送</a></li>
+            <li><a href="#article-10" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">補償保険制度</a></li>
+            <li><a href="#article-11" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">メッセージ機能</a></li>
+            <li><a href="#article-12" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">レビュー・評価</a></li>
+            <li><a href="#article-13" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">ユーザー間の関係</a></li>
+            <li><a href="#article-14" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">禁止事項</a></li>
+            <li><a href="#article-15" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">知的財産権</a></li>
+            <li><a href="#article-16" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">免責事項</a></li>
+            <li><a href="#article-17" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">サービスの変更・停止</a></li>
+            <li><a href="#article-18" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">その他</a></li>
+        </ol>
+    </div>
+
+    <!-- 本文 -->
+    <div class="legal-prose">
+        <p>本利用規約（以下「本規約」）は、MONOTAL（以下「本サービス」）の利用に関する条件を定めるものです。本サービスをご利用いただくにあたり、本規約に同意していただく必要があります。</p>
+
+        <h2 id="article-1">第1条（総則）</h2>
+        <ol>
+            <li>本規約は、MONOTAL運営事務局（以下「運営者」）が提供するカメラ・ガジェット等のレンタルプラットフォームサービス「MONOTAL」の利用に関する一切の関係に適用されます。</li>
+            <li>運営者は、本規約のほかに、各種ガイドラインやポリシー（以下「個別規定」）を定めることがあります。個別規定は本規約の一部を構成するものとします。</li>
+            <li>本規約と個別規定が矛盾する場合は、個別規定が優先されるものとします。</li>
+        </ol>
+
+        <h2 id="article-2">第2条（定義）</h2>
+        <p>本規約において使用する用語の定義は以下のとおりとします。</p>
+        <ol>
+            <li><strong>「ユーザー」</strong>とは、本サービスに会員登録を行ったすべての利用者をいいます。</li>
+            <li><strong>「出品者」</strong>とは、本サービスにおいて商品をレンタル用として出品するユーザーをいいます。</li>
+            <li><strong>「借り手」</strong>とは、本サービスにおいて商品のレンタルを申請するユーザーをいいます。</li>
+            <li><strong>「商品」</strong>とは、出品者が本サービス上に出品したカメラ、ガジェットその他のレンタル対象物をいいます。</li>
+            <li><strong>「取引」</strong>とは、借り手によるレンタル申請から商品の返却完了までの一連のプロセスをいいます。</li>
+            <li><strong>「レンタル料金」</strong>とは、商品のレンタルに対して借り手が支払う料金をいいます。</li>
+        </ol>
+
+        <h2 id="article-3">第3条（会員登録）</h2>
+        <ol>
+            <li>本サービスの利用を希望する者は、運営者の定める方法により会員登録を行うものとします。</li>
+            <li>会員登録にはメールアドレスの認証が必要です。登録されたメールアドレス宛に認証メールが送信され、認証手続きを完了することで登録が完了します。</li>
+            <li>ユーザーは1人につき1つのアカウントのみ保有できます。複数アカウントの作成は禁止されます。</li>
+            <li>満18歳未満の方は、保護者の同意を得た上で本サービスをご利用ください。</li>
+            <li>以下の場合、運営者は会員登録を拒否することがあります。
+                <ul>
+                    <li>登録内容に虚偽、誤記、または記載漏れがあった場合</li>
+                    <li>過去に本規約違反により利用停止となった者である場合</li>
+                    <li>その他、運営者が会員登録を適当でないと判断した場合</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="article-4">第4条（本人確認）</h2>
+        <ol>
+            <li>商品の出品およびレンタル取引を行うためには、本人確認手続きを完了する必要があります。</li>
+            <li>ユーザーは、運営者が指定する本人確認書類（運転免許証、マイナンバーカード等）を提出するものとします。</li>
+            <li>本人確認書類に虚偽の情報が含まれていた場合、運営者はアカウントの停止その他適切な措置を講じることができます。</li>
+            <li>運営者は、本人確認の審査結果について、理由を開示する義務を負わないものとします。</li>
+        </ol>
+
+        <h2 id="article-5">第5条（商品の出品）</h2>
+        <ol>
+            <li>出品者は、本人確認手続きを完了した上で、運営者の定める方法により商品を出品できます。</li>
+            <li>出品者は、商品の状態、仕様、付属品等について正確かつ詳細な説明を記載するものとします。</li>
+            <li>以下の商品の出品は禁止されます。
+                <ul>
+                    <li>法令に違反する商品または盗品</li>
+                    <li>第三者の権利を侵害する商品</li>
+                    <li>安全性に問題のある商品</li>
+                    <li>運営者が不適切と判断した商品</li>
+                </ul>
+            </li>
+            <li>運営者は、出品された商品が本規約に違反すると判断した場合、事前の通知なく出品を削除できるものとします。</li>
+        </ol>
+
+        <h2 id="article-6">第6条（レンタル取引）</h2>
+        <ol>
+            <li>レンタル取引は以下のフローで進行します。
+                <ul>
+                    <li>借り手が出品者に対してレンタル申請を行う</li>
+                    <li>出品者がレンタル申請を承認または拒否する</li>
+                    <li>承認後、借り手が決済を完了し取引が開始される</li>
+                    <li>出品者が商品を発送し、追跡番号を登録する</li>
+                    <li>借り手が商品を受け取り、受取確認を行う</li>
+                    <li>レンタル期間終了後、借り手が商品を返送する</li>
+                    <li>出品者が返送商品を受け取り、取引が完了する</li>
+                </ul>
+            </li>
+            <li>出品者は、合理的な理由なくレンタル申請を拒否し続けることはできません。</li>
+            <li>取引開始後のキャンセルについては、所定のキャンセルポリシーに従うものとします。</li>
+        </ol>
+
+        <h2 id="article-7">第7条（返品・返金）</h2>
+        <ol>
+            <li>借り手は、以下の場合に限り返品を申請できます。
+                <ul>
+                    <li>商品が出品情報と著しく異なる場合</li>
+                    <li>商品に重大な欠陥がある場合</li>
+                    <li>誤った商品が届いた場合</li>
+                </ul>
+            </li>
+            <li>返品申請は、商品受取後48時間以内に行うものとします。</li>
+            <li>出品者は返品申請に対して承認または拒否を行います。双方の合意が得られない場合は、運営者が仲裁を行います。</li>
+            <li>返品が承認された場合、借り手に対してレンタル料金の返金処理が行われます。返金の方法および時期は運営者が定めるところによります。</li>
+        </ol>
+
+        <h2 id="article-8">第8条（支払い・決済）</h2>
+        <ol>
+            <li>レンタル料金の支払いは、本サービスに登録されたクレジットカードを通じて行われます。</li>
+            <li>出品者は、レンタル料金を受け取るために銀行口座を登録する必要があります。</li>
+            <li>運営者は、取引完了時にレンタル料金の20%をサービス手数料として差し引き、残りの80%を出品者に振り込むものとします。</li>
+            <li>決済に関するトラブルについて、運営者は善意をもって対応しますが、最終的な解決を保証するものではありません。</li>
+            <li>借り手による商品の盗難・持ち逃げ等が発生した場合、運営者は調査・確認を行った上で、出品者に対しレンタル料金の全額（手数料差引前）および商品の時価相当額を補償するものとします。</li>
+        </ol>
+
+        <h2 id="article-9">第9条（配送）</h2>
+        <ol>
+            <li>出品者は、取引開始後速やかに商品を発送し、追跡番号を本サービス上に登録するものとします。</li>
+            <li>商品の梱包は出品者の責任において適切に行うものとし、配送中の破損について出品者が責任を負います。</li>
+            <li>配送の遅延が発生した場合、出品者は速やかに借り手に連絡するものとします。</li>
+            <li>返却時の配送費用は、特段の取り決めがない限り借り手が負担するものとします。</li>
+        </ol>
+
+        <h2 id="article-10">第10条（補償保険制度）</h2>
+        <ol>
+            <li>本サービスでは、レンタル中の商品に対する補償保険制度を提供しています。</li>
+            <li>ユーザーは任意で補償保険に加入することができ、所定の保険料を支払うことで補償の対象となります。</li>
+            <li>補償の範囲は、レンタル期間中における商品の破損、故障、盗難等とします。ただし、以下の場合は補償の対象外とします。
+                <ul>
+                    <li>故意または重過失による損害</li>
+                    <li>通常の使用による経年劣化</li>
+                    <li>自然災害による損害</li>
+                    <li>補償保険に加入していない場合</li>
+                </ul>
+            </li>
+            <li>補償請求は、事故発生後7日以内に所定の手続きにより行うものとします。</li>
+            <li>補償金額の上限および免責金額は、別途定めるところによります。</li>
+            <li>前各項に定める任意加入の補償保険とは別に、すべての取引にはプラットフォーム標準の盗難補償が適用されます。借り手による商品の盗難・持ち逃げ等が発生した場合、運営者は出品者に対しレンタル料金の全額（手数料差引前）および商品の時価相当額を補償します。</li>
+            <li>前項の補償の原資は、第8条第3項に定めるサービス手数料（レンタル料金の20%）によるものとします。</li>
+        </ol>
+
+        <h2 id="article-11">第11条（メッセージ機能）</h2>
+        <ol>
+            <li>ユーザーは、商品に関する問い合わせや取引に関する連絡に本サービスのメッセージ機能を利用できます。</li>
+            <li>メッセージ機能の利用にあたり、以下の行為を禁止します。
+                <ul>
+                    <li>個人情報（電話番号、住所等）の不必要な共有</li>
+                    <li>外部サービスへの誘導</li>
+                    <li>誹謗中傷、脅迫、嫌がらせ</li>
+                    <li>広告・宣伝目的のメッセージ送信</li>
+                </ul>
+            </li>
+            <li>運営者は、不正行為の防止およびサービス改善のため、メッセージの内容を確認する場合があります。</li>
+        </ol>
+
+        <h2 id="article-12">第12条（レビュー・評価）</h2>
+        <ol>
+            <li>取引完了後、借り手および出品者は互いにレビューおよび評価を投稿できます。</li>
+            <li>レビューは事実に基づき、公正かつ誠実に記載するものとします。</li>
+            <li>以下の内容を含むレビューは、運営者の判断により削除される場合があります。
+                <ul>
+                    <li>虚偽の内容</li>
+                    <li>誹謗中傷、差別的表現</li>
+                    <li>個人情報の記載</li>
+                    <li>取引と無関係な内容</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="article-13">第13条（ユーザー間の関係）</h2>
+        <ol>
+            <li>ユーザーは、他のユーザーをフォローすることで、そのユーザーの出品情報等を受け取ることができます。</li>
+            <li>ユーザーは、他のユーザーをブロックすることができます。ブロックされたユーザーからの連絡やレンタル申請は制限されます。</li>
+            <li>本規約に違反する行為を発見した場合、ユーザーは通報機能を通じて運営者に報告することができます。</li>
+            <li>運営者は通報内容を確認し、必要に応じて適切な措置を講じるものとします。</li>
+        </ol>
+
+        <h2 id="article-14">第14条（禁止事項）</h2>
+        <p>ユーザーは、本サービスの利用にあたり、以下の行為を行ってはなりません。</p>
+        <ol>
+            <li>法令または公序良俗に違反する行為</li>
+            <li>犯罪行為に関連する行為</li>
+            <li>他のユーザーまたは第三者の権利を侵害する行為</li>
+            <li>本サービスの運営を妨害する行為</li>
+            <li>不正アクセスまたはこれを試みる行為</li>
+            <li>他のユーザーに対するハラスメント、嫌がらせ、脅迫</li>
+            <li>本サービスを介さない直接取引（外部取引）の勧誘</li>
+            <li>虚偽の情報を登録・掲載する行為</li>
+            <li>複数アカウントの作成・運用</li>
+            <li>本サービスのシステムを不正に操作する行為</li>
+            <li>その他、運営者が不適切と判断する行為</li>
+        </ol>
+
+        <h2 id="article-15">第15条（知的財産権）</h2>
+        <ol>
+            <li>本サービスに関するすべての知的財産権（商標、ロゴ、デザイン、ソフトウェア等）は運営者に帰属します。</li>
+            <li>ユーザーが本サービス上にアップロードしたコンテンツ（商品画像、説明文、レビュー等）の著作権はユーザーに帰属しますが、ユーザーは運営者に対し、本サービスの運営に必要な範囲で当該コンテンツを使用する権利を無償で許諾するものとします。</li>
+            <li>ユーザーは、第三者の知的財産権を侵害するコンテンツをアップロードしてはなりません。</li>
+        </ol>
+
+        <h2 id="article-16">第16条（免責事項）</h2>
+        <ol>
+            <li>運営者は、ユーザー間の取引の仲介者としてプラットフォームを提供するものであり、取引の当事者となるものではありません。</li>
+            <li>運営者は、出品された商品の品質、安全性、適法性、正確性等について保証するものではありません。</li>
+            <li>ユーザー間のトラブルについては、原則としてユーザー間で解決するものとし、運営者は善意をもって仲裁に努めますが、解決を保証するものではありません。</li>
+            <li>本サービスの利用に起因してユーザーに生じた損害について、運営者の故意または重過失による場合を除き、運営者は責任を負わないものとします。</li>
+        </ol>
+
+        <h2 id="article-17">第17条（サービスの変更・停止）</h2>
+        <ol>
+            <li>運営者は、事前の通知なく本サービスの内容を変更し、または提供を停止することができるものとします。ただし、重要な変更については事前にユーザーに通知するよう努めます。</li>
+            <li>運営者は、以下の場合にユーザーのアカウントを停止または削除できるものとします。
+                <ul>
+                    <li>本規約に違反した場合</li>
+                    <li>登録情報に虚偽が判明した場合</li>
+                    <li>一定期間以上のログインがない場合</li>
+                    <li>その他、運営者がアカウントの継続を適当でないと判断した場合</li>
+                </ul>
+            </li>
+            <li>システムメンテナンスや不可抗力によるサービス停止について、運営者は責任を負わないものとします。</li>
+        </ol>
+
+        <h2 id="article-18">第18条（その他）</h2>
+        <ol>
+            <li>本規約の準拠法は日本法とします。</li>
+            <li>本規約に関する紛争については、東京地方裁判所を第一審の専属的合意管轄裁判所とします。</li>
+            <li>運営者は、必要に応じて本規約を改定することができます。改定後の規約は、本サービス上に掲示された時点で効力を生じるものとします。</li>
+            <li>重要な改定を行う場合は、改定内容を事前に通知するものとします。改定後も本サービスの利用を継続した場合、ユーザーは改定後の規約に同意したものとみなします。</li>
+        </ol>
+
+        <p class="mt-10 text-xs text-zinc-400">以上</p>
+        <p class="text-xs text-zinc-400">制定日：2026年2月18日</p>
+    </div>
+</div>
+{% endblock %}
