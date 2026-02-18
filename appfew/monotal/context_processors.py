@@ -1,4 +1,5 @@
-﻿from .models import RentalRequest, NotificationTargetUser, NotificationRead
+﻿from django.db.models import Q
+from .models import RentalRequest, NotificationTargetUser, NotificationRead
 
 
 def rental_context(request):
@@ -10,11 +11,15 @@ def rental_context(request):
     }
 
     if request.user.is_authenticated:
-        # 出品者として受け取った申請中の件数
-        context['pending_rental_count'] = RentalRequest.objects.filter(
-            requested_user=request.user,
-            rental_request_status_id=1  # 申請中
-        ).count()
+        # 受け取った申請 + 送った申請のうち、完了・拒否・キャンセル以外の件数
+        qs = RentalRequest.objects.filter(
+            Q(requested_user=request.user) | Q(requester_user=request.user),
+        ).exclude(
+            rental_request_status_id__in=[3, 4, 5]  # 拒否・キャンセル・完了を除外
+        )
+        context['pending_rental_count'] = qs.count()
+        import sys
+        print(f"[rental_context] user={request.user.user_name} count={qs.count()} query={qs.query}", file=sys.stderr)
 
     return context
 

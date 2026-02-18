@@ -19,6 +19,9 @@ const TransactionPage = {
         this.initCancelModal();
         this.initShipModal();
         this.initReturnShipModal();
+        this.initReturnRequestModal();
+        this.initReturnActions();
+        this.initReturnShipRefundModal();
         this.initTrackingModal();
         this.initCountdown();
         this.startPolling();
@@ -215,6 +218,18 @@ const TransactionPage = {
         if (cancelBtn) {
             cancelBtn.addEventListener('click', () => this.openCancelModal());
         }
+
+        // 返品申請 → モーダルを開く
+        const returnRequestBtn = document.getElementById('returnRequestBtn');
+        if (returnRequestBtn) {
+            returnRequestBtn.addEventListener('click', () => this.openModal('returnRequestModal'));
+        }
+
+        // 返品発送 → モーダルを開く
+        const returnShipRefundBtn = document.getElementById('returnShipRefundBtn');
+        if (returnShipRefundBtn) {
+            returnShipRefundBtn.addEventListener('click', () => this.openModal('returnShipRefundModal'));
+        }
     },
 
     // ==========================================
@@ -352,6 +367,198 @@ const TransactionPage = {
         } catch (error) {
             console.error('返送通知に失敗しました:', error);
             alert('返送通知に失敗しました');
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
+        }
+    },
+
+    // ==========================================
+    // 返品申請モーダル
+    // ==========================================
+
+    initReturnRequestModal() {
+        const modal = document.getElementById('returnRequestModal');
+        if (!modal) return;
+
+        modal.querySelectorAll('[data-modal="returnRequestModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('returnRequestModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('returnRequestModal'));
+
+        const confirmBtn = document.getElementById('returnRequestConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.submitReturnRequest());
+        }
+    },
+
+    async submitReturnRequest() {
+        const reasonId = document.getElementById('returnRequestReasonSelect')?.value;
+        const detail = document.getElementById('returnRequestReasonDetail')?.value || '';
+        const confirmBtn = document.getElementById('returnRequestConfirmBtn');
+        const errorEl = document.getElementById('returnRequestError');
+
+        if (!reasonId) {
+            if (errorEl) {
+                errorEl.textContent = '返品理由を選択してください';
+                errorEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        if (!confirm('返品を申請しますか？\n出品者の承認後に返品手続きが進みます。')) return;
+
+        if (errorEl) errorEl.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-request/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    return_reason_id: reasonId,
+                    return_reason_detail: detail
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                if (errorEl) {
+                    errorEl.textContent = data.message || '返品申請に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '返品申請に失敗しました');
+                }
+            }
+        } catch (error) {
+            console.error('返品申請に失敗しました:', error);
+            alert('返品申請に失敗しました');
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
+        }
+    },
+
+    // ==========================================
+    // 返品承認・拒否
+    // ==========================================
+
+    initReturnActions() {
+        const approveBtn = document.getElementById('returnApproveBtn');
+        if (approveBtn) {
+            approveBtn.addEventListener('click', () => this.approveReturn());
+        }
+
+        const rejectBtn = document.getElementById('returnRejectBtn');
+        if (rejectBtn) {
+            rejectBtn.addEventListener('click', () => this.rejectReturn());
+        }
+    },
+
+    async approveReturn() {
+        if (!confirm('返品申請を承認しますか？\n借り手に商品の返送を依頼します。')) return;
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-approve/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '承認に失敗しました');
+            }
+        } catch (error) {
+            console.error('承認に失敗しました:', error);
+            alert('承認に失敗しました');
+        }
+    },
+
+    async rejectReturn() {
+        if (!confirm('返品申請を拒否しますか？\n取引はレンタル中の状態に戻ります。')) return;
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-reject/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': CSRF_TOKEN }
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert(data.message || '拒否に失敗しました');
+            }
+        } catch (error) {
+            console.error('拒否に失敗しました:', error);
+            alert('拒否に失敗しました');
+        }
+    },
+
+    // ==========================================
+    // 返品発送モーダル
+    // ==========================================
+
+    initReturnShipRefundModal() {
+        const modal = document.getElementById('returnShipRefundModal');
+        if (!modal) return;
+
+        modal.querySelectorAll('[data-modal="returnShipRefundModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('returnShipRefundModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('returnShipRefundModal'));
+
+        const confirmBtn = document.getElementById('returnShipRefundConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.submitReturnShipRefund());
+        }
+    },
+
+    async submitReturnShipRefund() {
+        const trackingNumber = document.getElementById('returnRefundTrackingNumber')?.value.trim() || '';
+        const carrierCode = document.getElementById('returnRefundCarrierCode')?.value || '';
+        const confirmBtn = document.getElementById('returnShipRefundConfirmBtn');
+        const errorEl = document.getElementById('returnShipRefundError');
+
+        if (errorEl) errorEl.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
+
+        try {
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-ship-refund/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    tracking_number: trackingNumber,
+                    carrier_code: carrierCode
+                })
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                if (errorEl) {
+                    errorEl.textContent = data.message || '返品発送通知に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    alert(data.message || '返品発送通知に失敗しました');
+                }
+            }
+        } catch (error) {
+            console.error('返品発送通知に失敗しました:', error);
+            alert('返品発送通知に失敗しました');
         } finally {
             if (confirmBtn) confirmBtn.disabled = false;
         }
@@ -499,7 +706,7 @@ const TransactionPage = {
      * 返却受取
      */
     async notifyReturnReceive() {
-        if (!confirm('商品が届きましたか？\n返却を確認し、評価に進みます。')) return;
+        if (!confirm('商品が届きましたか？\n返却を確認します。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-receive/`, {

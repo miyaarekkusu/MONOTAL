@@ -14,7 +14,7 @@ from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from .models import *
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Avg
+from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField
 from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
@@ -84,18 +84,21 @@ class IndexView(View):
             ).order_by('-register_datetime')[:20]
             context['browsing_histories'] = browsing_histories
 
-        # おすすめ商品（公開中、新着順）
-        recommended_products = Product.objects.filter(
-            delete_datetime__isnull=True
-        ).exclude(
-            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
-        ).select_related(
-            'product_category', 'product_status'
-        ).prefetch_related(
-            'images', 'rental_plans'
-        ).annotate(
-            bookmark_count=Count('bookmark')
-        ).order_by('-register_datetime')[:40]
+        # おすすめ商品
+        if request.user.is_authenticated:
+            recommended_products = self._get_personalized_recommendations(request.user)
+        else:
+            recommended_products = Product.objects.filter(
+                delete_datetime__isnull=True
+            ).exclude(
+                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+            ).select_related(
+                'product_category', 'product_status'
+            ).prefetch_related(
+                'images', 'rental_plans'
+            ).annotate(
+                bookmark_count=Count('bookmark')
+            ).order_by('-register_datetime')[:40]
         context['recommended_products'] = recommended_products
 
         # カテゴリー一覧（親カテゴリーのみ、Nav用）
@@ -105,6 +108,103 @@ class IndexView(View):
         context['categories'] = categories
 
         return render(request, 'home.html', context)
+
+    def _get_personalized_recommendations(self, user):
+        """ユーザーの行動データに基づくパーソナライズされたおすすめ商品を取得"""
+        from collections import defaultdict
+
+        # カテゴリ階層マップを構築
+        all_categories = ProductCategory.objects.all()
+        parent_to_children = defaultdict(list)
+        child_to_parent = {}
+        for cat in all_categories:
+            if cat.parent_product_category_id:
+                parent_to_children[cat.parent_product_category_id].append(cat.product_category_id)
+                child_to_parent[cat.product_category_id] = cat.parent_product_category_id
+
+        # カテゴリごとのスコアを計算
+        category_scores = defaultdict(int)
+
+        # 閲覧履歴: 1点/件
+        browsing_counts = (
+            BrowsingHistory.objects.filter(user=user)
+            .values('product__product_category_id')
+            .annotate(cnt=Count('browsing_history_id'))
+        )
+        for row in browsing_counts:
+            category_scores[row['product__product_category_id']] += row['cnt'] * 1
+
+        # ブックマーク: 5点/件
+        bookmark_counts = (
+            Bookmark.objects.filter(user=user)
+            .values('product__product_category_id')
+            .annotate(cnt=Count('bookmark_id'))
+        )
+        for row in bookmark_counts:
+            category_scores[row['product__product_category_id']] += row['cnt'] * 5
+
+        # 興味カテゴリ: 50点/カテゴリ
+        hobby_categories = UserHobby.objects.filter(user=user).values_list(
+            'product_category_id', flat=True
+        )
+        for cat_id in hobby_categories:
+            category_scores[cat_id] += 50
+
+        # スコアデータがない場合は新着順にフォールバック
+        if not category_scores:
+            return Product.objects.filter(
+                delete_datetime__isnull=True
+            ).exclude(
+                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+            ).exclude(
+                user=user
+            ).select_related(
+                'product_category', 'product_status'
+            ).prefetch_related(
+                'images', 'rental_plans'
+            ).annotate(
+                bookmark_count=Count('bookmark')
+            ).order_by('-register_datetime')[:40]
+
+        # 階層間でスコアを展開
+        expanded_scores = defaultdict(int, category_scores)
+
+        # 子→親への伝播
+        for cat_id, score in category_scores.items():
+            if cat_id in child_to_parent:
+                expanded_scores[child_to_parent[cat_id]] += score
+
+        # 親→子への伝播
+        for cat_id, score in category_scores.items():
+            if cat_id in parent_to_children:
+                for child_id in parent_to_children[cat_id]:
+                    expanded_scores[child_id] += score
+
+        # Case/WhenでProductにスコアをannotate
+        whens = [
+            When(product_category_id=cat_id, then=Value(score))
+            for cat_id, score in expanded_scores.items()
+            if score > 0
+        ]
+
+        return Product.objects.filter(
+            delete_datetime__isnull=True
+        ).exclude(
+            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+        ).exclude(
+            user=user
+        ).select_related(
+            'product_category', 'product_status'
+        ).prefetch_related(
+            'images', 'rental_plans'
+        ).annotate(
+            bookmark_count=Count('bookmark'),
+            recommendation_score=Case(
+                *whens,
+                default=Value(0),
+                output_field=IntegerField()
+            )
+        ).order_by('-recommendation_score', '-register_datetime')[:40]
 
 
 class LoginView(View):
@@ -322,6 +422,18 @@ class RegisterCompleteView(View):
 
         messages.success(request, '認証メールを送信しました。メールを確認してください。')
         return redirect('register_sent')
+
+
+class TermsOfServiceView(View):
+    """利用規約ページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'terms_of_service.html')
+
+
+class PrivacyPolicyView(View):
+    """プライバシーポリシーページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'privacy_policy.html')
 
 
 class RegisterSentView(View):
@@ -586,6 +698,9 @@ RENTAL_STATUS_RENTING = 3     # レンタル中
 RENTAL_STATUS_RETURNING = 4   # 返送中（借り手→貸主）
 RENTAL_STATUS_COMPLETED = 5   # 返却済み（完了）
 RENTAL_STATUS_CANCELLED = 6   # キャンセル
+RENTAL_STATUS_RETURN_REQUESTED = 7  # 返品申請中
+RENTAL_STATUS_RETURN_APPROVED = 8   # 返品承認済み
+RENTAL_STATUS_RETURN_SHIPPING = 9   # 返品返送中
 
 
 class VerificationRequiredView(View):
@@ -1444,7 +1559,7 @@ class InterestSelectionView(LoginRequiredMixin, View):
             UserHobby.objects.create(user=request.user, product_category_id=int(cid))
 
         next_url = request.GET.get('next', request.POST.get('next', ''))
-        return redirect(next_url or 'index')
+        return redirect(next_url or 'mypage_browsing_history')
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -1767,6 +1882,15 @@ class AdminVerificationDetailView(LoginRequiredMixin, View):
                     verification.user.user_status = user_approved_status
                     verification.user.save()
 
+                    # 承認通知を送信
+                    create_notification(
+                        notification_type_id=NOTIFICATION_TYPE_SYSTEM,
+                        title='本人確認が完了しました',
+                        detail='本人確認が承認されました。すべての機能をご利用いただけます。',
+                        link_url='/monotal/mypage/listing/',
+                        target_users=[verification.user]
+                    )
+
                     message = '承認しました'
 
                 elif action == 'reject':
@@ -1784,6 +1908,15 @@ class AdminVerificationDetailView(LoginRequiredMixin, View):
                     verification.identity_verification_status = rejected_status
                     verification.rejection_datetime = timezone.now()
                     verification.save()
+
+                    # 却下通知を送信
+                    create_notification(
+                        notification_type_id=NOTIFICATION_TYPE_SYSTEM,
+                        title='本人確認が承認されませんでした',
+                        detail='本人確認書類を確認できませんでした。お手数ですが再度申請をお願いいたします。',
+                        link_url='/monotal/identity-verification/',
+                        target_users=[verification.user]
+                    )
 
                     message = '却下しました'
 
@@ -2421,6 +2554,8 @@ bookmark_toggle = BookmarkToggleView.as_view()
 product_messages = ProductMessagesView.as_view()
 product_message_delete = ProductMessageDeleteView.as_view()
 interest_selection = InterestSelectionView.as_view()
+terms_of_service = TermsOfServiceView.as_view()
+privacy_policy = PrivacyPolicyView.as_view()
 
 # 本人確認関連
 identity_verification = IdentityVerificationView.as_view()
@@ -3685,7 +3820,9 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             Q(lender_user=request.user) | Q(renter_user=request.user),
             rental_status_id__in=[
                 RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
-                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
+                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING,
+                RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED,
+                RENTAL_STATUS_RETURN_SHIPPING
             ]
         ).select_related(
             'product', 'lender_user', 'renter_user', 'rental_status'
@@ -3693,23 +3830,46 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
             'product__images'
         ).order_by('-register_datetime')
 
+        # カウント取得（ページネーション前）
+        received_pending_count = received_pending.count()
+        received_approved_active_count = received_approved.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+        ).count()
+        sent_pending_count = sent_pending.count()
+        sent_approved_active_count = sent_approved.filter(
+            rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+        ).count()
+        transactions_count = transactions_all.count()
+
+        # ページネーション (10件/ページ)
+        per_page = 10
+        received_pending_page = Paginator(received_pending, per_page).get_page(request.GET.get('rp_page', 1))
+        received_approved_page = Paginator(received_approved, per_page).get_page(request.GET.get('ra_page', 1))
+        received_rejected_page = Paginator(received_rejected, per_page).get_page(request.GET.get('rr_page', 1))
+        received_cancelled_page = Paginator(received_cancelled, per_page).get_page(request.GET.get('rc_page', 1))
+        sent_pending_page = Paginator(sent_pending, per_page).get_page(request.GET.get('sp_page', 1))
+        sent_approved_page = Paginator(sent_approved, per_page).get_page(request.GET.get('sa_page', 1))
+        sent_rejected_page = Paginator(sent_rejected, per_page).get_page(request.GET.get('sr_page', 1))
+        sent_cancelled_page = Paginator(sent_cancelled, per_page).get_page(request.GET.get('sc_page', 1))
+        transactions_page = Paginator(transactions_all, per_page).get_page(request.GET.get('tx_page', 1))
+
         context = {
-            'received_pending': received_pending,
-            'received_approved': received_approved,
-            'received_rejected': received_rejected,
-            'received_cancelled': received_cancelled,
-            'received_pending_count': received_pending.count(),
-            'received_approved_count': received_approved.filter(rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED).count(),
-            'received_total_count': received_pending.count() + received_approved.count(),
-            'sent_pending': sent_pending,
-            'sent_approved': sent_approved,
-            'sent_rejected': sent_rejected,
-            'sent_cancelled': sent_cancelled,
-            'sent_pending_count': sent_pending.count(),
-            'sent_approved_count': sent_approved.filter(rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED).count(),
-            'sent_total_count': sent_pending.count() + sent_approved.count(),
-            'transactions_all': transactions_all,
-            'transactions_count': transactions_all.count(),
+            'received_pending': received_pending_page,
+            'received_approved': received_approved_page,
+            'received_rejected': received_rejected_page,
+            'received_cancelled': received_cancelled_page,
+            'received_pending_count': received_pending_count,
+            'received_approved_count': received_approved_active_count,
+            'received_total_count': received_pending_count + received_approved_active_count,
+            'sent_pending': sent_pending_page,
+            'sent_approved': sent_approved_page,
+            'sent_rejected': sent_rejected_page,
+            'sent_cancelled': sent_cancelled_page,
+            'sent_pending_count': sent_pending_count,
+            'sent_approved_count': sent_approved_active_count,
+            'sent_total_count': sent_pending_count + sent_approved_active_count,
+            'transactions_all': transactions_page,
+            'transactions_count': transactions_count,
             'current_page': 'rental_management',
         }
         return render(request, 'mypage/rental_management.html', context)
@@ -4544,6 +4704,13 @@ class TransactionView(LoginRequiredMixin, View):
                     and rental_history.return_shipping_deadline
                     and timezone.now() > rental_history.return_shipping_deadline
                 ),
+                # 返品フロー
+                'is_return_flow': rental_history.rental_status_id in [
+                    RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED, RENTAL_STATUS_RETURN_SHIPPING
+                ],
+                'return_reason_history': ReturnReasonHistory.objects.filter(
+                    rental_history=rental_history
+                ).select_related('return_reason').order_by('-return_request_datetime').first(),
             }
 
             return render(request, 'transaction.html', context)
@@ -4851,7 +5018,7 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
 
 
 class TransactionReturnReceiveView(LoginRequiredMixin, View):
-    """貸主が返却を受取完了（取引完了）"""
+    """貸主が返却を受取完了（通常返送: ステータス4→5、返品返送: ステータス9→6）"""
     login_url = '/monotal/login/'
 
     def post(self, request, rental_history_id, *args, **kwargs):
@@ -4859,28 +5026,53 @@ class TransactionReturnReceiveView(LoginRequiredMixin, View):
             rental_history = RentalHistory.objects.select_related('product', 'renter_user').get(
                 rental_history_id=rental_history_id,
                 lender_user=request.user,
-                rental_status_id=RENTAL_STATUS_RETURNING
+                rental_status_id__in=[RENTAL_STATUS_RETURNING, RENTAL_STATUS_RETURN_SHIPPING]
             )
 
+            is_return_flow = rental_history.rental_status_id == RENTAL_STATUS_RETURN_SHIPPING
+
             with transaction.atomic():
-                rental_history.rental_status_id = RENTAL_STATUS_COMPLETED
-                rental_history.receipt_completed_datetime = timezone.now()
-                rental_history.save()
+                if is_return_flow:
+                    # 返品フロー: キャンセルに遷移
+                    rental_history.rental_status_id = RENTAL_STATUS_CANCELLED
+                    rental_history.receipt_completed_datetime = timezone.now()
+                    rental_history.save()
+
+                    # ReturnReasonHistoryのreturn_completed_datetimeを記録
+                    return_reason_history = ReturnReasonHistory.objects.filter(
+                        rental_history=rental_history
+                    ).order_by('-return_request_datetime').first()
+                    if return_reason_history:
+                        return_reason_history.return_completed_datetime = timezone.now()
+                        return_reason_history.return_status_id = RENTAL_STATUS_CANCELLED
+                        return_reason_history.save()
+                else:
+                    # 通常フロー: 完了に遷移
+                    rental_history.rental_status_id = RENTAL_STATUS_COMPLETED
+                    rental_history.receipt_completed_datetime = timezone.now()
+                    rental_history.save()
 
                 # 商品のステータスを貸出可能に戻す
                 product = rental_history.product
                 product.product_status_id = PRODUCT_STATUS_LISTED
                 product.save()
 
-                # 借り手に通知を送信（返却確認＋評価依頼）
-                self._send_notification(
-                    rental_history.renter_user,
-                    '返却が確認されました - 取引の評価をお願いします',
-                    f'「{rental_history.product.product_name}」の返却が確認されました。取引画面から相手の評価をお願いします。',
-                    f'/monotal/transaction/{rental_history_id}/'
-                )
-
-            return JsonResponse({'success': True, 'message': '返却を確認しました。取引の評価をお願いします。'})
+                if is_return_flow:
+                    self._send_notification(
+                        rental_history.renter_user,
+                        '返品が完了しました',
+                        f'「{rental_history.product.product_name}」の返品が完了しました。',
+                        f'/monotal/transaction/{rental_history_id}/'
+                    )
+                    return JsonResponse({'success': True, 'message': '返品の受取を確認しました。取引はキャンセルとなりました。'})
+                else:
+                    self._send_notification(
+                        rental_history.renter_user,
+                        '返却が確認されました - 取引の評価をお願いします',
+                        f'「{rental_history.product.product_name}」の返却が確認されました。取引画面から相手の評価をお願いします。',
+                        f'/monotal/transaction/{rental_history_id}/'
+                    )
+                    return JsonResponse({'success': True, 'message': '返却を確認しました。取引の評価をお願いします。'})
 
         except RentalHistory.DoesNotExist:
             return JsonResponse({'success': False, 'message': '取引が見つからないか、返却確認できる状態ではありません'}, status=400)
@@ -4971,6 +5163,249 @@ class TransactionCancelView(LoginRequiredMixin, View):
             return JsonResponse({'success': False, 'message': '取引が見つかりません'}, status=404)
         except ReturnReason.DoesNotExist:
             return JsonResponse({'success': False, 'message': '無効なキャンセル理由です'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class ReturnRequestView(LoginRequiredMixin, View):
+    """借り手が返品を申請（ステータス3→7）"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'lender_user').get(
+                rental_history_id=rental_history_id,
+                renter_user=request.user,
+                rental_status_id=RENTAL_STATUS_RENTING
+            )
+
+            try:
+                data = json.loads(request.body)
+                return_reason_id = data.get('return_reason_id')
+                return_reason_detail = data.get('return_reason_detail', '')
+            except json.JSONDecodeError:
+                return_reason_id = request.POST.get('return_reason_id')
+                return_reason_detail = request.POST.get('return_reason_detail', '')
+
+            if not return_reason_id:
+                return JsonResponse({'success': False, 'message': '返品理由を選択してください'}, status=400)
+
+            with transaction.atomic():
+                return_reason = ReturnReason.objects.get(return_reason_id=return_reason_id)
+                ReturnReasonHistory.objects.create(
+                    rental_history=rental_history,
+                    return_reason=return_reason,
+                    return_request_datetime=timezone.now(),
+                    return_reason_detail=return_reason_detail[:1000] if return_reason_detail else None,
+                    return_status_id=RENTAL_STATUS_RETURN_REQUESTED
+                )
+
+                rental_history.rental_status_id = RENTAL_STATUS_RETURN_REQUESTED
+                rental_history.save()
+
+                self._send_notification(
+                    rental_history.lender_user,
+                    '返品申請がありました',
+                    f'「{rental_history.product.product_name}」の返品申請がありました。承認または拒否をお願いします。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返品を申請しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、返品申請できる状態ではありません'}, status=400)
+        except ReturnReason.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '無効な返品理由です'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class ReturnApproveView(LoginRequiredMixin, View):
+    """貸し手が返品を承認（ステータス7→8）"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'renter_user').get(
+                rental_history_id=rental_history_id,
+                lender_user=request.user,
+                rental_status_id=RENTAL_STATUS_RETURN_REQUESTED
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_RETURN_APPROVED
+                rental_history.save()
+
+                # ReturnReasonHistoryのreturn_status_idを更新
+                return_reason_history = ReturnReasonHistory.objects.filter(
+                    rental_history=rental_history
+                ).order_by('-return_request_datetime').first()
+                if return_reason_history:
+                    return_reason_history.return_status_id = RENTAL_STATUS_RETURN_APPROVED
+                    return_reason_history.save()
+
+                self._send_notification(
+                    rental_history.renter_user,
+                    '返品申請が承認されました',
+                    f'「{rental_history.product.product_name}」の返品申請が承認されました。商品を返送してください。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返品申請を承認しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、承認できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class ReturnRejectView(LoginRequiredMixin, View):
+    """貸し手が返品を拒否（ステータス7→3）"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'renter_user').get(
+                rental_history_id=rental_history_id,
+                lender_user=request.user,
+                rental_status_id=RENTAL_STATUS_RETURN_REQUESTED
+            )
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_RENTING
+                rental_history.save()
+
+                # ReturnReasonHistoryのreturn_status_idを更新（拒否=レンタル中に戻す）
+                return_reason_history = ReturnReasonHistory.objects.filter(
+                    rental_history=rental_history
+                ).order_by('-return_request_datetime').first()
+                if return_reason_history:
+                    return_reason_history.return_status_id = RENTAL_STATUS_RENTING
+                    return_reason_history.save()
+
+                self._send_notification(
+                    rental_history.renter_user,
+                    '返品申請が拒否されました',
+                    f'「{rental_history.product.product_name}」の返品申請が拒否されました。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返品申請を拒否しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、拒否できる状態ではありません'}, status=400)
+        except Exception as e:
+            return JsonResponse({'success': False, 'message': str(e)}, status=500)
+
+    def _send_notification(self, user, title, detail, link_url):
+        try:
+            notification_type = NotificationType.objects.get(notification_type_id=1)
+            notification = Notification.objects.create(
+                notification_type=notification_type,
+                notification_title=title,
+                notification_detail=detail,
+                link_url=link_url
+            )
+            NotificationTargetUser.objects.create(notification=notification, user=user)
+        except Exception:
+            pass
+
+
+class ReturnShipView(LoginRequiredMixin, View):
+    """借り手が返品商品を発送（ステータス8→9）"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, rental_history_id, *args, **kwargs):
+        try:
+            rental_history = RentalHistory.objects.select_related('product', 'lender_user').get(
+                rental_history_id=rental_history_id,
+                renter_user=request.user,
+                rental_status_id=RENTAL_STATUS_RETURN_APPROVED
+            )
+
+            try:
+                body = json.loads(request.body) if request.body else {}
+            except json.JSONDecodeError:
+                body = {}
+            tracking_number = body.get('tracking_number', '').strip()
+            carrier_code = body.get('carrier_code', '').strip()
+
+            if tracking_number:
+                if not _register_tracking_17track(tracking_number, carrier_code):
+                    return JsonResponse({
+                        'success': False,
+                        'message': '発送業者または追跡番号が正しくありません。'
+                    }, status=400)
+
+            with transaction.atomic():
+                rental_history.rental_status_id = RENTAL_STATUS_RETURN_SHIPPING
+                rental_history.rental_end_datetime = timezone.now()
+
+                if tracking_number:
+                    rental_history.return_tracking_number = tracking_number
+                if carrier_code:
+                    rental_history.return_carrier_code = carrier_code
+
+                rental_history.save()
+
+                # ReturnReasonHistoryのreturn_status_idを更新
+                return_reason_history = ReturnReasonHistory.objects.filter(
+                    rental_history=rental_history
+                ).order_by('-return_request_datetime').first()
+                if return_reason_history:
+                    return_reason_history.return_status_id = RENTAL_STATUS_RETURN_SHIPPING
+                    return_reason_history.save()
+
+                self._send_notification(
+                    rental_history.lender_user,
+                    '返品商品が発送されました',
+                    f'「{rental_history.product.product_name}」の返品商品が発送されました。届きましたら受取確認をお願いします。',
+                    f'/monotal/transaction/{rental_history_id}/'
+                )
+
+            return JsonResponse({'success': True, 'message': '返品発送を通知しました'})
+
+        except RentalHistory.DoesNotExist:
+            return JsonResponse({'success': False, 'message': '取引が見つからないか、発送できる状態ではありません'}, status=400)
         except Exception as e:
             return JsonResponse({'success': False, 'message': str(e)}, status=500)
 
@@ -5267,6 +5702,10 @@ transaction_return_receive = TransactionReturnReceiveView.as_view()
 transaction_cancel = TransactionCancelView.as_view()
 transaction_review = TransactionReviewView.as_view()
 transaction_tracking = TransactionTrackingView.as_view()
+return_request = ReturnRequestView.as_view()
+return_approve = ReturnApproveView.as_view()
+return_reject = ReturnRejectView.as_view()
+return_ship_refund = ReturnShipView.as_view()
 
 
 class SearchAutocompleteView(View):

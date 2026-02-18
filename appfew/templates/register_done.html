@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}会員登録完了 - MONOTAL{% endblock %}
@@ -16,7 +16,7 @@
     <p class="register-subtitle">以下の項目もご確認ください。</p>
 
     <div class="register-done-links">
-        <a href="#" class="register-done-link">
+        <a href="{% url 'terms_of_service' %}" class="register-done-link">
             <i class="fas fa-file-alt"></i>
             利用規約
         </a>
@@ -26,8 +26,10 @@
         </a>
     </div>
 
+    <p class="register-hobby-prompt">趣味登録をすると、あなたにぴったりの商品がトップページに表示されるようになります。</p>
+
     <a href="{% url 'interest_selection' %}" class="register-done-cta">
-        興味のある趣味を選ぶ
+        趣味登録をする
     </a>
 </div>
 {% endblock %}

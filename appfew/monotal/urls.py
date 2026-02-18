@@ -28,6 +28,8 @@ urlpatterns = [
     path('product/<int:product_id>/messages/', views.product_messages, name='product_messages'),
     path('product/<int:product_id>/messages/<int:message_id>/delete/', views.product_message_delete, name='product_message_delete'),
     path('interest/', views.interest_selection, name='interest_selection'),
+    path('terms/', views.terms_of_service, name='terms_of_service'),
+    path('privacy/', views.privacy_policy, name='privacy_policy'),
 
     # 本人確認（ユーザー向け）
     path('identity-verification/', views.identity_verification, name='identity_verification'),
@@ -76,6 +78,10 @@ urlpatterns = [
     path('transaction/<int:rental_history_id>/return-ship/', views.transaction_return_ship, name='transaction_return_ship'),
     path('transaction/<int:rental_history_id>/return-receive/', views.transaction_return_receive, name='transaction_return_receive'),
     path('transaction/<int:rental_history_id>/cancel/', views.transaction_cancel, name='transaction_cancel'),
+    path('transaction/<int:rental_history_id>/return-request/', views.return_request, name='return_request'),
+    path('transaction/<int:rental_history_id>/return-approve/', views.return_approve, name='return_approve'),
+    path('transaction/<int:rental_history_id>/return-reject/', views.return_reject, name='return_reject'),
+    path('transaction/<int:rental_history_id>/return-ship-refund/', views.return_ship_refund, name='return_ship_refund'),
     path('transaction/<int:rental_history_id>/review/', views.transaction_review, name='transaction_review'),
     path('transaction/<int:rental_history_id>/tracking/<str:tracking_type>/', views.transaction_tracking, name='transaction_tracking'),
 

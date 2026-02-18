@@ -1,4 +1,4 @@
-/* シンプルヘッダー（ロゴのみ） */
+﻿/* シンプルヘッダー（ロゴのみ） */
 .simple-header {
     display: flex;
     justify-content: center;
@@ -354,6 +354,14 @@
 
 .register-done-link:hover i {
     color: #007bff;
+}
+
+.register-hobby-prompt {
+    text-align: center;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 16px;
+    line-height: 1.6;
 }
 
 .register-done-cta {

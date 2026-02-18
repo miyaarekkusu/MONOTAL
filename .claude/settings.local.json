@@ -1,4 +1,4 @@
-﻿{
+{
   "permissions": {
     "allow": [
       "Bash(python manage.py makemigrations:*)",
@@ -37,7 +37,17 @@
       "WebFetch(domain:admin.17track.net)",
       "WebFetch(domain:api.17track.net)",
       "WebFetch(domain:asset.17track.net)",
-      "WebFetch(domain:res.17track.net)"
+      "WebFetch(domain:res.17track.net)",
+      "Bash(git reset:*)",
+      "Bash(iconv:*)",
+      "Bash(/c/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin/appfew/create_test_data.py:*)",
+      "Bash(netstat:*)",
+      "Bash(test:*)",
+      "Bash(bash -c:*)",
+      "Bash(dir:*)",
+      "Bash(sh -c 'pwd')",
+      "Bash(git -C \"C:\\\\Users\\\\kohta\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\" ls-files)",
+      "Bash(git -C \"C:/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin\" ls-files)"
     ]
   }
 }

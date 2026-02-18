@@ -80,6 +80,9 @@
 .status-badge.status-4 { background: #e0e7ff; color: #4f46e5; }
 .status-badge.status-5 { background: #f3f4f6; color: #374151; }
 .status-badge.status-6 { background: #fee2e2; color: #dc2626; }
+.status-badge.status-7 { background: #fef3c7; color: #b45309; }
+.status-badge.status-8 { background: #d1fae5; color: #047857; }
+.status-badge.status-9 { background: #dbeafe; color: #1d4ed8; }
 
 .role-badge {
     display: inline-flex;
@@ -300,6 +303,35 @@
     font-size: 11px;
     color: #059669;
     margin-top: 2px;
+}
+
+/* 返品理由 */
+.return-reason-box {
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+.return-reason-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #92400e;
+    margin: 0 0 6px 0;
+}
+
+.return-reason-detail {
+    font-size: 13px;
+    color: #78350f;
+    margin: 0 0 8px 0;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.return-reason-date {
+    font-size: 11px;
+    color: #b45309;
+    margin: 0;
 }
 
 /* タイムライン */
@@ -577,6 +609,18 @@
 
 .action-btn.danger-outline:hover {
     background: #fee2e2;
+}
+
+.action-btn.warning-outline {
+    background: transparent;
+    color: #b45309;
+    border: 1px solid #fde68a;
+    justify-content: center;
+    padding: 10px 16px;
+}
+
+.action-btn.warning-outline:hover {
+    background: #fef3c7;
 }
 
 .completed-box {

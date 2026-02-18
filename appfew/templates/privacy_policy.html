@@ -1,0 +1,200 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}プライバシーポリシー - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+    .legal-prose h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #18181b;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        scroll-margin-top: 80px;
+    }
+    .legal-prose h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #27272a;
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    .legal-prose p {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose li {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.25rem;
+    }
+    .legal-prose ol {
+        list-style: decimal;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[900px] px-4 py-8">
+    <!-- パンくずリスト -->
+    <nav class="flex items-center gap-1.5 text-xs text-zinc-400 mb-6">
+        <a href="{% url 'index' %}" class="hover:text-pink-600 transition-colors">ホーム</a>
+        <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
+        <span class="text-zinc-700 font-medium">プライバシーポリシー</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-zinc-900 mb-2">プライバシーポリシー</h1>
+    <p class="text-xs text-zinc-400 mb-8">最終更新日：2026年2月18日</p>
+
+    <!-- 目次 -->
+    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-5 mb-10">
+        <h2 class="text-sm font-semibold text-zinc-700 mb-3" style="border:none; margin:0 0 0.75rem 0; padding:0; font-size:0.875rem;">目次</h2>
+        <ol class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal pl-5">
+            <li><a href="#article-1" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">基本方針</a></li>
+            <li><a href="#article-2" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">収集する個人情報</a></li>
+            <li><a href="#article-3" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">利用目的</a></li>
+            <li><a href="#article-4" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">第三者提供</a></li>
+            <li><a href="#article-5" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">個人情報の管理</a></li>
+            <li><a href="#article-6" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">Cookie・トラッキング</a></li>
+            <li><a href="#article-7" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">本人確認書類の取扱い</a></li>
+            <li><a href="#article-8" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">開示・訂正・削除</a></li>
+            <li><a href="#article-9" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">ポリシーの変更</a></li>
+            <li><a href="#article-10" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">お問い合わせ</a></li>
+        </ol>
+    </div>
+
+    <!-- 本文 -->
+    <div class="legal-prose">
+        <p>MONOTAL運営事務局（以下「運営者」）は、本サービス「MONOTAL」（以下「本サービス」）におけるユーザーの個人情報の取扱いについて、以下のとおりプライバシーポリシー（以下「本ポリシー」）を定めます。</p>
+
+        <h2 id="article-1">第1条（基本方針）</h2>
+        <ol>
+            <li>運営者は、個人情報の保護に関する法律（個人情報保護法）およびその他の関連法令を遵守し、ユーザーの個人情報を適切に取り扱います。</li>
+            <li>運営者は、個人情報の取得、利用、管理について、本ポリシーに従い適正に行います。</li>
+            <li>運営者は、個人情報の保護に関する体制を継続的に見直し、改善に努めます。</li>
+        </ol>
+
+        <h2 id="article-2">第2条（収集する個人情報）</h2>
+        <p>運営者は、本サービスの提供にあたり、以下の個人情報を収集する場合があります。</p>
+        <ol>
+            <li><strong>会員登録時に取得する情報</strong>
+                <ul>
+                    <li>メールアドレス</li>
+                    <li>氏名</li>
+                    <li>ユーザー名</li>
+                    <li>電話番号</li>
+                    <li>生年月日</li>
+                </ul>
+            </li>
+            <li><strong>本人確認時に取得する情報</strong>
+                <ul>
+                    <li>本人確認書類（運転免許証、マイナンバーカード等）の画像</li>
+                    <li>本人確認書類に記載された情報</li>
+                </ul>
+            </li>
+            <li><strong>取引・決済に関する情報</strong>
+                <ul>
+                    <li>クレジットカード情報</li>
+                    <li>銀行口座情報</li>
+                    <li>配送先住所</li>
+                </ul>
+            </li>
+            <li><strong>サービス利用に伴い自動的に取得する情報</strong>
+                <ul>
+                    <li>閲覧履歴、検索履歴</li>
+                    <li>アクセスログ（IPアドレス、ブラウザ情報、端末情報等）</li>
+                    <li>Cookie情報</li>
+                </ul>
+            </li>
+        </ol>
+
+        <h2 id="article-3">第3条（利用目的）</h2>
+        <p>運営者は、収集した個人情報を以下の目的で利用します。</p>
+        <ol>
+            <li>本サービスの提供、運営、維持</li>
+            <li>ユーザーの本人確認および認証</li>
+            <li>レンタル取引における決済処理および配送手配</li>
+            <li>ユーザーへのお知らせ、通知の送信</li>
+            <li>ユーザーからのお問い合わせへの対応</li>
+            <li>本サービスの改善、新機能の開発</li>
+            <li>利用状況の分析およびマーケティング</li>
+            <li>不正行為の検知および防止、セキュリティの確保</li>
+            <li>法令に基づく対応</li>
+        </ol>
+
+        <h2 id="article-4">第4条（第三者提供）</h2>
+        <ol>
+            <li>運営者は、以下の場合を除き、ユーザーの個人情報を第三者に提供しません。
+                <ul>
+                    <li>ユーザーの同意がある場合</li>
+                    <li>レンタル取引の成立に伴い、取引相手に配送に必要な情報（氏名、住所等）を提供する場合</li>
+                    <li>決済処理のために決済代行会社に必要な情報を提供する場合</li>
+                    <li>法令に基づく開示請求があった場合</li>
+                    <li>人の生命、身体または財産の保護のために必要がある場合</li>
+                </ul>
+            </li>
+            <li>運営者は、個人情報の取扱いを外部に委託する場合、委託先に対して適切な監督を行います。</li>
+        </ol>
+
+        <h2 id="article-5">第5条（個人情報の管理）</h2>
+        <ol>
+            <li>運営者は、個人情報への不正アクセス、紛失、破壊、改ざんおよび漏洩を防止するため、適切なセキュリティ対策を講じます。</li>
+            <li>個人情報はSSL/TLSによる暗号化通信を使用して送受信されます。</li>
+            <li>個人情報へのアクセスは、業務上必要な従業員に限定し、適切なアクセス制御を行います。</li>
+            <li>決済情報（クレジットカード番号等）は、PCI DSSに準拠した決済代行会社により安全に管理されます。</li>
+        </ol>
+
+        <h2 id="article-6">第6条（Cookie・トラッキング）</h2>
+        <ol>
+            <li>本サービスでは、ユーザー体験の向上およびサービス改善のためにCookieを使用しています。</li>
+            <li>Cookieにより収集される情報には、閲覧履歴、利用状況、アクセス元情報等が含まれます。</li>
+            <li>ユーザーは、ブラウザの設定によりCookieの受け入れを拒否することができます。ただし、Cookieを無効にした場合、本サービスの一部機能が利用できなくなることがあります。</li>
+            <li>本サービスでは、Google Analytics等のアクセス解析ツールを使用する場合があります。これらのツールは、Cookieを使用して匿名のアクセスデータを収集します。</li>
+        </ol>
+
+        <h2 id="article-7">第7条（本人確認書類の取扱い）</h2>
+        <ol>
+            <li>本人確認のために提出された書類の画像は、本人確認の目的にのみ使用します。</li>
+            <li>本人確認書類の画像は、本人確認完了後、運営者が定める期間（最大1年間）保管した後、安全な方法で削除します。</li>
+            <li>本人確認書類の保管は、アクセス制限された安全な環境で行われます。</li>
+        </ol>
+
+        <h2 id="article-8">第8条（開示・訂正・削除）</h2>
+        <ol>
+            <li>ユーザーは、運営者に対して自己の個人情報の開示、訂正、追加、削除、利用停止を請求する権利を有します。</li>
+            <li>上記の請求は、本サービスのマイページから行うか、運営者の定める方法によりお問い合わせください。</li>
+            <li>運営者は、請求者がユーザー本人であることを確認した上で、合理的な期間内に対応します。</li>
+            <li>法令に基づき保存が義務づけられている情報については、削除に応じられない場合があります。</li>
+        </ol>
+
+        <h2 id="article-9">第9条（ポリシーの変更）</h2>
+        <ol>
+            <li>運営者は、必要に応じて本ポリシーを変更することがあります。</li>
+            <li>重要な変更を行う場合は、本サービス上での通知またはメールによりユーザーにお知らせします。</li>
+            <li>変更後のポリシーは、本サービス上に掲示された時点から効力を生じるものとします。</li>
+        </ol>
+
+        <h2 id="article-10">第10条（お問い合わせ）</h2>
+        <p>本ポリシーに関するお問い合わせは、以下の窓口までご連絡ください。</p>
+        <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-4 mt-2">
+            <p class="mb-1"><strong>MONOTAL運営事務局</strong></p>
+            <p class="mb-0">メール：support@monotal.jp</p>
+        </div>
+
+        <p class="mt-10 text-xs text-zinc-400">以上</p>
+        <p class="text-xs text-zinc-400">制定日：2026年2月18日</p>
+    </div>
+</div>
+{% endblock %}

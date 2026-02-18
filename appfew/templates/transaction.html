@@ -34,6 +34,27 @@
                 </div>
             </div>
             <!-- 進捗インジケーター -->
+            {% if is_return_flow %}
+            <!-- 返品フロー用進捗バー（4ステップ） -->
+            <div class="progress-bar">
+                <div class="progress-step done">
+                    <span class="iconify" data-icon="lucide:file-text" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 8 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 8 %}done{% endif %} {% if rental_history.rental_status_id == 7 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="14"></span>
+                </div>
+                <div class="progress-line {% if rental_history.rental_status_id >= 9 %}done{% endif %}"></div>
+                <div class="progress-step {% if rental_history.rental_status_id >= 9 %}done{% endif %} {% if rental_history.rental_status_id == 8 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:truck" data-width="14"></span>
+                </div>
+                <div class="progress-line"></div>
+                <div class="progress-step {% if rental_history.rental_status_id == 9 %}current{% endif %}">
+                    <span class="iconify" data-icon="lucide:package-check" data-width="14"></span>
+                </div>
+            </div>
+            {% else %}
+            <!-- 通常フロー用進捗バー（5ステップ） -->
             <div class="progress-bar">
                 <div class="progress-step {% if rental_history.rental_status_id >= 1 %}done{% endif %} {% if rental_history.rental_status_id == 1 %}current{% endif %}">
                     <span class="iconify" data-icon="lucide:package" data-width="14"></span>
@@ -55,6 +76,7 @@
                     <span class="iconify" data-icon="lucide:check" data-width="14"></span>
                 </div>
             </div>
+            {% endif %}
         </div>
         {% if rental_history.rental_status_id == 6 %}
         <div class="cancelled-banner">
@@ -132,6 +154,20 @@
                     </div>
                 </a>
             </section>
+
+            <!-- 返品理由（返品フロー時に表示） -->
+            {% if return_reason_history %}
+            <section class="panel-section">
+                <h3><span class="iconify" data-icon="lucide:alert-circle" data-width="16"></span> 返品理由</h3>
+                <div class="return-reason-box">
+                    <p class="return-reason-name">{{ return_reason_history.return_reason.return_reason_name }}</p>
+                    {% if return_reason_history.return_reason_detail %}
+                    <p class="return-reason-detail">{{ return_reason_history.return_reason_detail }}</p>
+                    {% endif %}
+                    <p class="return-reason-date">申請日: {{ return_reason_history.return_request_datetime|date:"m/d H:i" }}</p>
+                </div>
+            </section>
+            {% endif %}
 
             <!-- 取引詳細 -->
             <section class="panel-section">
@@ -269,6 +305,10 @@
                         <small>商品を返送したら押してください</small>
                     </span>
                 </button>
+                <button id="returnRequestBtn" class="action-btn warning-outline">
+                    <span class="iconify" data-icon="lucide:rotate-ccw" data-width="18"></span>
+                    <span>返品を申請</span>
+                </button>
                 {% endif %}
 
                 {% if is_lender and rental_history.rental_status_id == 4 %}
@@ -277,6 +317,48 @@
                     <span class="action-text">
                         <strong>返却を確認</strong>
                         <small>商品が届いたら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if rental_history.rental_status_id == 7 %}
+                    {% if is_lender %}
+                    <button id="returnApproveBtn" class="action-btn success">
+                        <span class="iconify" data-icon="lucide:check" data-width="20"></span>
+                        <span class="action-text">
+                            <strong>返品を承認</strong>
+                            <small>返品申請を承認します</small>
+                        </span>
+                    </button>
+                    <button id="returnRejectBtn" class="action-btn danger-outline">
+                        <span class="iconify" data-icon="lucide:x" data-width="18"></span>
+                        <span>返品を拒否</span>
+                    </button>
+                    {% else %}
+                    <div class="review-status-box waiting">
+                        <span class="iconify" data-icon="lucide:clock" data-width="24"></span>
+                        <p>返品申請中</p>
+                        <small>出品者の承認を待っています</small>
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                {% if is_renter and rental_history.rental_status_id == 8 %}
+                <button id="returnShipRefundBtn" class="action-btn primary">
+                    <span class="iconify" data-icon="lucide:truck" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>返品発送を通知</strong>
+                        <small>返品商品を発送したら押してください</small>
+                    </span>
+                </button>
+                {% endif %}
+
+                {% if is_lender and rental_history.rental_status_id == 9 %}
+                <button id="returnReceiveBtn" class="action-btn success">
+                    <span class="iconify" data-icon="lucide:check-circle" data-width="20"></span>
+                    <span class="action-text">
+                        <strong>返品受取を確認</strong>
+                        <small>返品商品が届いたら押してください</small>
                     </span>
                 </button>
                 {% endif %}
@@ -332,7 +414,7 @@
                         {% endif %}
                     {% elif rental_history.rental_status_id == 3 %}
                         {% if is_renter %}
-                        <p>レンタル期間が終了したら商品を返送し、「返送を通知」ボタンを押してください。</p>
+                        <p>レンタル期間が終了したら商品を返送し、「返送を通知」ボタンを押してください。商品に問題がある場合は「返品を申請」から返品手続きができます。</p>
                         {% else %}
                         <p>借り手が商品を返送するまでお待ちください。</p>
                         {% endif %}
@@ -347,6 +429,24 @@
                         <p>「取引を完了」ボタンから取引相手の評価をしてください。評価が完了すると取引が完了になります。</p>
                         {% else %}
                         <p>評価が完了しました。取引は正常に完了しています。ご利用ありがとうございました。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 7 %}
+                        {% if is_lender %}
+                        <p>借り手から返品申請がありました。内容を確認し、「返品を承認」または「返品を拒否」を選択してください。</p>
+                        {% else %}
+                        <p>返品申請を送信しました。出品者の承認をお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 8 %}
+                        {% if is_renter %}
+                        <p>返品が承認されました。商品を返送し、「返品発送を通知」ボタンを押してください。</p>
+                        {% else %}
+                        <p>返品を承認しました。借り手が商品を返送するまでお待ちください。</p>
+                        {% endif %}
+                    {% elif rental_history.rental_status_id == 9 %}
+                        {% if is_lender %}
+                        <p>返品商品が発送されました。届きましたら「返品受取を確認」ボタンを押してください。</p>
+                        {% else %}
+                        <p>返品商品の発送を通知しました。出品者が受取確認するまでお待ちください。</p>
                         {% endif %}
                     {% endif %}
                 </div>
@@ -385,6 +485,40 @@
                 <button type="submit" class="btn-danger">キャンセルを確定</button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- 返品申請モーダル -->
+<div id="returnRequestModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>返品を申請</h2>
+            <button class="modal-close" data-modal="returnRequestModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="modal-body-form">
+            <p class="modal-description">商品に問題がある場合、返品を申請できます。出品者の承認後に返品手続きが進みます。</p>
+            <div class="form-group">
+                <label class="form-label">返品理由</label>
+                <select id="returnRequestReasonSelect" required class="form-select">
+                    <option value="">選択してください</option>
+                    {% for reason in return_reasons %}
+                    <option value="{{ reason.return_reason_id }}">{{ reason.return_reason_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">詳細（任意）</label>
+                <textarea id="returnRequestReasonDetail" maxlength="1000" rows="4" class="form-textarea" placeholder="返品の詳細を入力してください"></textarea>
+            </div>
+            <div id="returnRequestError" class="modal-error hidden"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" data-modal="returnRequestModal">閉じる</button>
+                <button type="button" class="btn-primary-action" id="returnRequestConfirmBtn">返品を申請する</button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -453,6 +587,41 @@
             <div class="modal-actions">
                 <button type="button" class="btn-cancel-modal" data-modal="returnShipModal">閉じる</button>
                 <button type="button" class="btn-primary-action" id="returnShipConfirmBtn">返送を通知する</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 返品発送モーダル -->
+<div id="returnShipRefundModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>返品発送を通知</h2>
+            <button class="modal-close" data-modal="returnShipRefundModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="modal-body-form">
+            <p class="modal-description">返品商品を発送しましたか？追跡番号を入力すると、配送状況を確認できます。</p>
+            <div class="form-group">
+                <label class="form-label">配送業者（任意）</label>
+                <select id="returnRefundCarrierCode" class="form-select">
+                    <option value="">選択してください</option>
+                    <option value="100062">ヤマト運輸</option>
+                    <option value="100040">佐川急便</option>
+                    <option value="10021">日本郵便</option>
+                    <option value="100171">西濃運輸</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">追跡番号（任意）</label>
+                <input type="text" id="returnRefundTrackingNumber" class="form-input" placeholder="追跡番号を入力" maxlength="50">
+            </div>
+            <div id="returnShipRefundError" class="modal-error hidden"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel-modal" data-modal="returnShipRefundModal">閉じる</button>
+                <button type="button" class="btn-primary-action" id="returnShipRefundConfirmBtn">返品発送を通知する</button>
             </div>
         </div>
     </div>

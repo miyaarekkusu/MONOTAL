@@ -1,7 +1,7 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
-{% block title %}興味のある趣味 | MONOTAL{% endblock %}
+{% block title %}趣味登録 | MONOTAL{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" type="text/css" href="{% static 'css/interest_selection.css' %}">
@@ -10,10 +10,21 @@
 {% block content %}
 <main class="flex-1 w-full mx-auto max-w-[1400px] px-4 lg:px-6 py-10 pb-10 flex flex-col relative">
 
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li><a href="{% url 'mypage_browsing_history' %}" class="hover:underline hover:text-pink-600">マイページ</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">趣味登録</li>
+        </ol>
+    </nav>
+
     <!-- Page Header -->
     <div class="text-center max-w-2xl mx-auto mb-12">
         <h1 class="text-2xl md:text-3xl font-bold tracking-tight text-zinc-900 mb-3">
-            興味のある趣味を選んでください
+            趣味登録
         </h1>
         <p class="text-sm text-zinc-500">
             あなたの好みに合わせて、おすすめの商品をピックアップして表示します。<br class="hidden md:inline">
@@ -65,8 +76,7 @@
             <span id="selected-count" class="font-bold text-pink-600">0</span> 個選択中
         </div>
         <button type="button" id="submitBtn" class="bg-zinc-900 text-white hover:bg-zinc-800 px-6 py-2.5 rounded-full font-bold text-sm transition-colors flex items-center gap-2">
-            次へ進む
-            <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
+            登録する
         </button>
     </div>
 </div>
