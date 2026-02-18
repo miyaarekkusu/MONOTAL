@@ -6086,3 +6086,181 @@ from .views_insurance import (
     insurance_claim_approve,
     insurance_claim_reject,
 )
+
+
+from django.views.generic import CreateView, DetailView, ListView
+from .forms import BoardCreateForm, MessageForm
+
+
+class InterestSelectionView(LoginRequiredMixin, View):
+    """
+    趣味・興味のあるジャンル選択ページ
+    GET: 親カテゴリ一覧を表示（既存選択をpre-select）
+    POST: 選択されたカテゴリIDを保存
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).order_by('product_category_id')
+
+        selected_ids = list(
+            UserHobby.objects.filter(user=request.user)
+            .values_list('product_category_id', flat=True)
+        )
+
+        return render(request, 'interest_selection.html', {
+            'categories': categories,
+            'selected_ids': selected_ids,
+        })
+
+    def post(self, request, *args, **kwargs):
+        category_ids = request.POST.getlist('category_ids')
+        UserHobby.objects.filter(user=request.user).delete()
+        for cid in category_ids:
+            UserHobby.objects.create(user=request.user, product_category_id=int(cid))
+
+        next_url = request.GET.get('next', request.POST.get('next', ''))
+        return redirect(next_url or 'mypage_browsing_history')
+
+
+# 掲示板関連ビュー
+
+class BoardListView(ListView):
+    """掲示板一覧ビュー"""
+    model = Community
+    template_name = 'board_list.html'
+    context_object_name = 'boards'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = super().get_queryset().select_related('creator', 'category').order_by('-created_at')
+        
+        search_query = self.request.GET.get('q', '')
+        category_id = self.request.GET.get('category', '')
+
+        if search_query:
+            queryset = queryset.filter(
+                Q(name__icontains=search_query) | 
+                Q(description__icontains=search_query)
+            )
+        
+        if category_id:
+            queryset = queryset.filter(category_id=category_id)
+            
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['categories'] = BoardCategory.objects.all().order_by('name')
+        context['search_query'] = self.request.GET.get('q', '')
+        try:
+            context['selected_category_id'] = int(self.request.GET.get('category', ''))
+        except (ValueError, TypeError):
+            context['selected_category_id'] = None
+        return context
+
+class BoardCreateView(LoginRequiredMixin, CreateView):
+    """掲示板作成ビュー"""
+    model = Community
+    form_class = BoardCreateForm
+    template_name = 'board_create.html'
+    login_url = '/monotal/login/'
+
+    def form_valid(self, form):
+        form.instance.creator = self.request.user
+        
+        with transaction.atomic():
+            self.object = form.save()
+            
+            chat_room_type, _ = ChatRoomType.objects.get_or_create(
+                chat_room_type_id=4,
+                defaults={'type_name': 'コミュニティチャット'}
+            )
+            chat_room = ChatRoom.objects.create(
+                chat_room_type=chat_room_type,
+                community=self.object
+            )
+
+            ChatRoomParticipant.objects.create(
+                chat_room=chat_room,
+                user=self.request.user
+            )
+
+        messages.success(self.request, '新しい掲示板を作成しました。')
+        return redirect(self.get_success_url())
+
+    def get_success_url(self):
+        return reverse('board_detail', kwargs={'pk': self.object.pk})
+
+class BoardDetailView(LoginRequiredMixin, DetailView):
+    """掲示板詳細・チャットビュー"""
+    model = Community
+    template_name = 'board_detail.html'
+    context_object_name = 'board'
+    login_url = '/monotal/login/'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        board = self.get_object()
+        
+        chat_room = ChatRoom.objects.filter(community=board).first()
+        
+        if chat_room:
+            messages_list = Message.objects.filter(chat_room=chat_room).select_related('user').order_by('register_datetime')
+            context['messages'] = messages_list
+        else:
+            context['messages'] = []
+
+        # メッセージ投稿フォームにユーザーを渡す
+        context['message_form'] = MessageForm(user=self.request.user)
+        
+        return context
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object()
+        board = self.object
+        chat_room = ChatRoom.objects.filter(community=board).first()
+
+        if not chat_room:
+            messages.error(request, 'この掲示板にはチャットルームが存在しません。')
+            return redirect('board_list')
+            
+        # フォームにユーザー情報を渡す
+        form = MessageForm(request.POST, request.FILES, user=request.user)
+
+        if form.is_valid():
+            message = form.save(commit=False)
+            message.chat_room = chat_room
+            message.user = request.user
+            message.save()
+            return redirect('board_detail', pk=board.pk)
+        else:
+            # フォームが無効な場合、エラー付きで再表示
+            context = self.get_context_data()
+            context['message_form'] = form
+            messages.error(request, 'メッセージの投稿に失敗しました。内容を確認してください。')
+            return self.render_to_response(context)
+
+class DeleteMessageView(LoginRequiredMixin, View):
+    """メッセージ削除ビュー"""
+    login_url = '/monotal/login/'
+
+    def post(self, request, *args, **kwargs):
+        message_id = self.kwargs.get('pk')
+        message = get_object_or_404(Message, pk=message_id)
+
+        if message.user != request.user:
+            messages.error(request, '他人のメッセージは削除できません。')
+            return redirect('board_detail', pk=message.chat_room.community.pk)
+        
+        board_pk = message.chat_room.community.pk
+        message.delete()
+        messages.success(request, 'メッセージを削除しました。')
+        return redirect('board_detail', pk=board_pk)
+
+
+def community(request):
+    """コミュニティページ"""
+    return render(request, 'community.html')

@@ -1720,6 +1720,19 @@ class InsuranceClaimImage(models.Model):
 # ║                                                                              ║
 # ╚══════════════════════════════════════════════════════════════════════════════╝
 
+class BoardCategory(models.Model):
+    """掲示板カテゴリマスター"""
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True, verbose_name='カテゴリ名')
+
+    class Meta:
+        db_table = 'M_BoardCategory'
+        verbose_name = '掲示板カテゴリ'
+        verbose_name_plural = '掲示板カテゴリ'
+        
+    def __str__(self):
+        return self.name
+
 class ChatRoomType(models.Model):
     """
     チャットルームタイプマスター
@@ -1739,19 +1752,40 @@ class ChatRoomType(models.Model):
 
 class Community(models.Model):
     """
-    コミュニティテーブル
-    ユーザーコミュニティを管理
+    コミュニティテーブル -> 掲示板として利用
     """
     community_id = models.AutoField(primary_key=True)
-    community_name = models.CharField(max_length=200, null=True, blank=True)
+    
+    # 掲示板のタイトル（旧 community_name）
+    name = models.CharField(max_length=200, verbose_name='掲示板タイトル', null=True, blank=True)
+    
+    # 要求仕様に基づきフィールドを追加
+    description = models.TextField(verbose_name='説明文', null=True, blank=True)
+    
+    category = models.ForeignKey(
+        BoardCategory, 
+        on_delete=models.SET_NULL, # カテゴリが削除されても掲示板は残す
+        null=True,
+        verbose_name='カテゴリ'
+    )
+    
+    creator = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, # ユーザーが削除されても掲示板は残す
+        null=True, 
+        related_name='created_communities', 
+        verbose_name='作成者'
+    )
+    
+    created_at = models.DateTimeField(default=timezone.now, verbose_name='作成日時')
     
     class Meta:
         db_table = 'T_Community'
-        verbose_name = 'コミュニティ'
-        verbose_name_plural = 'コミュニティ'
+        verbose_name = 'コミュニティ（掲示板）'
+        verbose_name_plural = 'コミュニティ（掲示板）'
     
     def __str__(self):
-        return self.community_name or f'コミュニティ {self.community_id}'
+        return self.name
 
 
 class ChatRoom(models.Model):
@@ -1841,7 +1875,13 @@ class Message(models.Model):
         db_column='user_id'
     )
     
-    message_content = models.CharField(max_length=2000, null=True, blank=True)
+    # 長い文章（説明文など）も保存できるようTextFieldに変更
+    message_content = models.TextField(null=True, blank=True)
+    
+    # 添付機能のためのフィールドを追加
+    product_link = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='商品リンク')
+    image = models.ImageField(upload_to='chat_images/', null=True, blank=True, verbose_name='添付画像')
+
     register_datetime = models.DateTimeField(auto_now_add=True)
     
     class Meta:
