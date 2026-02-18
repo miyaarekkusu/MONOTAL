@@ -219,6 +219,18 @@
 
         <!-- 出品リスト -->
         <div id="products-tab" class="tab-content">
+            <!-- フィルタ・ソートバー -->
+            <div class="flex items-center justify-end gap-3 mb-4">
+                <select id="product-status-select" class="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                    <option value="all" {% if product_status_filter == 'all' %}selected{% endif %}>すべて</option>
+                    <option value="available" {% if product_status_filter == 'available' %}selected{% endif %}>レンタル可のみ</option>
+                    <option value="renting" {% if product_status_filter == 'renting' %}selected{% endif %}>レンタル中のみ</option>
+                </select>
+                <select id="product-sort-select" class="text-sm border border-zinc-200 rounded-lg px-3 py-2 bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-pink-500">
+                    <option value="-register_datetime" {% if product_sort == '-register_datetime' %}selected{% endif %}>新しい順</option>
+                    <option value="register_datetime" {% if product_sort == 'register_datetime' %}selected{% endif %}>古い順</option>
+                </select>
+            </div>
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {% for product in user_products %}
                 <a href="{% url 'product_detail' product_id=product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if product.product_status.product_status_id == 2 %}opacity-90{% endif %}">

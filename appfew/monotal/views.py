@@ -518,7 +518,20 @@ class ProfileView(View):
             'product_category'
         ).prefetch_related(
             'images'
-        ).order_by('-register_datetime')
+        )
+
+        # 商品ステータスフィルタ
+        product_status_filter = request.GET.get('status', 'all')
+        if product_status_filter == 'available':
+            user_products = user_products.filter(product_status_id=1)
+        elif product_status_filter == 'renting':
+            user_products = user_products.filter(product_status_id=2)
+
+        # 商品ソート
+        product_sort = request.GET.get('product_sort', '-register_datetime')
+        if product_sort not in ['-register_datetime', 'register_datetime']:
+            product_sort = '-register_datetime'
+        user_products = user_products.order_by(product_sort)
 
         # ブックマーク商品を取得（本人のみ表示）
         bookmarked_products = []
@@ -617,6 +630,8 @@ class ProfileView(View):
             'review_avg': review_avg,
             'reviews': reviews,
             'review_sort': sort_param,
+            'product_status_filter': product_status_filter,
+            'product_sort': product_sort,
             'report_reasons': ReportReason.objects.all(),
         }
 

@@ -28,6 +28,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Review sort functionality
     initReviewSort();
 
+    // Product filter & sort functionality
+    initProductFilter();
+
     // URLハッシュによるタブ自動選択
     if (window.location.hash === '#reviews') {
         const reviewsTab = document.querySelector('.profile-tab[data-tab="reviews"]');
@@ -386,6 +389,36 @@ function initReviewSort() {
         url.hash = 'reviews';
         window.location.href = url.toString();
     });
+}
+
+/**
+ * Initialize product filter & sort selects
+ */
+function initProductFilter() {
+    const statusSelect = document.getElementById('product-status-select');
+    const sortSelect = document.getElementById('product-sort-select');
+
+    function applyProductFilter() {
+        const url = new URL(window.location.href);
+        if (statusSelect) {
+            if (statusSelect.value === 'all') {
+                url.searchParams.delete('status');
+            } else {
+                url.searchParams.set('status', statusSelect.value);
+            }
+        }
+        if (sortSelect) {
+            if (sortSelect.value === '-register_datetime') {
+                url.searchParams.delete('product_sort');
+            } else {
+                url.searchParams.set('product_sort', sortSelect.value);
+            }
+        }
+        window.location.href = url.toString();
+    }
+
+    if (statusSelect) statusSelect.addEventListener('change', applyProductFilter);
+    if (sortSelect) sortSelect.addEventListener('change', applyProductFilter);
 }
 
 /**
