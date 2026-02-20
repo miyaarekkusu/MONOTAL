@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}掲示板一覧 - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/community.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto px-4 py-8">
+
+    <!-- ページヘッダー -->
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <div class="flex items-center gap-2 text-sm text-zinc-400 mb-1">
+                <a href="{% url 'community' %}" class="hover:text-zinc-600 transition-colors">コミュニティ</a>
+                <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
+                <span>掲示板</span>
+            </div>
+            <h1 class="text-2xl font-bold text-zinc-900">掲示板一覧</h1>
+        </div>
+        {% if user.is_authenticated %}
+        <a href="{% url 'board_create' %}"
+           class="flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold rounded-xl transition-colors">
+            <span class="iconify" data-icon="lucide:plus" data-width="16"></span>
+            掲示板を作成
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- 検索・フィルター -->
+    <form method="GET" action="{% url 'board_list' %}" class="bg-white border border-zinc-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row gap-3">
+        <div class="relative flex-1">
+            <span class="iconify absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" data-icon="solar:magnifer-linear" data-width="16"></span>
+            <input type="text" name="q" value="{{ search_query }}"
+                   placeholder="タイトルや説明文で検索..."
+                   class="w-full pl-9 pr-4 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition">
+        </div>
+        <select name="category"
+                class="px-3 py-2 border border-zinc-200 rounded-xl text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition bg-white">
+            <option value="">すべてのカテゴリ</option>
+            {% for category in categories %}
+            <option value="{{ category.id }}" {% if selected_category_id == category.id %}selected{% endif %}>
+                {{ category.name }}
+            </option>
+            {% endfor %}
+        </select>
+        <button type="submit"
+                class="px-5 py-2 bg-zinc-900 hover:bg-zinc-700 text-white text-sm font-semibold rounded-xl transition-colors">
+            検索
+        </button>
+        {% if search_query or selected_category_id %}
+        <a href="{% url 'board_list' %}"
+           class="px-4 py-2 border border-zinc-200 text-zinc-600 hover:bg-zinc-50 text-sm rounded-xl transition-colors flex items-center">
+            クリア
+        </a>
+        {% endif %}
+    </form>
+
+    <!-- ボードカード一覧 -->
+    {% if boards %}
+    <div class="space-y-3">
+        {% for board in boards %}
+        <a href="{% url 'community' %}?board={{ board.community_id }}"
+           class="board-card block bg-white border border-zinc-100 rounded-2xl p-5 hover:border-pink-200 hover:shadow-md transition-all">
+            <div class="flex items-start justify-between gap-4">
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 mb-1 flex-wrap">
+                        {% if board.category %}
+                        <span class="board-category-badge">{{ board.category.name }}</span>
+                        {% endif %}
+                        <h2 class="text-base font-semibold text-zinc-900 truncate">{{ board.name }}</h2>
+                    </div>
+                    {% if board.description %}
+                    <p class="text-sm text-zinc-500 line-clamp-2 mb-3">{{ board.description }}</p>
+                    {% endif %}
+                    <div class="flex items-center gap-3 text-xs text-zinc-400">
+                        <span class="flex items-center gap-1">
+                            <span class="iconify" data-icon="lucide:user" data-width="12"></span>
+                            {% if board.creator %}{{ board.creator.username }}{% else %}不明{% endif %}
+                        </span>
+                        <span class="w-1 h-1 rounded-full bg-zinc-300"></span>
+                        <span class="flex items-center gap-1">
+                            <span class="iconify" data-icon="lucide:clock" data-width="12"></span>
+                            {{ board.created_at|date:"Y/m/d" }}
+                        </span>
+                    </div>
+                </div>
+                <span class="iconify text-zinc-300 flex-shrink-0" data-icon="lucide:chevron-right" data-width="20"></span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- ページネーション -->
+    {% if is_paginated %}
+    <nav class="flex justify-center items-center gap-1 mt-8">
+        {% if page_obj.has_previous %}
+        <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category_id %}category={{ selected_category_id }}&{% endif %}page={{ page_obj.previous_page_number }}"
+           class="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
+            <span class="iconify" data-icon="lucide:chevron-left" data-width="18"></span>
+        </a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <span class="px-3 py-1.5 rounded-lg text-sm font-semibold bg-zinc-900 text-white">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+            <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category_id %}category={{ selected_category_id }}&{% endif %}page={{ num }}"
+               class="px-3 py-1.5 rounded-lg text-sm text-zinc-600 hover:bg-zinc-100 transition-colors">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+        <a href="?{% if search_query %}q={{ search_query }}&{% endif %}{% if selected_category_id %}category={{ selected_category_id }}&{% endif %}page={{ page_obj.next_page_number }}"
+           class="p-2 rounded-lg text-zinc-500 hover:bg-zinc-100 transition-colors">
+            <span class="iconify" data-icon="lucide:chevron-right" data-width="18"></span>
+        </a>
+        {% endif %}
+    </nav>
+    {% endif %}
+
+    {% else %}
+    <!-- 空状態 -->
+    <div class="text-center py-20 text-zinc-400">
+        <div class="h-16 w-16 bg-zinc-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="iconify opacity-50" data-icon="lucide:layout-list" data-width="32"></span>
+        </div>
+        {% if search_query or selected_category_id %}
+        <p class="text-sm font-medium text-zinc-500">該当する掲示板が見つかりませんでした</p>
+        <a href="{% url 'board_list' %}" class="mt-3 inline-block text-xs text-pink-600 hover:underline">すべての掲示板を見る</a>
+        {% else %}
+        <p class="text-sm font-medium text-zinc-500">まだ掲示板がありません</p>
+        {% if user.is_authenticated %}
+        <a href="{% url 'board_create' %}" class="mt-3 inline-block text-xs text-pink-600 hover:underline">最初の掲示板を作成する</a>
+        {% endif %}
+        {% endif %}
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

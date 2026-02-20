@@ -30,23 +30,30 @@ def notification_context(request):
     """
     context = {
         'unread_notification_count': 0,
+        'unread_community_notification_count': 0,
     }
 
     if request.user.is_authenticated:
-        # 自分宛ての通知のうち、未読のものをカウント
-        # NotificationTargetUserに自分が含まれていて、NotificationReadが存在しないか未読のもの
-        target_notification_ids = NotificationTargetUser.objects.filter(
-            user=request.user
-        ).values_list('notification_id', flat=True)
-
         # 既読の通知ID
         read_notification_ids = NotificationRead.objects.filter(
             user=request.user,
             notification_read_status_id=2  # 既読
         ).values_list('notification_id', flat=True)
 
-        # 未読数 = 自分宛て通知 - 既読通知
+        # 自分宛ての全通知（未読数）
+        target_notification_ids = NotificationTargetUser.objects.filter(
+            user=request.user
+        ).values_list('notification_id', flat=True)
+
         context['unread_notification_count'] = target_notification_ids.exclude(
+            notification_id__in=read_notification_ids
+        ).count()
+
+        # コミュニティ通知（notification_type_id=4）の未読数
+        context['unread_community_notification_count'] = NotificationTargetUser.objects.filter(
+            user=request.user,
+            notification__notification_type_id=4,
+        ).exclude(
             notification_id__in=read_notification_ids
         ).count()
 

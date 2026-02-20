@@ -1,0 +1,371 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}コミュニティ - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/community.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Data element for JS -->
+<div id="community-data" class="hidden"
+    data-user-avatar="{% if user.is_authenticated and user.user_image %}{{ user.user_image.url }}{% endif %}">
+</div>
+
+<!-- Community Main Container -->
+<div class="community-container">
+    <!-- Sidebar -->
+    <aside id="community-sidebar" class="community-sidebar">
+        <!-- Tabs -->
+        <div class="flex border-b border-zinc-200 px-2 pt-2 gap-1 bg-zinc-50/50 flex-shrink-0">
+            <button data-community-tab="boards" id="tab-boards" class="community-tab active">掲示板</button>
+            <button data-community-tab="qa" id="tab-qa" class="community-tab">Q&A</button>
+        </div>
+
+        <!-- Search Area -->
+        <div class="flex-shrink-0 bg-white z-30 shadow-sm relative flex flex-col">
+            <div class="p-3 bg-white z-40 border-b border-zinc-100">
+                <div class="relative group">
+                    <span class="iconify absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400 group-focus-within:text-pink-500 transition-colors" data-icon="solar:magnifer-linear" data-width="16"></span>
+                    <input type="text" id="community-search-input" placeholder="検索..." class="community-search-input">
+                </div>
+            </div>
+        </div>
+
+        <!-- Q&Aタブヘッダー（JS で表示切り替え） -->
+        <div id="qa-sidebar-header" class="hidden flex-shrink-0 p-3 border-b border-zinc-100 flex items-center justify-between bg-white">
+            <span class="text-xs font-semibold text-zinc-500">Q&A</span>
+            {% if user.is_authenticated %}
+            <button onclick="openQACreateModal()"
+                    class="flex items-center gap-1 text-xs text-pink-600 hover:text-pink-700 font-semibold transition-colors">
+                <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                質問する
+            </button>
+            {% endif %}
+        </div>
+        <div id="sidebar-list" class="community-sidebar-list hidden"></div>
+
+        <!-- 掲示板タブコンテンツ（サーバーレンダリング） -->
+        <div id="board-list-content" class="flex-1 overflow-y-auto">
+            <!-- 掲示板ヘッダー -->
+            <div class="p-3 border-b border-zinc-100 flex items-center justify-between bg-white">
+                <span class="text-xs font-semibold text-zinc-500">掲示板</span>
+                {% if user.is_authenticated %}
+                <button onclick="openBoardCreateModal()"
+                        class="flex items-center gap-1 text-xs text-pink-600 hover:text-pink-700 font-semibold transition-colors">
+                    <span class="iconify" data-icon="lucide:plus" data-width="14"></span>
+                    作成
+                </button>
+                {% endif %}
+            </div>
+            <!-- 検索（board_listへ遷移） -->
+            <form action="{% url 'board_list' %}" method="GET" class="p-3 border-b border-zinc-100 bg-white">
+                <div class="relative">
+                    <span class="iconify absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" data-icon="solar:magnifer-linear" data-width="14"></span>
+                    <input type="text" name="q" placeholder="掲示板を検索..."
+                           class="w-full pl-8 pr-4 py-2 border border-zinc-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-pink-400 transition">
+                </div>
+            </form>
+            <!-- すべての掲示板を見る（検索バー直下） -->
+            <div class="px-3 py-2 bg-white border-b border-zinc-100">
+                <a href="{% url 'board_list' %}"
+                   class="flex items-center justify-center gap-1 text-xs text-zinc-500 hover:text-pink-600 transition-colors py-1.5 rounded-lg hover:bg-zinc-50 font-medium">
+                    <span class="iconify" data-icon="lucide:layout-list" data-width="13"></span>
+                    すべての掲示板を見る
+                </a>
+            </div>
+            <!-- ボードリスト -->
+            <div class="divide-y divide-zinc-100" id="sidebar-board-items">
+                {% for board in recent_boards %}
+                <div data-board-id="{{ board.community_id }}"
+                     data-board-url="{% url 'board_detail' pk=board.community_id %}"
+                     data-join-url="{% url 'board_join' pk=board.community_id %}"
+                     data-leave-url="{% url 'board_leave' pk=board.community_id %}"
+                     onclick="loadBoard({{ board.community_id }}, '{% url 'board_detail' pk=board.community_id %}')"
+                     class="flex flex-col gap-1.5 px-4 py-3 hover:bg-zinc-50 transition-colors cursor-pointer">
+                    <div class="flex items-center gap-2">
+                        {% if board.category %}
+                        <span class="text-[10px] px-1.5 py-0.5 bg-pink-50 text-pink-600 rounded-md font-semibold flex-shrink-0">{{ board.category.name }}</span>
+                        {% endif %}
+                        <span class="text-sm font-semibold text-zinc-900 truncate flex-1">{{ board.name }}</span>
+                        {% if user.is_authenticated %}
+                            {% if board.user_is_creator %}
+                            <span class="text-[10px] px-1.5 py-0.5 bg-zinc-100 text-zinc-500 rounded-md font-semibold flex-shrink-0">作成者</span>
+                            {% elif board.user_is_member %}
+                            <span data-leave-btn="{{ board.community_id }}"
+                                  class="text-[10px] px-1.5 py-0.5 bg-emerald-50 text-emerald-600 rounded-md font-semibold flex-shrink-0">参加中</span>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                    {% if board.description %}
+                    <p class="text-xs text-zinc-400 truncate">{{ board.description }}</p>
+                    {% endif %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] text-zinc-400 flex items-center gap-1">
+                            <span class="iconify" data-icon="lucide:users" data-width="11"></span>
+                            {% if board.creator %}{{ board.member_count|add:1 }}{% else %}{{ board.member_count }}{% endif %}人
+                        </span>
+                        {% if user.is_authenticated and not board.user_is_creator and not board.user_is_member %}
+                        <button
+                            onclick="joinBoardFromSidebar(event, {{ board.community_id }}, '{% url 'board_join' pk=board.community_id %}')"
+                            data-join-btn="{{ board.community_id }}"
+                            class="text-[10px] px-2 py-0.5 bg-pink-600 text-white rounded-full font-semibold hover:bg-pink-700 transition-colors">
+                            参加する
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="py-10 text-center text-zinc-400">
+                    <span class="iconify mb-2" data-icon="lucide:layout-list" data-width="28"></span>
+                    <p class="text-xs">掲示板がまだありません</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main View -->
+    <main id="community-main" class="community-main">
+        <!-- Header -->
+        <div class="community-main-header">
+            <div class="flex items-center gap-3 md:gap-4 overflow-hidden">
+                <button id="mobile-back" class="md:hidden hidden p-1 -ml-2 text-zinc-500 hover:bg-zinc-100 rounded-full transition-colors">
+                    <span class="iconify" data-icon="solar:alt-arrow-left-linear" data-width="24"></span>
+                </button>
+                <div id="header-icon" class="h-10 w-10 rounded-xl bg-zinc-100 text-zinc-400 flex items-center justify-center flex-shrink-0">
+                    <span class="iconify" data-icon="lucide:layout-list" data-width="24"></span>
+                </div>
+                <div class="min-w-0">
+                    <h2 id="header-title" class="text-base font-semibold text-zinc-900 truncate">掲示板</h2>
+                    <div class="flex items-center gap-2 text-xs text-zinc-500 truncate">
+                        <span id="header-tag" class="truncate">左のリストから掲示板を選択</span>
+                        <span id="header-members" class="hidden"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2">
+                <button id="members-btn" onclick="openMembersModal()"
+                        class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-zinc-600 bg-zinc-100 hover:bg-zinc-200 transition-colors">
+                    <span class="iconify" data-icon="lucide:users" data-width="14"></span>
+                    <span id="members-btn-count">0人</span>
+                </button>
+                <button id="join-btn" class="hidden px-4 py-1.5 rounded-full text-xs font-bold transition-all items-center gap-1.5 border"></button>
+            </div>
+        </div>
+
+        <div id="content-area" class="community-content">
+            <div class="community-empty-state">
+                <div class="h-16 w-16 bg-zinc-100 rounded-full flex items-center justify-center mb-4">
+                    <span class="iconify opacity-50" data-icon="lucide:layout-list" data-width="32"></span>
+                </div>
+                <p class="text-sm font-medium">掲示板を選択してください</p>
+            </div>
+        </div>
+
+        <!-- 掲示板投稿バー（掲示板選択時に表示） -->
+        <div id="board-post-bar" class="hidden flex-shrink-0 bg-white border-t border-zinc-200">
+            <div class="px-4 py-3">
+                <!-- エラー -->
+                <div id="board-post-error" class="hidden mb-2 text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+                <!-- 画像プレビュー -->
+                <div id="board-image-preview-wrap" class="hidden mb-2 relative inline-block">
+                    <img id="board-image-preview" src="" alt="プレビュー" class="h-20 w-20 object-cover rounded-xl border border-zinc-200">
+                    <button type="button" onclick="clearBoardImage()"
+                            class="absolute -top-1.5 -right-1.5 h-5 w-5 bg-zinc-700 text-white rounded-full flex items-center justify-center hover:bg-red-500 transition-colors">
+                        <span class="iconify" data-icon="lucide:x" data-width="11"></span>
+                    </button>
+                </div>
+                <!-- 商品リンクプレビュー -->
+                <div id="board-product-preview" class="hidden mb-2 relative inline-flex items-center gap-2 bg-zinc-50 border border-zinc-200 rounded-xl px-3 py-1.5">
+                    <span class="iconify text-pink-500" data-icon="lucide:package" data-width="14"></span>
+                    <span id="board-product-name" class="text-xs text-zinc-700 max-w-[140px] truncate"></span>
+                    <button type="button" onclick="clearBoardProduct()" class="text-zinc-400 hover:text-red-400 transition-colors ml-1">
+                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
+                    </button>
+                </div>
+                <!-- 入力欄 -->
+                <div class="flex items-end gap-2">
+                    <div class="flex gap-1 flex-shrink-0">
+                        <button type="button" onclick="document.getElementById('board-file-input').click()"
+                                class="p-2 text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="画像を添付">
+                            <span class="iconify" data-icon="lucide:image" data-width="20"></span>
+                        </button>
+                        <button type="button" id="board-product-btn" onclick="toggleBoardProductPicker()"
+                                class="hidden p-2 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="商品をリンク">
+                            <span class="iconify" data-icon="lucide:package" data-width="20"></span>
+                        </button>
+                    </div>
+                    <textarea id="board-message-input" placeholder="メッセージを入力..." rows="1"
+                              class="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm resize-none focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition overflow-hidden"
+                              oninput="boardAutoResize(this)"></textarea>
+                    <button type="button" id="board-send-btn" onclick="sendBoardMessage()"
+                            class="p-2.5 bg-pink-600 hover:bg-pink-700 text-white rounded-xl transition-colors flex-shrink-0 disabled:opacity-60">
+                        <span class="iconify" data-icon="lucide:send" data-width="18"></span>
+                    </button>
+                </div>
+                <input type="file" id="board-file-input" class="hidden" accept="image/*"
+                       onchange="previewBoardImage(this)">
+                <input type="hidden" id="board-selected-product-id">
+            </div>
+            <!-- 商品ピッカー -->
+            <div id="board-product-picker" class="hidden border-t border-zinc-100 bg-zinc-50">
+                <div class="px-4 py-3">
+                    <p class="text-xs font-semibold text-zinc-500 mb-2">商品を選択</p>
+                    <div id="board-product-list" class="flex gap-3 overflow-x-auto pb-1 scrollbar-hide"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Image Modal (Q&A) -->
+<div id="image-modal" onclick="closeImageModal()" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4 transition-opacity duration-300">
+    <img id="modal-img" src="" class="max-w-full max-h-[90vh] rounded shadow-2xl" alt="">
+</div>
+
+<!-- Board Image Modal -->
+<div id="board-image-modal" onclick="closeBoardImageModal()" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4">
+    <img id="board-modal-img" src="" class="max-w-full max-h-[90vh] rounded shadow-2xl" alt="">
+</div>
+
+<!-- Members Modal -->
+<div id="members-modal" onclick="closeMembersModalOutside(event)"
+     class="fixed inset-0 z-[100] bg-black/50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm max-h-[70vh] flex flex-col">
+        <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+            <h3 class="font-bold text-zinc-900 flex items-center gap-2">
+                <span class="iconify text-pink-500" data-icon="lucide:users" data-width="16"></span>
+                参加メンバー
+                <span id="members-modal-count" class="text-zinc-400 font-normal text-sm"></span>
+            </h3>
+            <button onclick="closeMembersModal()" class="p-1 text-zinc-400 hover:text-zinc-600 transition-colors rounded-lg hover:bg-zinc-100">
+                <span class="iconify" data-icon="lucide:x" data-width="18"></span>
+            </button>
+        </div>
+        <div id="members-modal-list" class="overflow-y-auto flex-1 p-2"></div>
+    </div>
+</div>
+
+<!-- 掲示板作成モーダル -->
+<div id="board-create-modal" onclick="closeBoardCreateModalOutside(event)"
+     class="fixed inset-0 z-[100] bg-black/50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-100 flex-shrink-0">
+            <h3 class="font-bold text-zinc-900 flex items-center gap-2">
+                <span class="iconify text-pink-500" data-icon="lucide:layout-list" data-width="18"></span>
+                掲示板を作成
+            </h3>
+            <button onclick="closeBoardCreateModal()" class="p-1 text-zinc-400 hover:text-zinc-600 transition-colors rounded-lg hover:bg-zinc-100">
+                <span class="iconify" data-icon="lucide:x" data-width="18"></span>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+            <div id="board-create-error" class="hidden text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-semibold text-zinc-600">タイトル <span class="text-red-400">*</span></label>
+                    <span id="board-create-name-counter" class="text-[10px] text-zinc-400">0 / 100</span>
+                </div>
+                <input type="text" id="board-create-name" maxlength="100" placeholder="掲示板のタイトルを入力..."
+                       class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400"
+                       oninput="document.getElementById('board-create-name-counter').textContent = this.value.length + ' / 100'">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-zinc-600 mb-1">カテゴリ <span class="text-red-400">*</span></label>
+                <select id="board-create-category" class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                    <option value="">カテゴリを選択してください</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}">{{ cat.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-semibold text-zinc-600">説明文 <span class="text-red-400">*</span></label>
+                    <span id="board-create-desc-counter" class="text-[10px] text-zinc-400">0 / 1000</span>
+                </div>
+                <textarea id="board-create-description" rows="4" maxlength="1000"
+                          placeholder="この掲示板の目的やルールなどを入力..."
+                          class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"
+                          oninput="document.getElementById('board-create-desc-counter').textContent = this.value.length + ' / 1000'"></textarea>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-zinc-100 flex-shrink-0">
+            <button onclick="closeBoardCreateModal()" class="px-4 py-2 rounded-xl text-sm text-zinc-500 hover:bg-zinc-100 transition-colors">キャンセル</button>
+            <button onclick="submitBoardCreate()" id="board-create-submit"
+                    class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
+                作成する
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Q&A作成モーダル -->
+<div id="qa-create-modal" onclick="closeQACreateModalOutside(event)"
+     class="fixed inset-0 z-[100] bg-black/50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
+        <div class="flex items-center justify-between px-5 py-4 border-b border-zinc-100 flex-shrink-0">
+            <h3 class="font-bold text-zinc-900 flex items-center gap-2">
+                <span class="iconify text-pink-500" data-icon="solar:question-circle-bold" data-width="18"></span>
+                質問を投稿する
+            </h3>
+            <button onclick="closeQACreateModal()" class="p-1 text-zinc-400 hover:text-zinc-600 transition-colors rounded-lg hover:bg-zinc-100">
+                <span class="iconify" data-icon="lucide:x" data-width="18"></span>
+            </button>
+        </div>
+        <div class="overflow-y-auto flex-1 px-5 py-4 flex flex-col gap-4">
+            <div id="qa-create-error" class="hidden text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2"></div>
+            <div>
+                <label class="block text-xs font-semibold text-zinc-600 mb-1">カテゴリ</label>
+                <select id="qa-create-category" class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+                    <option value="">カテゴリなし</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-zinc-600 mb-1">タイトル <span class="text-red-400">*</span></label>
+                <input type="text" id="qa-create-title" maxlength="200" placeholder="質問のタイトルを入力..."
+                       class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-zinc-600 mb-1">本文 <span class="text-red-400">*</span></label>
+                <textarea id="qa-create-content" rows="5" placeholder="質問の詳細を入力..."
+                          class="w-full border border-zinc-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 resize-none"></textarea>
+            </div>
+            <p class="text-[11px] text-zinc-400">※ 投稿から3日間、回答を受け付けます。</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 px-5 py-4 border-t border-zinc-100 flex-shrink-0">
+            <button onclick="closeQACreateModal()" class="px-4 py-2 rounded-xl text-sm text-zinc-500 hover:bg-zinc-100 transition-colors">キャンセル</button>
+            <button onclick="submitQAQuestion()" id="qa-create-submit"
+                    class="px-5 py-2 bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-60">
+                投稿する
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="community-toast-container"></div>
+
+<!-- JS用定数 -->
+<script>
+const BOARD_CURRENT_USER = {
+    name: "{{ user.user_name|escapejs }}",
+    avatar: "{% if user.user_image %}{{ user.user_image.url }}{% endif %}",
+    profile_url: "{% if user.is_authenticated %}{% url 'profile' username=user.user_name %}{% endif %}"
+};
+const BOARD_DETAIL_URL_BASE = "{% url 'board_detail' pk=0 %}";
+const BOARD_CREATE_URL = "{% url 'board_create' %}";
+const QA_LIST_URL = "{% url 'qa_list' %}";
+const QA_CREATE_URL = "{% url 'qa_create' %}";
+const QA_DETAIL_URL_BASE = "{% url 'qa_detail' pk=0 %}";
+const QA_CATEGORIES = {{ qa_categories_json|safe }};
+const IS_AUTHENTICATED = {{ user.is_authenticated|yesno:"true,false" }};
+</script>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/community.js' %}"></script>
+{% endblock %}
