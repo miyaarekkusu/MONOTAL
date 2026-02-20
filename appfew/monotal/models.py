@@ -1785,7 +1785,35 @@ class Community(models.Model):
         verbose_name_plural = 'コミュニティ（掲示板）'
     
     def __str__(self):
-        return self.name
+        return self.name or ''
+
+
+class CommunityMember(models.Model):
+    """
+    掲示板メンバーテーブル
+    """
+    community = models.ForeignKey(
+        Community,
+        on_delete=models.CASCADE,
+        related_name='members',
+        verbose_name='掲示板',
+    )
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='joined_communities',
+        verbose_name='ユーザー',
+    )
+    joined_at = models.DateTimeField(auto_now_add=True, verbose_name='参加日時')
+
+    class Meta:
+        db_table = 'T_CommunityMember'
+        unique_together = ('community', 'user')
+        verbose_name = '掲示板メンバー'
+        verbose_name_plural = '掲示板メンバー'
+
+    def __str__(self):
+        return f'{self.community} - {self.user}'
 
 
 class ChatRoom(models.Model):
@@ -2099,6 +2127,94 @@ class NotificationTargetUser(models.Model):
         verbose_name = '通知ターゲットユーザー'
         verbose_name_plural = '通知ターゲットユーザー'
         unique_together = [['notification', 'user']]
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║                          9. Q&A                                              ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+class QAStatus(models.Model):
+    """Q&Aステータスマスター（受付中 / 解決済み / 期限切れ終了）"""
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=50, verbose_name='ステータス名')
+
+    class Meta:
+        db_table = 'M_QAStatus'
+        verbose_name = 'Q&Aステータス'
+        verbose_name_plural = 'Q&Aステータス'
+
+    def __str__(self):
+        return self.name
+
+
+class QACategory(models.Model):
+    """Q&A専用カテゴリマスター"""
+    id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True, verbose_name='カテゴリ名')
+
+    class Meta:
+        db_table = 'M_QACategory'
+        verbose_name = 'Q&Aカテゴリ'
+        verbose_name_plural = 'Q&Aカテゴリ'
+
+    def __str__(self):
+        return self.name
+
+
+class QAQuestion(models.Model):
+    """Q&A質問テーブル"""
+    question_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='qa_questions', verbose_name='質問者'
+    )
+    category = models.ForeignKey(
+        QACategory, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='questions', verbose_name='カテゴリ'
+    )
+    title = models.CharField(max_length=200, verbose_name='タイトル')
+    content = models.TextField(verbose_name='本文')
+    status = models.ForeignKey(
+        QAStatus, on_delete=models.PROTECT, default=1, verbose_name='ステータス'
+    )
+    expires_at = models.DateTimeField(verbose_name='回答受付期限')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+
+    class Meta:
+        db_table = 'T_QAQuestion'
+        ordering = ['-created_at']
+        verbose_name = 'Q&A質問'
+        verbose_name_plural = 'Q&A質問'
+
+    def __str__(self):
+        return self.title
+
+
+class QAAnswer(models.Model):
+    """Q&A回答テーブル（parent_answer が NULL なら通常回答、値があれば返信）"""
+    answer_id = models.AutoField(primary_key=True)
+    question = models.ForeignKey(
+        QAQuestion, on_delete=models.CASCADE, related_name='answers', verbose_name='質問'
+    )
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name='qa_answers', verbose_name='回答者'
+    )
+    parent_answer = models.ForeignKey(
+        'self', on_delete=models.CASCADE, null=True, blank=True,
+        related_name='replies', verbose_name='親回答'
+    )
+    content = models.TextField(verbose_name='回答内容')
+    is_best_answer = models.BooleanField(default=False, verbose_name='ベストアンサー')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='投稿日時')
+
+    class Meta:
+        db_table = 'T_QAAnswer'
+        ordering = ['created_at']
+        verbose_name = 'Q&A回答'
+        verbose_name_plural = 'Q&A回答'
+
+    def __str__(self):
+        return f'Answer({self.answer_id}) for Q({self.question_id})'
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
