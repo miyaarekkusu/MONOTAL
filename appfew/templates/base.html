@@ -416,8 +416,40 @@
     });
     </script>
 
+    <!-- Custom Modal Dialog -->
+    <div id="customAlertModal" class="fixed inset-0 z-[100] hidden">
+        <div id="customModalBackdrop" class="fixed inset-0 bg-black/50 backdrop-blur-sm"></div>
+        <div class="fixed inset-0 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4">
+                <div class="relative w-full max-w-md bg-white rounded-2xl shadow-xl">
+                    <div class="p-6 space-y-4">
+                        <h3 id="customModalTitle" class="text-lg font-bold text-zinc-900 hidden"></h3>
+                        <p id="customModalMessage" class="text-sm text-zinc-600 whitespace-pre-line"></p>
+                        <div id="customModalAlertBtn" class="pt-2">
+                            <button type="button" id="customModalOkBtn"
+                                class="w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors bg-pink-600 text-white hover:bg-pink-700">
+                                OK
+                            </button>
+                        </div>
+                        <div id="customModalConfirmBtns" class="flex gap-3 pt-2 hidden">
+                            <button type="button" id="customModalCancelBtn"
+                                class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors bg-zinc-100 text-zinc-700 hover:bg-zinc-200">
+                                キャンセル
+                            </button>
+                            <button type="button" id="customModalConfirmBtn"
+                                class="flex-1 px-4 py-2.5 rounded-xl text-sm font-semibold transition-colors bg-pink-600 text-white hover:bg-pink-700">
+                                確認
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Autocomplete Script -->
     {% load static %}
+    <script src="{% static 'js/modal.js' %}"></script>
     <script src="{% static 'js/search-autocomplete.js' %}"></script>
 
 </body>

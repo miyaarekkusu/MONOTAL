@@ -140,11 +140,11 @@ function initFollowButton() {
                     followerCountEl.textContent = data.follower_count;
                 }
             } else {
-                alert(data.error || 'エラーが発生しました');
+                showAlert(data.error || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Follow error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         } finally {
             this.disabled = false;
         }
@@ -195,11 +195,11 @@ function initListingNotificationButton() {
                     icon.setAttribute('data-icon', 'lucide:bell');
                 }
             } else {
-                alert(data.error || 'エラーが発生しました');
+                showAlert(data.error || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Listing notification error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         } finally {
             this.disabled = false;
         }
@@ -253,7 +253,7 @@ function initBlockButton() {
         const confirmMsg = isBlocked
             ? 'このユーザーのブロックを解除しますか？'
             : 'このユーザーをブロックしますか？\nブロックすると、お互いのフォローが解除されます。';
-        if (!confirm(confirmMsg)) return;
+        if (!await showConfirm(confirmMsg)) return;
 
         // Disable button during request
         this.disabled = true;
@@ -319,11 +319,11 @@ function initBlockButton() {
                 // Close dropdown
                 if (dropdown) dropdown.classList.add('hidden');
             } else {
-                alert(data.error || 'エラーが発生しました');
+                showAlert(data.error || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Block error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         } finally {
             this.disabled = false;
         }
@@ -370,7 +370,7 @@ function initShareButton() {
         } else {
             // Fallback: copy to clipboard
             navigator.clipboard.writeText(window.location.href).then(() => {
-                alert('URLをコピーしました');
+                showAlert('URLをコピーしました');
             });
         }
     });
@@ -497,7 +497,7 @@ function initReportButton() {
             const detail = reportDetail ? reportDetail.value : '';
 
             if (!reasonId) {
-                alert('通報理由を選択してください');
+                showAlert('通報理由を選択してください');
                 return;
             }
 
@@ -525,14 +525,14 @@ function initReportButton() {
 
                 if (data.success) {
                     closeReportModal();
-                    alert('通報を受け付けました。ご報告ありがとうございます。');
+                    await showAlert('通報を受け付けました。ご報告ありがとうございます。');
                 } else {
-                    alert(data.error || 'エラーが発生しました');
+                    showAlert(data.error || 'エラーが発生しました');
                     if (reportSubmitBtn) reportSubmitBtn.disabled = !reasonId;
                 }
             } catch (error) {
                 console.error('Report error:', error);
-                alert('エラーが発生しました');
+                showAlert('エラーが発生しました');
                 if (reportSubmitBtn) reportSubmitBtn.disabled = !reasonId;
             }
         });

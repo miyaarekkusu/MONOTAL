@@ -1,5 +1,6 @@
 ﻿from django.urls import path
 from . import views
+from . import views_cancellation
 
 urlpatterns = [
     path('', views.index, name='index'),
@@ -124,6 +125,13 @@ urlpatterns = [
     path('mypage/insurance/cancel/confirm/', views.insurance_cancel_confirm, name='insurance_cancel_confirm'),
     path('mypage/insurance/claim/', views.insurance_claim_page, name='insurance_claim'),
     path('mypage/insurance/claim/submit/', views.insurance_claim_submit, name='insurance_claim_submit'),
+
+    # 取引中止申請
+    path('transaction/<int:rental_history_id>/cancellation-request/', views_cancellation.cancellation_request_submit, name='cancellation_request'),
+
+    # 管理者：中止申請管理
+    path('admin/cancellations/', views_cancellation.admin_cancellation_list, name='admin_cancellation_list'),
+    path('admin/cancellations/<int:cancellation_request_id>/', views_cancellation.admin_cancellation_detail, name='admin_cancellation_detail'),
 
     # 管理者：補償申請管理
     path('admin/insurance/claims/', views.admin_insurance_claims, name='admin_insurance_claims'),

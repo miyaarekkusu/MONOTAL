@@ -1,0 +1,149 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}ヘルプセンター - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+    .legal-prose h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #18181b;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        scroll-margin-top: 80px;
+    }
+    .legal-prose h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #27272a;
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    .legal-prose p {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose li {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.25rem;
+    }
+    .legal-prose ol {
+        list-style: decimal;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[900px] px-4 py-8">
+    <!-- パンくずリスト -->
+    <nav class="flex items-center gap-1.5 text-xs text-zinc-400 mb-6">
+        <a href="{% url 'index' %}" class="hover:text-pink-600 transition-colors">ホーム</a>
+        <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
+        <span class="text-zinc-700 font-medium">ヘルプセンター</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-zinc-900 mb-2">ヘルプセンター</h1>
+    <p class="text-xs text-zinc-400 mb-8">よくある質問をカテゴリ別にまとめています。</p>
+
+    <!-- 目次 -->
+    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-5 mb-10">
+        <h2 class="text-sm font-semibold text-zinc-700 mb-3" style="border:none; margin:0 0 0.75rem 0; padding:0; font-size:0.875rem;">カテゴリ一覧</h2>
+        <ol class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal pl-5">
+            <li><a href="#section-1" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">アカウント</a></li>
+            <li><a href="#section-2" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">レンタル（借りる側）</a></li>
+            <li><a href="#section-3" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">レンタル（貸す側）</a></li>
+            <li><a href="#section-4" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">お支払い</a></li>
+            <li><a href="#section-5" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">補償・トラブル</a></li>
+            <li><a href="#section-6" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">コミュニティ</a></li>
+        </ol>
+    </div>
+
+    <!-- 本文 -->
+    <div class="legal-prose">
+        <h2 id="section-1">1. アカウント</h2>
+
+        <h3>Q. 会員登録に必要なものは何ですか？</h3>
+        <p>メールアドレス、ユーザー名、電話番号が必要です。Googleアカウントを使った登録にも対応しています。</p>
+
+        <h3>Q. パスワードを忘れてしまいました。</h3>
+        <p>ログインページの「パスワードをお忘れの方」からパスワードの再設定が可能です。登録済みのメールアドレスにリセットリンクが送信されます。</p>
+
+        <h3>Q. 本人確認はなぜ必要ですか？</h3>
+        <p>安全な取引環境を提供するため、出品やレンタルを行う際には本人確認が必要です。本人確認済みのユーザーには認証バッジが表示され、取引相手に安心感を提供します。</p>
+
+        <h3>Q. プロフィール情報を変更したいです。</h3>
+        <p>プロフィールページの「設定」から、自己紹介文やアイコン画像を変更できます。ユーザー名の変更も可能です。</p>
+
+        <h2 id="section-2">2. レンタル（借りる側）</h2>
+
+        <h3>Q. レンタルの手順を教えてください。</h3>
+        <p>商品詳細ページから「レンタルリクエスト」を送信し、出品者の承認後に決済を行います。決済完了後、出品者が商品を発送します。詳しくは<a href="{% url 'beginner_guide' %}" class="text-pink-600 hover:underline">はじめてガイド</a>をご覧ください。</p>
+
+        <h3>Q. レンタルリクエストをキャンセルしたいです。</h3>
+        <p>出品者が承認する前であれば、マイページの「レンタル管理」からキャンセルが可能です。承認後のキャンセルについてはキャンセルポリシーが適用されます。</p>
+
+        <h3>Q. 商品が届きません。</h3>
+        <p>まずは取引メッセージで出品者に確認してください。追跡番号をもとに配送状況を確認することもできます。解決しない場合は、<a href="{% url 'contact' %}" class="text-pink-600 hover:underline">お問い合わせ</a>からご連絡ください。</p>
+
+        <h3>Q. レンタル期間を延長できますか？</h3>
+        <p>現在、レンタル期間の延長機能は提供しておりません。追加でレンタルしたい場合は、返却後に改めてリクエストを送信してください。</p>
+
+        <h2 id="section-3">3. レンタル（貸す側）</h2>
+
+        <h3>Q. 出品するにはどうすればいいですか？</h3>
+        <p>本人確認と銀行口座の登録が完了していれば、「出品する」ページから商品を出品できます。商品の写真、説明、レンタル料金、発送元住所を入力してください。</p>
+
+        <h3>Q. レンタルリクエストを拒否できますか？</h3>
+        <p>はい、リクエスト内容を確認した上で拒否することができます。拒否する場合、借り手に通知が送信されます。</p>
+
+        <h3>Q. 出品した商品を削除・停止したいです。</h3>
+        <p>商品詳細ページの編集メニューから、商品の公開停止や削除が可能です。ただし、進行中の取引がある場合は取引完了後に操作してください。</p>
+
+        <h3>Q. 売上金はいつ振り込まれますか？</h3>
+        <p>取引完了後、登録済みの銀行口座に振り込まれます。振込のタイミングや手数料については利用規約をご確認ください。</p>
+
+        <h2 id="section-4">4. お支払い</h2>
+
+        <h3>Q. 使える決済方法は何ですか？</h3>
+        <p>クレジットカード決済に対応しています。VISA、Mastercard、JCB、American Expressがご利用いただけます。</p>
+
+        <h3>Q. サービス手数料はいくらですか？</h3>
+        <p>取引完了時、レンタル料金の20%がサービス手数料として差し引かれます（出品者様には80%が振り込まれます）。この手数料には基本補償制度（盗難・持ち逃げ補償）の費用が含まれています。</p>
+
+        <h2 id="section-5">5. 補償・トラブル</h2>
+
+        <h3>Q. レンタル中に商品が壊れてしまいました。</h3>
+        <p>まずは取引メッセージで出品者に状況を報告してください。その後、マイページの「補償保険」から補償申請を行えます。詳しくは<a href="{% url 'insurance_info' %}" class="text-pink-600 hover:underline">補償保険制度</a>のページをご覧ください。</p>
+
+        <h3>Q. 基本補償とあんしん補償プラスの違いは何ですか？</h3>
+        <p>基本補償は盗難・持ち逃げが対象で、レンタル料金の全額＋商品の時価相当額が補償されます（全ユーザーに自動適用）。あんしん補償プラスは偶発的な破損・故障・盗難にも対応（上限50,000円）で、月額2,000円の任意加入です。</p>
+
+        <h3>Q. 取引相手とトラブルになりました。</h3>
+        <p>まずは取引メッセージで相手と話し合いを試みてください。解決しない場合は、<a href="{% url 'contact' %}" class="text-pink-600 hover:underline">お問い合わせ</a>から運営にご連絡ください。必要に応じて運営が仲介いたします。</p>
+
+        <h2 id="section-6">6. コミュニティ</h2>
+
+        <h3>Q. 掲示板やQ&Aの使い方を教えてください。</h3>
+        <p>コミュニティページから掲示板やQ&Aにアクセスできます。掲示板ではカメラやガジェットに関する話題を自由に投稿でき、Q&Aでは質問を投稿して他のユーザーから回答を得ることができます。</p>
+
+        <h3>Q. 不適切な投稿を見つけました。</h3>
+        <p>該当の投稿に表示される「通報」ボタンから、運営に報告してください。通報内容を確認の上、適切に対応いたします。</p>
+
+        <h3>Q. 投稿を削除したいです。</h3>
+        <p>自分が投稿した掲示板やQ&Aの投稿は、投稿の編集メニューから削除できます。</p>
+    </div>
+</div>
+{% endblock %}

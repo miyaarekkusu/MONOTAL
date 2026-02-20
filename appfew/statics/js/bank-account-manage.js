@@ -173,12 +173,12 @@
                             showError(fieldMap[field] || field, data.errors[field]);
                         });
                     } else if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                     }
                 }
             } catch (error) {
                 console.error('Submit error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             } finally {
                 submitBtn.disabled = false;
                 submitBtnIcon.classList.remove('animate-spin');
@@ -199,9 +199,9 @@
     document.querySelectorAll('.delete-account-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
             const accountId = this.dataset.accountId;
-            const accountCard = this.closest('[data-account-id]');
+            const accountCard = this.closest('div[data-account-id]');
 
-            if (!confirm('この口座を削除しますか？')) {
+            if (!await showConfirm('この口座を削除しますか？', {danger: true})) {
                 return;
             }
 
@@ -218,22 +218,23 @@
 
                 if (response.ok && data.success) {
                     // Remove card with animation
+                    accountCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                     accountCard.style.opacity = '0';
                     accountCard.style.transform = 'translateX(-20px)';
                     setTimeout(() => {
                         accountCard.remove();
                         // Check if no accounts left
-                        const remainingCards = document.querySelectorAll('[data-account-id]').length;
+                        const remainingCards = document.querySelectorAll('div[data-account-id]').length;
                         if (remainingCards === 0) {
                             window.location.reload();
                         }
                     }, 300);
                 } else {
-                    alert(data.message || '削除に失敗しました');
+                    showAlert(data.message || '削除に失敗しました');
                 }
             } catch (error) {
                 console.error('Delete error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             }
         });
     });

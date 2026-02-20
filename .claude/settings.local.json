@@ -47,7 +47,9 @@
       "Bash(dir:*)",
       "Bash(sh -c 'pwd')",
       "Bash(git -C \"C:\\\\Users\\\\kohta\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\" ls-files)",
-      "Bash(git -C \"C:/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin\" ls-files)"
+      "Bash(git -C \"C:/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin\" ls-files)",
+      "Bash(git push:*)",
+      "Bash(cd:*)"
     ]
   }
 }

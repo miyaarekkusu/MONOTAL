@@ -210,12 +210,12 @@
                             showError(field === 'postal_code' ? 'postalCode' : field === 'street_address' ? 'streetAddress' : field, data.errors[field]);
                         });
                     } else if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                     }
                 }
             } catch (error) {
                 console.error('Submit error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             } finally {
                 submitBtn.disabled = false;
                 submitBtnIcon.classList.remove('animate-spin');
@@ -238,7 +238,7 @@
             const addressId = this.dataset.addressId;
             const addressCard = this.closest('[data-address-id]');
 
-            if (!confirm('この住所を削除しますか？')) {
+            if (!await showConfirm('この住所を削除しますか？', {danger: true})) {
                 return;
             }
 
@@ -266,11 +266,11 @@
                         }
                     }, 300);
                 } else {
-                    alert(data.message || '削除に失敗しました');
+                    showAlert(data.message || '削除に失敗しました');
                 }
             } catch (error) {
                 console.error('Delete error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             }
         });
     });

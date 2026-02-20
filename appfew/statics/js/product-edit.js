@@ -26,21 +26,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (publishBtn) {
         publishBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を公開しますか？')) return;
+            if (!await showConfirm('この商品を公開しますか？')) return;
             await updateProductStatus(1); // 貸出可能（公開）
         });
     }
 
     if (unpublishBtn) {
         unpublishBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を非公開にしますか？')) return;
+            if (!await showConfirm('この商品を非公開にしますか？')) return;
             await updateProductStatus(4); // 非公開
         });
     }
 
     if (deleteProductBtn) {
         deleteProductBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を削除しますか？\n削除すると復元できません。')) return;
+            if (!await showConfirm('この商品を削除しますか？\n削除すると復元できません。', {danger: true})) return;
             await deleteProduct();
         });
     }
@@ -62,11 +62,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok && data.success) {
                 window.location.reload();
             } else {
-                alert(data.message || 'エラーが発生しました');
+                showAlert(data.message || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Status update error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         }
     }
 
@@ -85,11 +85,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok && data.success) {
                 window.location.href = data.redirect_url || '/monotal/mypage/listing/';
             } else {
-                alert(data.message || '削除に失敗しました');
+                showAlert(data.message || '削除に失敗しました');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         }
     }
 

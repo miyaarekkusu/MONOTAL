@@ -210,12 +210,12 @@
                             showError(field === 'postal_code' ? 'postalCode' : field === 'street_address' ? 'streetAddress' : field, data.errors[field]);
                         });
                     } else if (data.message) {
-                        alert(data.message);
+                        showAlert(data.message);
                     }
                 }
             } catch (error) {
                 console.error('Submit error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             } finally {
                 submitBtn.disabled = false;
                 submitBtnIcon.classList.remove('animate-spin');
@@ -236,9 +236,9 @@
     document.querySelectorAll('.delete-address-btn').forEach(btn => {
         btn.addEventListener('click', async function() {
             const addressId = this.dataset.addressId;
-            const addressCard = this.closest('[data-address-id]');
+            const addressCard = this.closest('div[data-address-id]');
 
-            if (!confirm('この住所を削除しますか？')) {
+            if (!await showConfirm('この住所を削除しますか？', {danger: true})) {
                 return;
             }
 
@@ -255,22 +255,23 @@
 
                 if (response.ok && data.success) {
                     // Remove card with animation
+                    addressCard.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
                     addressCard.style.opacity = '0';
                     addressCard.style.transform = 'translateX(-20px)';
                     setTimeout(() => {
                         addressCard.remove();
                         // Check if no addresses left
-                        const remainingCards = document.querySelectorAll('[data-address-id]').length;
+                        const remainingCards = document.querySelectorAll('div[data-address-id]').length;
                         if (remainingCards === 0) {
                             window.location.reload();
                         }
                     }, 300);
                 } else {
-                    alert(data.message || '削除に失敗しました');
+                    showAlert(data.message || '削除に失敗しました');
                 }
             } catch (error) {
                 console.error('Delete error:', error);
-                alert('エラーが発生しました。もう一度お試しください。');
+                showAlert('エラーが発生しました。もう一度お試しください。');
             }
         });
     });

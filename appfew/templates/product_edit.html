@@ -195,16 +195,6 @@
             </div>
         </section>
 
-        <!-- Hidden fields for unchanged data -->
-        <input type="hidden" id="shippingDays" value="{{ product.shipping_days.shipping_days_id|default:'' }}">
-        <input type="hidden" id="shippingBurden" value="{{ product.shipping_burden.shipping_burden_id|default:'' }}">
-        {% for address in user_addresses %}
-            {% if address.is_default %}
-            <input type="hidden" name="address_id" value="{{ address.user_address_id }}">
-            {% endif %}
-        {% endfor %}
-        <input type="hidden" id="rentalPlansData" value='[{% for plan in rental_plans %}{"days": {{ plan.rental_days }}, "price": {{ plan.rental_fee|floatformat:0 }}}{% if not forloop.last %}, {% endif %}{% endfor %}]'>
-
             <!-- Submit Action -->
             <div class="submit-section">
                 <button type="submit" id="submitBtn" class="submit-btn">
@@ -287,21 +277,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (publishBtn) {
         publishBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を公開しますか？')) return;
+            if (!await showConfirm('この商品を公開しますか？')) return;
             await updateProductStatus(1);
         });
     }
 
     if (unpublishBtn) {
         unpublishBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を非公開にしますか？')) return;
+            if (!await showConfirm('この商品を非公開にしますか？')) return;
             await updateProductStatus(4);
         });
     }
 
     if (deleteProductBtn) {
         deleteProductBtn.addEventListener('click', async function() {
-            if (!confirm('この商品を削除しますか？\n削除すると復元できません。')) return;
+            if (!await showConfirm('この商品を削除しますか？\n削除すると復元できません。', {danger: true})) return;
             await deleteProduct();
         });
     }
@@ -323,11 +313,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok && data.success) {
                 window.location.reload();
             } else {
-                alert(data.message || 'エラーが発生しました');
+                showAlert(data.message || 'エラーが発生しました');
             }
         } catch (error) {
             console.error('Status update error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         }
     }
 
@@ -346,11 +336,11 @@ document.addEventListener('DOMContentLoaded', function () {
             if (response.ok && data.success) {
                 window.location.href = data.redirect_url || '/monotal/mypage/listing/';
             } else {
-                alert(data.message || '削除に失敗しました');
+                showAlert(data.message || '削除に失敗しました');
             }
         } catch (error) {
             console.error('Delete error:', error);
-            alert('エラーが発生しました');
+            showAlert('エラーが発生しました');
         }
     }
 
@@ -521,15 +511,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // 既存の値を取得
-        const rentalPlansData = document.getElementById('rentalPlansData');
-        let rentalPlans = [];
-        try {
-            rentalPlans = JSON.parse(rentalPlansData.value);
-        } catch (e) {
-            rentalPlans = [];
-        }
-
         setLoadingState(true);
 
         try {
@@ -538,18 +519,7 @@ document.addEventListener('DOMContentLoaded', function () {
             submitData.append('product_category', formData.product_category);
             submitData.append('product_description', formData.product_description);
             submitData.append('product_condition', formData.product_condition);
-            submitData.append('product_status', document.getElementById('productStatus').value);
-            submitData.append('shipping_days', document.getElementById('shippingDays').value);
-            submitData.append('shipping_burden', document.getElementById('shippingBurden').value);
-
-            const addressInput = document.querySelector('input[name="address_id"]');
-            submitData.append('address_id', addressInput ? addressInput.value : '');
-
-            submitData.append('rental_plans', JSON.stringify(rentalPlans));
-
-            deleteImageIds.forEach(id => {
-                submitData.append('delete_images', id);
-            });
+            submitData.append('delete_image_ids', JSON.stringify(deleteImageIds));
 
             newImages.forEach(img => {
                 submitData.append('images', img.file);

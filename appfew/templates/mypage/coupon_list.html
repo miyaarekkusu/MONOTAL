@@ -1,0 +1,180 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 所持クーポン | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- 本人確認バナー -->
+    {% if request.user.user_status_id != 2 %}
+    <div class="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+        <div class="flex items-center gap-3">
+            <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品・レンタル機能を利用するには本人確認が必要です。</p>
+            </div>
+            <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
+                本人確認する
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">所持クーポン</h1>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ coupon_count }}件</span>
+            </div>
+
+            <!-- Filter & Sort Bar -->
+            <div class="mb-4 flex flex-wrap items-center gap-3 bg-white border border-zinc-200 rounded-lg px-4 py-3">
+                <div class="flex items-center gap-2">
+                    <span class="iconify text-zinc-400 flex-shrink-0" data-icon="lucide:filter" data-width="14"></span>
+                    <select id="category-filter" class="text-sm border border-zinc-200 rounded-md px-2 py-1.5 bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 cursor-pointer">
+                        <option value="">すべてのカテゴリー</option>
+                        {% for cat in filter_categories %}
+                        <option value="{{ cat.product_category_id }}" {% if selected_category == cat.product_category_id|stringformat:"d" %}selected{% endif %}>{{ cat.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <span class="iconify text-zinc-400 flex-shrink-0" data-icon="lucide:arrow-up-down" data-width="14"></span>
+                    <select id="sort-select" class="text-sm border border-zinc-200 rounded-md px-2 py-1.5 bg-white text-zinc-700 focus:outline-none focus:ring-2 focus:ring-pink-300 focus:border-pink-300 cursor-pointer">
+                        <option value="newest" {% if selected_sort == 'newest' %}selected{% endif %}>取得日が新しい順</option>
+                        <option value="expiry_asc" {% if selected_sort == 'expiry_asc' %}selected{% endif %}>有効期限が近い順</option>
+                        <option value="expiry_desc" {% if selected_sort == 'expiry_desc' %}selected{% endif %}>有効期限が遠い順</option>
+                        <option value="discount_desc" {% if selected_sort == 'discount_desc' %}selected{% endif %}>値引き額が大きい順</option>
+                        <option value="discount_asc" {% if selected_sort == 'discount_asc' %}selected{% endif %}>値引き額が小さい順</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Coupon List -->
+            <div class="space-y-3">
+                {% for uc in coupons %}
+                <div class="bg-white rounded-lg border border-zinc-200 p-4 hover:border-zinc-300 hover:shadow-sm transition-all">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="iconify text-pink-500 flex-shrink-0" data-icon="lucide:ticket" data-width="18"></span>
+                                <h3 class="text-sm font-bold text-zinc-900 truncate">{{ uc.coupon.coupon_name }}</h3>
+                            </div>
+                            <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-xs text-zinc-500">
+                                <span class="flex items-center gap-1">
+                                    <span class="iconify" data-icon="lucide:calendar" data-width="12"></span>
+                                    有効期限: {{ uc.coupon.expires_at|date:"Y/m/d" }}
+                                </span>
+                                {% with cats=uc.coupon.target_categories.all %}
+                                {% if cats %}
+                                <span class="flex items-center gap-1">
+                                    <span class="iconify" data-icon="lucide:tag" data-width="12"></span>
+                                    対象: {% for cat in cats %}{{ cat.product_category.category_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                </span>
+                                {% else %}
+                                <span class="flex items-center gap-1 text-sm font-bold text-pink-600">
+                                    <span class="iconify" data-icon="lucide:tag" data-width="14"></span>
+                                    全カテゴリー対象
+                                </span>
+                                {% endif %}
+                                {% endwith %}
+                            </div>
+                        </div>
+                        <div class="flex-shrink-0 text-right">
+                            <span class="inline-block bg-pink-50 text-pink-700 text-sm font-bold px-3 py-1.5 rounded-full">
+                                ¥{{ uc.coupon.discount_amount|floatformat:0 }} OFF
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-16 text-zinc-400">
+                    <span class="iconify mx-auto mb-4" data-icon="lucide:ticket" data-width="48" data-height="48"></span>
+                    {% if selected_category %}
+                    <p class="text-sm">該当するクーポンはありません</p>
+                    <a href="{% url 'mypage_coupon_list' %}" class="mt-3 inline-flex items-center gap-1 text-pink-600 hover:text-pink-700 text-sm font-medium">
+                        <span class="iconify" data-icon="lucide:x" data-width="14"></span>
+                        絞り込みを解除
+                    </a>
+                    {% else %}
+                    <p class="text-sm">所持しているクーポンはありません</p>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <div class="mt-8 flex justify-center">
+                <nav class="flex items-center gap-1">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}&category={{ selected_category }}&sort={{ selected_sort }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-left" data-width="16"></span>
+                    </span>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if num == page_obj.number %}
+                        <span class="h-8 w-8 rounded-md bg-zinc-900 text-white text-xs font-bold flex items-center justify-center">{{ num }}</span>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}&category={{ selected_category }}&sort={{ selected_sort }}" class="h-8 w-8 rounded-md text-zinc-600 text-xs font-medium hover:bg-zinc-100 flex items-center justify-center transition-colors">{{ num }}</a>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}&category={{ selected_category }}&sort={{ selected_sort }}" class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </a>
+                    {% else %}
+                    <span class="h-8 w-8 rounded-md flex items-center justify-center text-zinc-300">
+                        <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    </span>
+                    {% endif %}
+                </nav>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mypage.js' %}"></script>
+<script>
+function applyFilters() {
+    const category = document.getElementById('category-filter').value;
+    const sort = document.getElementById('sort-select').value;
+    const params = new URLSearchParams();
+    if (category) params.set('category', category);
+    if (sort && sort !== 'newest') params.set('sort', sort);
+    const qs = params.toString();
+    window.location.href = '{% url "mypage_coupon_list" %}' + (qs ? '?' + qs : '');
+}
+document.getElementById('category-filter').addEventListener('change', applyFilters);
+document.getElementById('sort-select').addEventListener('change', applyFilters);
+</script>
+{% endblock %}

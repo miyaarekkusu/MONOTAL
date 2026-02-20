@@ -298,6 +298,7 @@ class UserAddress(models.Model):
     city = models.CharField(max_length=100, null=True, blank=True)  # 市区町村・町域
     street_address = models.CharField(max_length=200, null=True, blank=True)  # 番地・建物名・部屋番号
     is_default = models.BooleanField(default=False)  # デフォルト住所フラグ
+    is_deleted = models.BooleanField(default=False)  # 論理削除フラグ
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
 
@@ -1202,6 +1203,95 @@ class ReturnReasonHistory(models.Model):
         db_table = 'T_ReturnReason'
         verbose_name = '返却理由履歴'
         verbose_name_plural = '返却理由履歴'
+
+
+# ────────────────────────────────────────────────────────────────────────────────
+# 取引中止 / Cancellation
+# ────────────────────────────────────────────────────────────────────────────────
+
+class CancellationReason(models.Model):
+    """
+    中止理由マスター
+    例: 商品説明と実物が異なる、商品が届かない、商品が破損していた、相手と連絡が取れない、その他
+    """
+    cancellation_reason_id = models.AutoField(primary_key=True)
+    reason_name = models.CharField(max_length=100, unique=True)
+
+    class Meta:
+        db_table = 'M_CancellationReason'
+        verbose_name = '中止理由'
+        verbose_name_plural = '中止理由'
+
+    def __str__(self):
+        return self.reason_name
+
+
+class CancellationStatus(models.Model):
+    """
+    中止ステータスマスター
+    1: 申請中
+    2: 承認
+    3: 却下
+    """
+    cancellation_status_id = models.AutoField(primary_key=True)
+    status_name = models.CharField(max_length=50, unique=True)
+
+    class Meta:
+        db_table = 'M_CancellationStatus'
+        verbose_name = '中止ステータス'
+        verbose_name_plural = '中止ステータス'
+
+    def __str__(self):
+        return self.status_name
+
+
+class CancellationRequest(models.Model):
+    """
+    取引中止申請テーブル
+    取引中のトラブル時に運営へ中止を申請するレコード
+    """
+    cancellation_request_id = models.AutoField(primary_key=True)
+
+    rental_history = models.ForeignKey(
+        RentalHistory,
+        on_delete=models.PROTECT,
+        related_name='cancellation_requests',
+        db_column='rental_history_id'
+    )
+    requester_user = models.ForeignKey(
+        User,
+        on_delete=models.PROTECT,
+        related_name='cancellation_requests',
+        db_column='requester_user_id'
+    )
+    cancellation_reason = models.ForeignKey(
+        CancellationReason,
+        on_delete=models.PROTECT,
+        db_column='cancellation_reason_id'
+    )
+    cancellation_status = models.ForeignKey(
+        CancellationStatus,
+        on_delete=models.PROTECT,
+        db_column='cancellation_status_id'
+    )
+
+    detail = models.CharField(max_length=1000, null=True, blank=True)
+    admin_note = models.CharField(max_length=1000, null=True, blank=True)
+    previous_rental_status_id = models.IntegerField()
+
+    request_datetime = models.DateTimeField(auto_now_add=True)
+    approval_datetime = models.DateTimeField(null=True, blank=True)
+    rejection_datetime = models.DateTimeField(null=True, blank=True)
+    register_datetime = models.DateTimeField(auto_now_add=True)
+    update_datetime = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'T_CancellationRequest'
+        verbose_name = '取引中止申請'
+        verbose_name_plural = '取引中止申請'
+
+    def __str__(self):
+        return f"中止申請 #{self.cancellation_request_id} - {self.rental_history}"
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - レンタル管理 | MONOTAL{% endblock %}
@@ -1246,7 +1246,7 @@ function getCSRFToken() {
 
 // Approve request
 async function approveRequest(requestId) {
-    if (!confirm('この申請を承認しますか？')) return;
+    if (!await showConfirm('この申請を承認しますか？')) return;
 
     try {
         const response = await fetch(`/monotal/rental-request/${requestId}/approve/`, {
@@ -1260,16 +1260,16 @@ async function approveRequest(requestId) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message);
+            showAlert(data.message);
         }
     } catch (e) {
-        alert('エラーが発生しました');
+        showAlert('エラーが発生しました');
     }
 }
 
 // Reject request
 async function rejectRequest(requestId) {
-    if (!confirm('この申請を拒否しますか？')) return;
+    if (!await showConfirm('この申請を拒否しますか？')) return;
 
     try {
         const response = await fetch(`/monotal/rental-request/${requestId}/reject/`, {
@@ -1283,16 +1283,16 @@ async function rejectRequest(requestId) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message);
+            showAlert(data.message);
         }
     } catch (e) {
-        alert('エラーが発生しました');
+        showAlert('エラーが発生しました');
     }
 }
 
 // Cancel request (申請者用)
 async function cancelRequest(requestId) {
-    if (!confirm('この申請をキャンセルしますか？')) return;
+    if (!await showConfirm('この申請をキャンセルしますか？')) return;
 
     try {
         const response = await fetch(`/monotal/rental-request/${requestId}/cancel/`, {
@@ -1306,16 +1306,16 @@ async function cancelRequest(requestId) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message);
+            showAlert(data.message);
         }
     } catch (e) {
-        alert('エラーが発生しました');
+        showAlert('エラーが発生しました');
     }
 }
 
 // Cancel request (出品者用)
 async function cancelRequestSeller(requestId) {
-    if (!confirm('この申請をキャンセルしますか？')) return;
+    if (!await showConfirm('この申請をキャンセルしますか？')) return;
 
     try {
         const response = await fetch(`/monotal/rental-request/${requestId}/cancel-seller/`, {
@@ -1329,10 +1329,10 @@ async function cancelRequestSeller(requestId) {
         if (data.success) {
             location.reload();
         } else {
-            alert(data.message);
+            showAlert(data.message);
         }
     } catch (e) {
-        alert('エラーが発生しました');
+        showAlert('エラーが発生しました');
     }
 }
 </script>

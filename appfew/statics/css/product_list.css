@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 * {
     margin: 0;
@@ -665,29 +665,28 @@ details[open] .filter-summary .icon {
     transform: scale(1.05);
 }
 
-/* Sold Badge */
-.sold-badge {
+/* Rental Overlay */
+.rental-overlay {
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 20;
-    height: 0;
-    width: 0;
-    border-top: 50px solid #dc2626;
-    border-right: 50px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
 }
 
-.sold-text {
-    position: absolute;
-    left: 4px;
-    top: 8px;
-    z-index: 30;
-    transform: rotate(-45deg);
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
+.rental-overlay-text {
+    background: #ef4444;
     color: white;
+    font-size: 12px;
+    font-weight: 700;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .product-card.sold img {

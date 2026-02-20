@@ -129,8 +129,13 @@
         <h1 class="bank-required-title">受取口座の登録が必要です</h1>
 
         <p class="bank-required-message">
+            {% if context_type == 'transaction' %}
+            取引を完了するには受取口座の登録が必要です。<br>
+            売上金の受け取りに使用する銀行口座を登録してください。
+            {% else %}
             商品を出品するには受取口座の登録が必要です。<br>
             売上金の受け取りに使用する銀行口座を登録してください。
+            {% endif %}
         </p>
 
         <div class="bank-required-actions">
@@ -138,10 +143,17 @@
                 <span class="iconify" data-icon="lucide:plus-circle" data-width="18"></span>
                 口座を登録する
             </a>
+            {% if next_url %}
+            <a href="{{ next_url }}" class="btn-secondary">
+                <span class="iconify" data-icon="lucide:arrow-left" data-width="18"></span>
+                取引に戻る
+            </a>
+            {% else %}
             <a href="{% url 'index' %}" class="btn-secondary">
                 <span class="iconify" data-icon="lucide:arrow-left" data-width="18"></span>
                 ホームに戻る
             </a>
+            {% endif %}
         </div>
 
         <div class="bank-required-note">

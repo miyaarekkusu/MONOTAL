@@ -1,0 +1,172 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}はじめてガイド - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+    .legal-prose h2 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #18181b;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e4e4e7;
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        scroll-margin-top: 80px;
+    }
+    .legal-prose h3 {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #27272a;
+        margin-top: 1.25rem;
+        margin-bottom: 0.5rem;
+    }
+    .legal-prose p {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose ul {
+        list-style: disc;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .legal-prose li {
+        font-size: 14px;
+        line-height: 1.8;
+        color: #3f3f46;
+        margin-bottom: 0.25rem;
+    }
+    .legal-prose ol {
+        list-style: decimal;
+        padding-left: 1.5rem;
+        margin-bottom: 0.75rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mx-auto max-w-[900px] px-4 py-8">
+    <!-- パンくずリスト -->
+    <nav class="flex items-center gap-1.5 text-xs text-zinc-400 mb-6">
+        <a href="{% url 'index' %}" class="hover:text-pink-600 transition-colors">ホーム</a>
+        <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
+        <span class="text-zinc-700 font-medium">はじめてガイド</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-zinc-900 mb-2">はじめてガイド</h1>
+    <p class="text-xs text-zinc-400 mb-8">MONOTALの使い方をわかりやすくご案内します。</p>
+
+    <!-- 目次 -->
+    <div class="bg-zinc-50 border border-zinc-200 rounded-lg p-5 mb-10">
+        <h2 class="text-sm font-semibold text-zinc-700 mb-3" style="border:none; margin:0 0 0.75rem 0; padding:0; font-size:0.875rem;">目次</h2>
+        <ol class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 list-decimal pl-5">
+            <li><a href="#section-1" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">MONOTALとは</a></li>
+            <li><a href="#section-2" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">会員登録</a></li>
+            <li><a href="#section-3" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">本人確認</a></li>
+            <li><a href="#section-4" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">商品を借りる</a></li>
+            <li><a href="#section-5" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">商品を貸す</a></li>
+            <li><a href="#section-6" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">お支払い</a></li>
+            <li><a href="#section-7" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">評価・レビュー</a></li>
+            <li><a href="#section-8" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">コミュニティ</a></li>
+            <li><a href="#section-9" class="text-xs text-zinc-500 hover:text-pink-600 transition-colors">安全への取り組み</a></li>
+        </ol>
+    </div>
+
+    <!-- 本文 -->
+    <div class="legal-prose">
+        <h2 id="section-1">1. MONOTALとは</h2>
+        <p>MONOTALは、個人間でカメラやガジェットなどの機器を安心してレンタルできるシェアリングエコノミー・プラットフォームです。</p>
+        <p>使っていないカメラやガジェットを持っている方は「貸し手」として出品し、レンタル料を得ることができます。一方、一時的に使いたい方は「借り手」として手軽にレンタルできます。</p>
+        <ul>
+            <li>購入前のお試しとして気になる機器をレンタル</li>
+            <li>旅行やイベントなど短期間だけ必要な機器を調達</li>
+            <li>使っていない機器を有効活用して収益を得る</li>
+        </ul>
+
+        <h2 id="section-2">2. 会員登録</h2>
+        <p>MONOTALをご利用いただくには、まず会員登録が必要です。</p>
+        <h3>登録手順</h3>
+        <ol>
+            <li>トップページの「新規登録」ボタンをクリック</li>
+            <li>メールアドレス、ユーザー名、電話番号を入力（またはGoogleアカウントで登録）</li>
+            <li>認証メールが届くので、メール内のリンクをクリック</li>
+            <li>パスワードを設定して登録完了</li>
+        </ol>
+        <p>登録後は、プロフィールページから自己紹介やアイコン画像を設定できます。充実したプロフィールは取引相手に安心感を与えます。</p>
+
+        <h2 id="section-3">3. 本人確認</h2>
+        <p>商品の出品やレンタルを行うには、本人確認が必要です。本人確認は、安全な取引環境を提供するための重要なステップです。</p>
+        <h3>なぜ本人確認が必要？</h3>
+        <ul>
+            <li>不正利用やトラブルの防止</li>
+            <li>ユーザー間の信頼性の確保</li>
+            <li>万が一のトラブル時に運営が適切に対応するため</li>
+        </ul>
+        <h3>本人確認の手順</h3>
+        <ol>
+            <li>マイページから「本人確認」メニューを選択</li>
+            <li>本人確認書類（運転免許証、マイナンバーカードなど）の写真をアップロード</li>
+            <li>運営による審査（通常1〜3営業日）</li>
+            <li>承認されると本人確認バッジが付与されます</li>
+        </ol>
+
+        <h2 id="section-4">4. 商品を借りる</h2>
+        <p>MONOTALでは、以下の流れで商品をレンタルできます。</p>
+        <h3>ステップ1：商品を探す</h3>
+        <p>ショップページでカテゴリやキーワードで検索し、気になる商品を見つけましょう。商品詳細ページでは、商品の説明、料金、出品者の評価などを確認できます。</p>
+        <h3>ステップ2：レンタルリクエスト</h3>
+        <p>レンタルしたい商品が見つかったら、レンタル期間を選択して「レンタルリクエスト」を送信します。</p>
+        <h3>ステップ3：承認を待つ</h3>
+        <p>出品者がリクエストを確認し、承認すると取引が開始されます。承認後、お届け先住所とクレジットカード情報を登録して決済を行います。</p>
+        <h3>ステップ4：商品を受け取る</h3>
+        <p>出品者が商品を発送し、追跡番号が共有されます。商品が届いたら「受取確認」ボタンを押してください。</p>
+        <h3>ステップ5：商品を返却する</h3>
+        <p>レンタル期間が終了したら、商品を梱包して返送します。「返送完了」ボタンを押して追跡番号を入力してください。出品者が返却を確認すると取引が完了します。</p>
+
+        <h2 id="section-5">5. 商品を貸す</h2>
+        <p>使っていない機器をMONOTALで出品して、レンタル料を得ることができます。</p>
+        <h3>ステップ1：商品を出品する</h3>
+        <p>「出品する」ページから、商品の写真・説明・レンタル料金・発送元住所などを入力して出品します。</p>
+        <h3>ステップ2：リクエストを確認・承認</h3>
+        <p>借り手からレンタルリクエストが届いたら、内容を確認して承認または拒否を選択します。</p>
+        <h3>ステップ3：商品を発送する</h3>
+        <p>承認後、借り手が決済を完了すると、商品の発送に進みます。梱包して発送し、追跡番号を入力してください。</p>
+        <h3>ステップ4：返却を確認する</h3>
+        <p>レンタル期間終了後、借り手が商品を返送します。商品が届いたら状態を確認し、「返却確認」ボタンを押して取引を完了してください。</p>
+
+        <h2 id="section-6">6. お支払い</h2>
+        <h3>決済方法</h3>
+        <p>MONOTALでは、クレジットカードによる決済に対応しています。取引開始時に登録済みのクレジットカードから決済が行われます。</p>
+        <h3>サービス手数料</h3>
+        <p>取引完了時、レンタル料金の20%がサービス手数料として差し引かれます（出品者様には80%が振り込まれます）。この手数料には基本補償制度（盗難・持ち逃げ補償）の費用が含まれています。</p>
+        <p>出品者への支払いは、取引完了後にマイページの銀行口座情報に基づいて振り込まれます。</p>
+
+        <h2 id="section-7">7. 評価・レビュー</h2>
+        <p>取引が完了すると、お互いに評価・レビューを投稿できます。</p>
+        <ul>
+            <li>5段階の星評価とコメントで取引相手を評価</li>
+            <li>評価はプロフィールページに公開されます</li>
+            <li>誠実な評価は、コミュニティ全体の信頼向上につながります</li>
+        </ul>
+
+        <h2 id="section-8">8. コミュニティ</h2>
+        <p>MONOTALには、ユーザー同士が交流できるコミュニティ機能があります。</p>
+        <h3>掲示板</h3>
+        <p>カメラやガジェットに関する話題を自由に投稿・議論できる掲示板です。おすすめの機材や撮影テクニックなど、幅広い話題で交流しましょう。</p>
+        <h3>Q&A</h3>
+        <p>わからないことがあれば、Q&Aコーナーで質問できます。他のユーザーが回答してくれるので、機材選びや使い方の参考にしてください。</p>
+
+        <h2 id="section-9">9. 安全への取り組み</h2>
+        <p>MONOTALでは、安全で安心な取引環境を提供するために、以下の取り組みを行っています。</p>
+        <ul>
+            <li><strong>本人確認制度</strong> — 出品・レンタルには本人確認が必須です。</li>
+            <li><strong>補償保険制度</strong> — 万が一のトラブルに備えた<a href="{% url 'insurance_info' %}" class="text-pink-600 hover:underline">補償保険制度</a>をご用意しています。</li>
+            <li><strong>通報機能</strong> — 不適切な行為を見つけた場合、運営に通報できます。</li>
+            <li><strong>ブロック機能</strong> — 特定のユーザーをブロックして、やり取りを制限できます。</li>
+            <li><strong>取引メッセージ</strong> — 取引中はプラットフォーム内のメッセージ機能で安全にやり取りできます。</li>
+        </ul>
+    </div>
+</div>
+{% endblock %}

@@ -559,9 +559,10 @@ document.querySelectorAll('.manage-link, .register-btn').forEach(link => {
 });
 
 // フォーム送信時の確認
-document.getElementById('rental-start-form').addEventListener('submit', (e) => {
-    if (!confirm('レンタルを開始しますか？')) {
-        e.preventDefault();
+document.getElementById('rental-start-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (await showConfirm('レンタルを開始しますか？')) {
+        e.target.submit();
     }
 });
 </script>

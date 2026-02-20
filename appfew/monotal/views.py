@@ -739,6 +739,8 @@ RENTAL_STATUS_CANCELLED = 6   # キャンセル
 RENTAL_STATUS_RETURN_REQUESTED = 7  # 返品申請中
 RENTAL_STATUS_RETURN_APPROVED = 8   # 返品承認済み
 RENTAL_STATUS_RETURN_SHIPPING = 9   # 返品返送中
+RENTAL_STATUS_CANCELLATION_REQUESTED = 10  # 中止申請中
+RENTAL_STATUS_CANCELLATION_APPROVED = 11   # 中止済み
 
 
 class VerificationRequiredView(View):
@@ -757,7 +759,12 @@ class VerificationRequiredView(View):
 class BankAccountRequiredView(View):
     """受取口座の登録が必要なページ"""
     def get(self, request, *args, **kwargs):
-        context = {}
+        next_url = request.GET.get('next', '')
+        context_type = request.GET.get('context', 'sell')
+        context = {
+            'next_url': next_url,
+            'context_type': context_type,
+        }
         return render(request, 'bank_account_required.html', context)
 
 
@@ -794,7 +801,7 @@ class CreateSellView(View):
 
         # ユーザーの登録住所を取得
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         # デフォルト住所を取得
@@ -1125,6 +1132,10 @@ class ProductListView(View):
             'images'  # 商品画像も取得
         ).order_by('-register_datetime')
 
+        # ログインユーザー自身の商品を除外
+        if request.user.is_authenticated:
+            products = products.exclude(user=request.user)
+
         # フィルター適用
         products = self.apply_filters(request, products)
 
@@ -1263,11 +1274,10 @@ class ProductDetailView(View):
             messages.error(request, '商品が見つかりません。')
             return redirect('product_list')
 
-        # 非公開商品（status_id=3）は出品者のみアクセス可能
-        if product.product_status_id == PRODUCT_STATUS_PAUSED:
+        # 非公開商品は出品者のみアクセス可能
+        if product.product_status_id in (PRODUCT_STATUS_PAUSED, 4):
             if not request.user.is_authenticated or request.user != product.user:
-                messages.error(request, 'この商品は非公開です。')
-                return redirect('product_list')
+                return render(request, 'product_unavailable.html')
 
         # 商品画像を取得
         product_images = list(product.images.all())
@@ -2546,7 +2556,7 @@ class ProductEditView(LoginRequiredMixin, View):
 
         # ユーザーの登録住所を取得
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         # デフォルト住所を取得
@@ -2611,28 +2621,13 @@ class ProductEditView(LoginRequiredMixin, View):
             return redirect('bank_account_required')
 
         try:
-            # FormDataから取得
+            # 編集可能項目のみ取得
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
             product_description = request.POST.get('product_description', '').strip()
             product_condition_id = request.POST.get('product_condition', '')
-            product_status_id = request.POST.get('product_status', '')
-            shipping_days_id = request.POST.get('shipping_days', '')
-            shipping_burden_id = request.POST.get('shipping_burden', '')
-
-            # 住所情報（既存住所IDを使用）
-            address_id = request.POST.get('address_id', '')
-
-            # レンタルプラン
-            rental_plans_json = request.POST.get('rental_plans', '[]')
             new_images = request.FILES.getlist('images')
             delete_image_ids_json = request.POST.get('delete_image_ids', '[]')
-
-            # JSONをパース
-            try:
-                rental_plans = json.loads(rental_plans_json)
-            except json.JSONDecodeError:
-                rental_plans = []
 
             try:
                 delete_image_ids = json.loads(delete_image_ids_json)
@@ -2652,8 +2647,14 @@ class ProductEditView(LoginRequiredMixin, View):
                 errors['product_name'] = '商品名は40文字以内で入力してください'
 
             # カテゴリー
+            category_obj = None
             if not product_category_id:
                 errors['product_category'] = 'カテゴリーを選択してください'
+            else:
+                try:
+                    category_obj = ProductCategory.objects.get(product_category_id=product_category_id)
+                except ProductCategory.DoesNotExist:
+                    errors['product_category'] = '選択されたカテゴリーが存在しません'
 
             # 商品の説明
             if not product_description:
@@ -2662,49 +2663,14 @@ class ProductEditView(LoginRequiredMixin, View):
                 errors['product_description'] = '商品の説明は1000文字以内で入力してください'
 
             # 商品の状態
+            condition_obj = None
             if not product_condition_id:
                 errors['product_condition'] = '商品の状態を選択してください'
-
-            # 発送までの日数
-            if not shipping_days_id:
-                errors['shipping_days'] = '発送までの日数を選択してください'
-
-            # レンタルプランのバリデーション
-            if not rental_plans or len(rental_plans) == 0:
-                errors['rental_plans'] = '少なくとも1つのレンタルプランを設定してください'
             else:
-                has_valid_plan = False
-                for plan in rental_plans:
-                    days = plan.get('days', 0)
-                    price = plan.get('price', 0)
-
-                    if days > 3650:
-                        errors['rental_plans'] = '日数は3650日以下で設定してください'
-                        break
-                    elif price > 9999999:
-                        errors['rental_plans'] = '金額は9,999,999円以下で設定してください'
-                        break
-                    elif days > 0 and price >= 100:
-                        has_valid_plan = True
-                    elif days > 0 and 0 < price < 100:
-                        errors['rental_plans'] = '金額は100円以上で設定してください'
-                        break
-
-                if not has_valid_plan and 'rental_plans' not in errors:
-                    errors['rental_plans'] = '日数と金額を正しく入力してください'
-
-            # 住所バリデーション
-            selected_address = None
-            if address_id:
                 try:
-                    selected_address = UserAddress.objects.get(
-                        user_address_id=address_id,
-                        user=request.user
-                    )
-                except UserAddress.DoesNotExist:
-                    errors['address'] = '選択された住所が見つかりません'
-            else:
-                errors['address'] = '発送元住所を選択してください'
+                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
+                except ProductCondition.DoesNotExist:
+                    errors['product_condition'] = '選択された商品の状態が存在しません'
 
             # 画像チェック（既存 - 削除 + 新規 >= 1）
             current_image_count = ProductImage.objects.filter(product=product).count()
@@ -2714,10 +2680,6 @@ class ProductEditView(LoginRequiredMixin, View):
             elif remaining_count > 10:
                 errors['images'] = '商品画像は10枚までです'
 
-            # 受取口座バリデーション
-            if not BankAccount.objects.filter(user=request.user).exists():
-                errors['bank_account'] = '受取口座を登録してください'
-
             if errors:
                 if is_ajax:
                     return JsonResponse({'success': False, 'errors': errors}, status=400)
@@ -2725,53 +2687,14 @@ class ProductEditView(LoginRequiredMixin, View):
                 return redirect('product_edit', product_id=product_id)
 
             # ========================================
-            # マスターデータ取得
-            # ========================================
-
-            category_obj = ProductCategory.objects.get(product_category_id=product_category_id)
-            condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
-            shipping_days_obj = ShippingDays.objects.get(shipping_days_id=shipping_days_id)
-
-            status_obj = None
-            if product_status_id:
-                status_obj = ProductStatus.objects.get(product_status_id=product_status_id)
-
-            shipping_burden_obj = None
-            if shipping_burden_id:
-                try:
-                    shipping_burden_obj = ShippingBurden.objects.get(shipping_burden_id=shipping_burden_id)
-                except ShippingBurden.DoesNotExist:
-                    pass
-
-            # ========================================
             # 更新（トランザクション使用）
             # ========================================
 
             with transaction.atomic():
-                # 商品を更新
                 product.product_name = product_name
                 product.product_description = product_description
                 product.product_category = category_obj
                 product.product_condition = condition_obj
-                product.shipping_days = shipping_days_obj
-                product.shipping_burden = shipping_burden_obj
-
-                if status_obj:
-                    product.product_status = status_obj
-
-                # 最初のレンタルプランを取得（Productテーブル用）
-                rental_days_value = 0
-                rental_fee_value = 0
-                for plan in rental_plans:
-                    if plan.get('days', 0) > 0 and plan.get('price', 0) >= 100:
-                        rental_days_value = plan['days']
-                        rental_fee_value = plan['price']
-                        break
-
-                product.rental_days = rental_days_value
-                product.rental_fee = rental_fee_value
-                product.shipping_address = selected_address
-                product.shipping_prefecture = selected_address.prefecture if selected_address else None
                 product.save()
 
                 # 削除対象の画像を削除
@@ -2789,23 +2712,6 @@ class ProductEditView(LoginRequiredMixin, View):
                         image=image,
                         display_order=max_order + index
                     )
-
-                # レンタルプラン更新（全削除→再作成）
-                ProductRentalPlan.objects.filter(product=product).delete()
-                for plan in rental_plans:
-                    days = plan.get('days', 0)
-                    price = plan.get('price', 0)
-                    if days > 0 and price >= 100:
-                        ProductRentalPlan.objects.create(
-                            product=product,
-                            rental_days=days,
-                            rental_fee=price
-                        )
-
-                # 選択された住所をデフォルトに設定
-                if selected_address and not selected_address.is_default:
-                    selected_address.is_default = True
-                    selected_address.save()
 
             if is_ajax:
                 return JsonResponse({
@@ -2893,7 +2799,7 @@ class MyPageAddressListView(LoginRequiredMixin, View):
     def get(self, request, *args, **kwargs):
         # ユーザーの住所を取得
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         # 都道府県リスト
@@ -2919,7 +2825,7 @@ class MyPageAddressListView(LoginRequiredMixin, View):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
         # 住所数チェック
-        current_count = UserAddress.objects.filter(user=request.user).count()
+        current_count = UserAddress.objects.filter(user=request.user, is_deleted=False).count()
         if current_count >= MAX_USER_ADDRESSES:
             if is_ajax:
                 return JsonResponse({
@@ -3020,11 +2926,15 @@ class AddressDeleteView(LoginRequiredMixin, View):
             )
 
             was_default = address.is_default
-            address.delete()
+            address.is_deleted = True
+            address.is_default = False
+            address.save()
 
             # デフォルト住所を削除した場合、残りの最初の住所をデフォルトに
             if was_default:
-                remaining = UserAddress.objects.filter(user=request.user).first()
+                remaining = UserAddress.objects.filter(
+                    user=request.user, is_deleted=False
+                ).first()
                 if remaining:
                     remaining.is_default = True
                     remaining.save()
@@ -3642,7 +3552,7 @@ class SellAddressManageView(LoginRequiredMixin, View):
 
     def get(self, request, *args, **kwargs):
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         prefectures = Prefecture.objects.all()
@@ -3662,7 +3572,7 @@ class SellAddressManageView(LoginRequiredMixin, View):
     def post(self, request, *args, **kwargs):
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        current_count = UserAddress.objects.filter(user=request.user).count()
+        current_count = UserAddress.objects.filter(user=request.user, is_deleted=False).count()
         if current_count >= MAX_USER_ADDRESSES:
             if is_ajax:
                 return JsonResponse({
@@ -3742,7 +3652,7 @@ class EditAddressManageView(LoginRequiredMixin, View):
         product = get_object_or_404(Product, product_id=product_id, user=request.user)
 
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         prefectures = Prefecture.objects.all()
@@ -3766,7 +3676,7 @@ class EditAddressManageView(LoginRequiredMixin, View):
 
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        current_count = UserAddress.objects.filter(user=request.user).count()
+        current_count = UserAddress.objects.filter(user=request.user, is_deleted=False).count()
         if current_count >= MAX_USER_ADDRESSES:
             if is_ajax:
                 return JsonResponse({
@@ -4130,7 +4040,8 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
                 RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
                 RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING,
                 RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED,
-                RENTAL_STATUS_RETURN_SHIPPING
+                RENTAL_STATUS_RETURN_SHIPPING,
+                RENTAL_STATUS_CANCELLATION_REQUESTED
             ]
         ).select_related(
             'product', 'lender_user', 'renter_user', 'rental_status'
@@ -4269,7 +4180,7 @@ class RentalStartPageView(LoginRequiredMixin, View):
 
         # 自分（申請者）の住所一覧
         my_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', 'user_address_id')
 
         # 自分（申請者）のクレジットカード一覧
@@ -4311,7 +4222,7 @@ class RentalAddressManageView(LoginRequiredMixin, View):
             return redirect('mypage_rental_management')
 
         user_addresses = UserAddress.objects.filter(
-            user=request.user
+            user=request.user, is_deleted=False
         ).select_related('prefecture').order_by('-is_default', '-register_datetime')
 
         prefectures = Prefecture.objects.all()
@@ -4343,7 +4254,7 @@ class RentalAddressManageView(LoginRequiredMixin, View):
 
         is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 
-        current_count = UserAddress.objects.filter(user=request.user).count()
+        current_count = UserAddress.objects.filter(user=request.user, is_deleted=False).count()
         if current_count >= MAX_USER_ADDRESSES:
             if is_ajax:
                 return JsonResponse({
@@ -4970,6 +4881,14 @@ class TransactionView(LoginRequiredMixin, View):
             # 返品理由マスターを取得
             return_reasons = ReturnReason.objects.all()
 
+            # 中止理由マスターと申請中の中止申請を取得
+            from .models import CancellationReason, CancellationRequest
+            cancellation_reasons = CancellationReason.objects.all()
+            cancellation_request = CancellationRequest.objects.filter(
+                rental_history=rental_history,
+                cancellation_status_id=1  # 申請中
+            ).select_related('cancellation_reason', 'requester_user').first()
+
             # レビュー情報を取得
             my_review = UserReview.objects.filter(
                 reviewer_user=request.user, rental_history=rental_history
@@ -5020,6 +4939,9 @@ class TransactionView(LoginRequiredMixin, View):
                 'return_reason_history': ReturnReasonHistory.objects.filter(
                     rental_history=rental_history
                 ).select_related('return_reason').order_by('-return_request_datetime').first(),
+                # 中止申請関連
+                'cancellation_reasons': cancellation_reasons,
+                'cancellation_request': cancellation_request,
             }
 
             return render(request, 'transaction.html', context)
@@ -5761,6 +5683,13 @@ class TransactionReviewView(LoginRequiredMixin, View):
                 messages.info(request, 'この取引は既に評価済みです')
                 return redirect('transaction', rental_history_id=rental_history_id)
 
+            # 貸主の場合、口座登録チェック
+            if is_lender:
+                has_bank_account = BankAccount.objects.filter(user=request.user).exists()
+                if not has_bank_account:
+                    review_url = reverse('transaction_review', kwargs={'rental_history_id': rental_history_id})
+                    return redirect(f"{reverse('bank_account_required')}?next={review_url}&context=transaction")
+
             partner_user = rental_history.renter_user if is_lender else rental_history.lender_user
 
             context = {
@@ -5793,6 +5722,10 @@ class TransactionReviewView(LoginRequiredMixin, View):
             # 二重レビュー防止
             if UserReview.objects.filter(reviewer_user=request.user, rental_history=rental_history).exists():
                 return JsonResponse({'success': False, 'message': 'この取引は既に評価済みです'}, status=400)
+
+            # 貸主の場合、口座登録チェック
+            if is_lender and not BankAccount.objects.filter(user=request.user).exists():
+                return JsonResponse({'success': False, 'message': '取引を完了するには受取口座の登録が必要です'}, status=400)
 
             try:
                 data = json.loads(request.body)

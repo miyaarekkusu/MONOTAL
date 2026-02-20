@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}中止申請審査 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_cancellation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1 class="page-title">中止申請審査</h1>
+
+    <!-- 申請者情報 -->
+    <div class="info-card">
+        <h2>申請者情報</h2>
+        <div class="info-row">
+            <span class="info-label">申請者</span>
+            <span class="info-value">{{ cr.requester_user.display_name }} (@{{ cr.requester_user.user_name }})</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">メールアドレス</span>
+            <span class="info-value">{{ cr.requester_user.email }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">申請日時</span>
+            <span class="info-value">{{ cr.request_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">ステータス</span>
+            <span class="info-value">
+                {% if cr.cancellation_status_id == 1 %}
+                    <span class="status-badge pending">申請中</span>
+                {% elif cr.cancellation_status_id == 2 %}
+                    <span class="status-badge approved">承認</span>
+                {% else %}
+                    <span class="status-badge rejected">却下</span>
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- 取引情報 -->
+    <div class="info-card">
+        <h2>取引情報</h2>
+        <div class="info-row">
+            <span class="info-label">商品名</span>
+            <span class="info-value">{{ rental_history.product.product_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">出品者</span>
+            <span class="info-value">{{ rental_history.lender_user.display_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">借り手</span>
+            <span class="info-value">{{ rental_history.renter_user.display_name }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">取引開始日</span>
+            <span class="info-value">{{ rental_history.register_datetime|date:"Y/m/d H:i" }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">申請前ステータス</span>
+            <span class="info-value">ID: {{ cr.previous_rental_status_id }}</span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">取引ページ</span>
+            <span class="info-value">
+                <a href="{% url 'transaction' rental_history_id=rental_history.rental_history_id %}" target="_blank">
+                    取引 #{{ rental_history.rental_history_id }} を開く
+                    <span class="iconify" data-icon="lucide:external-link" data-width="12"></span>
+                </a>
+            </span>
+        </div>
+    </div>
+
+    <!-- 中止理由 -->
+    <div class="info-card">
+        <h2>中止理由</h2>
+        <div class="info-row">
+            <span class="info-label">理由</span>
+            <span class="info-value cancellation-reason-highlight">{{ cr.cancellation_reason.reason_name }}</span>
+        </div>
+        {% if cr.detail %}
+        <div class="info-row">
+            <span class="info-label">詳細</span>
+            <span class="info-value claim-description">{{ cr.detail }}</span>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- 審査アクション（申請中のみ表示） -->
+    {% if cr.cancellation_status_id == 1 %}
+    <div class="info-card">
+        <h2>審査</h2>
+        <div class="form-group" style="margin-bottom: 16px;">
+            <label class="form-label" style="font-weight: 600; margin-bottom: 8px; display: block;">管理者メモ（任意）</label>
+            <textarea id="adminNote" placeholder="審査に関するメモを入力（内部用）" style="width: 100%; min-height: 80px; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; font-family: inherit; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+        </div>
+        <div class="action-buttons">
+            <button type="button" class="btn btn-approve" id="approveBtn" onclick="submitCancellationReview('approve')">
+                承認（取引中止）
+            </button>
+            <button type="button" class="btn btn-reject" id="rejectBtn" onclick="submitCancellationReview('reject')">
+                却下（取引続行）
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 審査結果（承認済み） -->
+    {% if cr.cancellation_status_id == 2 %}
+    <div class="info-card result-card result-approved">
+        <h2>審査結果</h2>
+        <div class="info-row">
+            <span class="info-label">結果</span>
+            <span class="info-value"><span class="status-badge approved">承認</span></span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">承認日時</span>
+            <span class="info-value">{{ cr.approval_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        {% if cr.admin_note %}
+        <div class="info-row">
+            <span class="info-label">管理者メモ</span>
+            <span class="info-value">{{ cr.admin_note }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- 審査結果（却下） -->
+    {% if cr.cancellation_status_id == 3 %}
+    <div class="info-card result-card result-rejected">
+        <h2>審査結果</h2>
+        <div class="info-row">
+            <span class="info-label">結果</span>
+            <span class="info-value"><span class="status-badge rejected">却下</span></span>
+        </div>
+        <div class="info-row">
+            <span class="info-label">却下日時</span>
+            <span class="info-value">{{ cr.rejection_datetime|date:"Y/m/d H:i:s" }}</span>
+        </div>
+        {% if cr.admin_note %}
+        <div class="info-row">
+            <span class="info-label">管理者メモ</span>
+            <span class="info-value">{{ cr.admin_note }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'admin_cancellation_list' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            一覧に戻る
+        </a>
+    </p>
+</div>
+
+<!-- 一覧URLをJSに渡す -->
+<input type="hidden" id="cancellationListUrl" value="{% url 'admin_cancellation_list' %}">
+
+<!-- トースト通知 -->
+<div class="toast" id="toast"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/admin_cancellation.js' %}"></script>
+{% endblock %}

@@ -1,4 +1,4 @@
-// MyPage JavaScript
+﻿// MyPage JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     initFollowToggleButtons();
@@ -55,11 +55,11 @@ function initFollowToggleButtons() {
                         followerCountEl.textContent = 'フォロワー ' + data.follower_count;
                     }
                 } else {
-                    alert(data.error || 'エラーが発生しました');
+                    showAlert(data.error || 'エラーが発生しました');
                 }
             } catch (error) {
                 console.error('Follow toggle error:', error);
-                alert('エラーが発生しました');
+                showAlert('エラーが発生しました');
             } finally {
                 this.disabled = false;
             }
@@ -107,9 +107,9 @@ function initBlockToggleButtons() {
             const isBlocked = this.dataset.blocked === 'true';
 
             if (isBlocked) {
-                if (!confirm('このユーザーのブロックを解除しますか？')) return;
+                if (!await showConfirm('このユーザーのブロックを解除しますか？')) return;
             } else {
-                if (!confirm('このユーザーを再ブロックしますか？')) return;
+                if (!await showConfirm('このユーザーを再ブロックしますか？')) return;
             }
 
             this.disabled = true;
@@ -132,11 +132,11 @@ function initBlockToggleButtons() {
                     this.dataset.blocked = data.is_blocked ? 'true' : 'false';
                     updateBlockUI(this, label);
                 } else {
-                    alert(data.error || 'エラーが発生しました');
+                    showAlert(data.error || 'エラーが発生しました');
                 }
             } catch (error) {
                 console.error('Block toggle error:', error);
-                alert('エラーが発生しました');
+                showAlert('エラーが発生しました');
             } finally {
                 this.disabled = false;
             }

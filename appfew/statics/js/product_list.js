@@ -1,4 +1,4 @@
-// AP Collections - JavaScript
+﻿// AP Collections - JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all functionality
@@ -119,7 +119,7 @@ function initializePricePresets() {
 const saveSearchBtn = document.querySelector('.save-search-btn');
 if (saveSearchBtn) {
     saveSearchBtn.addEventListener('click', function() {
-        alert('検索条件を保存しました！');
+        showAlert('検索条件を保存しました！');
     });
 }
 

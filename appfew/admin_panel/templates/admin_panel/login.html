@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ログイン | MONOTAL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-zinc-100 min-h-screen flex items-center justify-center">
+    <div class="w-full max-w-sm mx-4">
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center gap-2 mb-2">
+                <span class="iconify text-pink-600" data-icon="lucide:box-select" data-width="28"></span>
+                <span class="text-2xl font-bold tracking-tight text-zinc-900 uppercase">MONOTAL</span>
+            </div>
+            <p class="text-sm font-semibold text-zinc-500">管理者画面</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-zinc-200 p-8">
+            {% if errors %}
+            <div class="mb-6 p-3 bg-red-50 border border-red-200 rounded-lg">
+                {% for error in errors %}
+                <p class="text-sm text-red-600">{{ error }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                {% csrf_token %}
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 mb-1.5">電話番号</label>
+                        <input type="text" name="username" value="{{ username|default:'' }}"
+                            placeholder="09012345678" autocomplete="username"
+                            class="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none transition-colors">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-zinc-700 mb-1.5">パスワード</label>
+                        <input type="password" name="password"
+                            placeholder="パスワード" autocomplete="current-password"
+                            class="w-full rounded-lg border border-zinc-300 px-4 py-2.5 text-sm focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none transition-colors">
+                    </div>
+                    <button type="submit"
+                        class="w-full rounded-lg bg-zinc-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-zinc-800 transition-colors">
+                        ログイン
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

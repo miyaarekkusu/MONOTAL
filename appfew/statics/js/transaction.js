@@ -23,6 +23,7 @@ const TransactionPage = {
         this.initReturnActions();
         this.initReturnShipRefundModal();
         this.initTrackingModal();
+        this.initCancellationModal();
         this.initCountdown();
         this.startPolling();
     },
@@ -157,11 +158,11 @@ const TransactionPage = {
                 input.value = '';
                 this.loadMessages();
             } else {
-                alert(data.message || 'メッセージの送信に失敗しました');
+                showAlert(data.message || 'メッセージの送信に失敗しました');
             }
         } catch (error) {
             console.error('メッセージの送信に失敗しました:', error);
-            alert('メッセージの送信に失敗しました');
+            showAlert('メッセージの送信に失敗しました');
         } finally {
             sendBtn.disabled = false;
         }
@@ -211,6 +212,12 @@ const TransactionPage = {
         const returnReceiveBtn = document.getElementById('returnReceiveBtn');
         if (returnReceiveBtn) {
             returnReceiveBtn.addEventListener('click', () => this.notifyReturnReceive());
+        }
+
+        // 中止申請
+        const cancellationRequestBtn = document.getElementById('cancellationRequestBtn');
+        if (cancellationRequestBtn) {
+            cancellationRequestBtn.addEventListener('click', () => this.openModal('cancellationRequestModal'));
         }
 
         // キャンセル
@@ -291,19 +298,18 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
                 if (errorEl) {
                     errorEl.textContent = data.message || '発送通知に失敗しました';
                     errorEl.classList.remove('hidden');
                 } else {
-                    alert(data.message || '発送通知に失敗しました');
+                    showAlert(data.message || '発送通知に失敗しました');
                 }
             }
         } catch (error) {
             console.error('発送通知に失敗しました:', error);
-            alert('発送通知に失敗しました');
+            showAlert('発送通知に失敗しました');
         } finally {
             if (confirmBtn) confirmBtn.disabled = false;
         }
@@ -354,19 +360,18 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
                 if (errorEl) {
                     errorEl.textContent = data.message || '返送通知に失敗しました';
                     errorEl.classList.remove('hidden');
                 } else {
-                    alert(data.message || '返送通知に失敗しました');
+                    showAlert(data.message || '返送通知に失敗しました');
                 }
             }
         } catch (error) {
             console.error('返送通知に失敗しました:', error);
-            alert('返送通知に失敗しました');
+            showAlert('返送通知に失敗しました');
         } finally {
             if (confirmBtn) confirmBtn.disabled = false;
         }
@@ -405,7 +410,12 @@ const TransactionPage = {
             return;
         }
 
-        if (!confirm('返品を申請しますか？\n出品者の承認後に返品手続きが進みます。')) return;
+        this.closeModal('returnRequestModal');
+
+        if (!await showConfirm('返品を申請しますか？\n出品者の承認後に返品手続きが進みます。')) {
+            this.openModal('returnRequestModal');
+            return;
+        }
 
         if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
@@ -425,19 +435,18 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
                 if (errorEl) {
                     errorEl.textContent = data.message || '返品申請に失敗しました';
                     errorEl.classList.remove('hidden');
                 } else {
-                    alert(data.message || '返品申請に失敗しました');
+                    showAlert(data.message || '返品申請に失敗しました');
                 }
             }
         } catch (error) {
             console.error('返品申請に失敗しました:', error);
-            alert('返品申請に失敗しました');
+            showAlert('返品申請に失敗しました');
         } finally {
             if (confirmBtn) confirmBtn.disabled = false;
         }
@@ -460,7 +469,7 @@ const TransactionPage = {
     },
 
     async approveReturn() {
-        if (!confirm('返品申請を承認しますか？\n借り手に商品の返送を依頼します。')) return;
+        if (!await showConfirm('返品申請を承認しますか？\n借り手に商品の返送を依頼します。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-approve/`, {
@@ -470,19 +479,18 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '承認に失敗しました');
+                showAlert(data.message || '承認に失敗しました');
             }
         } catch (error) {
             console.error('承認に失敗しました:', error);
-            alert('承認に失敗しました');
+            showAlert('承認に失敗しました');
         }
     },
 
     async rejectReturn() {
-        if (!confirm('返品申請を拒否しますか？\n取引はレンタル中の状態に戻ります。')) return;
+        if (!await showConfirm('返品申請を拒否しますか？\n取引はレンタル中の状態に戻ります。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-reject/`, {
@@ -492,14 +500,13 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '拒否に失敗しました');
+                showAlert(data.message || '拒否に失敗しました');
             }
         } catch (error) {
             console.error('拒否に失敗しました:', error);
-            alert('拒否に失敗しました');
+            showAlert('拒否に失敗しました');
         }
     },
 
@@ -546,19 +553,18 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
                 if (errorEl) {
                     errorEl.textContent = data.message || '返品発送通知に失敗しました';
                     errorEl.classList.remove('hidden');
                 } else {
-                    alert(data.message || '返品発送通知に失敗しました');
+                    showAlert(data.message || '返品発送通知に失敗しました');
                 }
             }
         } catch (error) {
             console.error('返品発送通知に失敗しました:', error);
-            alert('返品発送通知に失敗しました');
+            showAlert('返品発送通知に失敗しました');
         } finally {
             if (confirmBtn) confirmBtn.disabled = false;
         }
@@ -681,7 +687,7 @@ const TransactionPage = {
      * 受取通知
      */
     async notifyReceipt() {
-        if (!confirm('商品を受け取りましたか？\n受取完了を通知します。')) return;
+        if (!await showConfirm('商品を受け取りましたか？\n受取完了を通知します。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/receive/`, {
@@ -691,14 +697,13 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '受取通知に失敗しました');
+                showAlert(data.message || '受取通知に失敗しました');
             }
         } catch (error) {
             console.error('受取通知に失敗しました:', error);
-            alert('受取通知に失敗しました');
+            showAlert('受取通知に失敗しました');
         }
     },
 
@@ -706,7 +711,7 @@ const TransactionPage = {
      * 返却受取
      */
     async notifyReturnReceive() {
-        if (!confirm('商品が届きましたか？\n返却を確認します。')) return;
+        if (!await showConfirm('商品が届きましたか？\n返却を確認します。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-receive/`, {
@@ -716,14 +721,13 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || '返却確認に失敗しました');
+                showAlert(data.message || '返却確認に失敗しました');
             }
         } catch (error) {
             console.error('返却確認に失敗しました:', error);
-            alert('返却確認に失敗しました');
+            showAlert('返却確認に失敗しました');
         }
     },
 
@@ -777,11 +781,11 @@ const TransactionPage = {
         const detail = document.getElementById('returnReasonDetail').value;
 
         if (!reasonId) {
-            alert('キャンセル理由を選択してください');
+            showAlert('キャンセル理由を選択してください');
             return;
         }
 
-        if (!confirm('本当に取引をキャンセルしますか？\nこの操作は取り消せません。')) return;
+        if (!await showConfirm('本当に取引をキャンセルしますか？\nこの操作は取り消せません。')) return;
 
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/cancel/`, {
@@ -798,14 +802,88 @@ const TransactionPage = {
             const data = await response.json();
 
             if (data.success) {
-                alert(data.message);
                 location.reload();
             } else {
-                alert(data.message || 'キャンセルに失敗しました');
+                showAlert(data.message || 'キャンセルに失敗しました');
             }
         } catch (error) {
             console.error('キャンセルに失敗しました:', error);
-            alert('キャンセルに失敗しました');
+            showAlert('キャンセルに失敗しました');
+        }
+    },
+
+    // ==========================================
+    // 中止申請モーダル
+    // ==========================================
+
+    initCancellationModal() {
+        const modal = document.getElementById('cancellationRequestModal');
+        if (!modal) return;
+
+        modal.querySelectorAll('[data-modal="cancellationRequestModal"]').forEach(btn => {
+            btn.addEventListener('click', () => this.closeModal('cancellationRequestModal'));
+        });
+        modal.querySelector('.modal-overlay')?.addEventListener('click', () => this.closeModal('cancellationRequestModal'));
+
+        const confirmBtn = document.getElementById('cancellationRequestConfirmBtn');
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', () => this.submitCancellationRequest());
+        }
+    },
+
+    async submitCancellationRequest() {
+        const reasonId = document.getElementById('cancellationReasonSelect')?.value;
+        const detail = document.getElementById('cancellationDetail')?.value || '';
+        const confirmBtn = document.getElementById('cancellationRequestConfirmBtn');
+        const errorEl = document.getElementById('cancellationRequestError');
+
+        if (!reasonId) {
+            if (errorEl) {
+                errorEl.textContent = '中止理由を選択してください';
+                errorEl.classList.remove('hidden');
+            }
+            return;
+        }
+
+        this.closeModal('cancellationRequestModal');
+
+        if (!await showConfirm('取引中止を申請しますか？\n運営の審査後に取引が中止されます。')) {
+            this.openModal('cancellationRequestModal');
+            return;
+        }
+
+        if (errorEl) errorEl.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
+
+        try {
+            const formData = new FormData();
+            formData.append('cancellation_reason_id', reasonId);
+            formData.append('detail', detail);
+
+            const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/cancellation-request/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': CSRF_TOKEN,
+                },
+                body: formData
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                location.reload();
+            } else {
+                if (errorEl) {
+                    errorEl.textContent = data.message || '中止申請に失敗しました';
+                    errorEl.classList.remove('hidden');
+                } else {
+                    showAlert(data.message || '中止申請に失敗しました');
+                }
+            }
+        } catch (error) {
+            console.error('中止申請に失敗しました:', error);
+            showAlert('中止申請に失敗しました');
+        } finally {
+            if (confirmBtn) confirmBtn.disabled = false;
         }
     }
 };

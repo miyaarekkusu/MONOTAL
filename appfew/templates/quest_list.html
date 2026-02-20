@@ -1,0 +1,682 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}クエスト | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===== Page ===== */
+    .qp {
+        width: 100%; max-width: 1400px; margin: 0 auto;
+        padding: 2rem 2rem 3rem;
+        min-height: calc(100vh - 4rem);
+    }
+
+    /* ===== Page Header ===== */
+    .qp-header {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .qp-header-title { font-size: 1.25rem; font-weight: 800; color: #18181b; }
+
+    /* ===== Layout: sidebar + main ===== */
+    .qp-layout { display: flex; gap: 3rem; }
+
+    /* ===== Sidebar ===== */
+    .qp-side {
+        width: 200px; flex-shrink: 0;
+        position: sticky; top: 80px; align-self: flex-start;
+    }
+    .qp-side-group { margin-bottom: 1.25rem; }
+    .qp-side-label {
+        font-size: 0.6875rem; font-weight: 700; color: #a1a1aa;
+        padding: 0 0.5rem 0.375rem;
+    }
+    .qp-side-item {
+        display: flex; align-items: center; gap: 0.5rem;
+        width: 100%; padding: 0.5rem 0.75rem; border: none; background: none;
+        font-size: 0.8125rem; font-weight: 600; color: #52525b;
+        border-radius: 0.5rem; cursor: pointer; transition: all 0.15s;
+        text-align: left;
+    }
+    .qp-side-item:hover { background: #f4f4f5; color: #18181b; }
+    .qp-side-item.active { background: #fdf2f8; color: #db2777; }
+    .qp-side-item .iconify { flex-shrink: 0; }
+    .qp-side-count {
+        margin-left: auto; font-size: 0.625rem; font-weight: 700;
+        background: #f4f4f5; color: #71717a;
+        padding: 0.0625rem 0.375rem; border-radius: 9999px;
+    }
+    .qp-side-item.active .qp-side-count { background: #fce7f3; color: #db2777; }
+
+    /* ===== Main ===== */
+    .qp-main { flex: 1; min-width: 0; }
+    .qp-main-head {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .qp-main-title { font-size: 1rem; font-weight: 700; color: #18181b; }
+
+    /* ===== Card Grid (3 columns fixed) ===== */
+    .qg {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1rem;
+    }
+
+    /* ===== Quest Card ===== */
+    .qc {
+        position: relative; border-radius: 0.75rem; overflow: hidden;
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        cursor: pointer; transition: transform 0.15s, box-shadow 0.15s;
+        user-select: none;
+    }
+    .qc:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+    .qc.qc-done { opacity: 0.55; }
+    .qc.qc-done:hover { transform: none; box-shadow: none; }
+
+    /* difficulty stripe */
+    .qc-stripe { height: 3px; }
+    .qc.rk-t .qc-stripe { background: linear-gradient(90deg, #818cf8, #60a5fa); }
+    .qc.rk-1 .qc-stripe { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+    .qc.rk-2 .qc-stripe { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .qc.rk-3 .qc-stripe { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+    .qc.rk-l .qc-stripe { background: linear-gradient(90deg, #f43f5e, #facc15); }
+
+    .qc-top {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 0.75rem 1rem 0;
+    }
+    .qc-stars { display: flex; gap: 2px; }
+    .qc-star { color: #f59e0b; }
+    .qc-star.off { color: #d4d4d8; }
+    .qc-rw {
+        display: inline-flex; align-items: center; gap: 0.25rem;
+        background: #fdf2f8; border: 1px solid #fce7f3;
+        border-radius: 9999px; padding: 0.125rem 0.5rem;
+        font-size: 0.6875rem; font-weight: 700; color: #db2777;
+    }
+
+    .qc-body { padding: 0.5rem 1rem 0.25rem; }
+    .qc-name {
+        font-size: 0.9375rem; font-weight: 700; color: #18181b;
+        line-height: 1.35; margin-bottom: 0.125rem;
+    }
+    .qc-desc {
+        font-size: 0.75rem; color: #71717a; line-height: 1.35;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ===== Mission list on card ===== */
+    .qc-missions { padding: 0 1rem; margin-bottom: 0.375rem; }
+    .qc-mi {
+        display: flex; align-items: center; gap: 0.5rem;
+        padding: 0.3125rem 0;
+    }
+    .qc-mi + .qc-mi { border-top: 1px solid #f4f4f5; }
+    .qc-mi-icon {
+        width: 1.125rem; height: 1.125rem; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .qc-mi-icon.done { background: #16a34a; color: #fff; }
+    .qc-mi-icon.pend { background: #f4f4f5; color: #a1a1aa; }
+    .qc-mi-name { font-size: 0.75rem; line-height: 1.3; }
+    .qc-mi-name.done { color: #a1a1aa; text-decoration: line-through; }
+    .qc-mi-name.pend { color: #3f3f46; }
+
+    .qc-prog {
+        padding: 0.375rem 1rem 0.75rem;
+        display: flex; align-items: center; gap: 0.5rem;
+    }
+    .qc-prog-bar {
+        flex: 1; height: 5px; background: #f4f4f5;
+        border-radius: 9999px; overflow: hidden;
+    }
+    .qc-prog-fill { height: 100%; border-radius: 9999px; }
+    .qc.rk-t .qc-prog-fill { background: linear-gradient(90deg, #818cf8, #60a5fa); }
+    .qc.rk-1 .qc-prog-fill { background: linear-gradient(90deg, #4ade80, #22d3ee); }
+    .qc.rk-2 .qc-prog-fill { background: linear-gradient(90deg, #f59e0b, #f97316); }
+    .qc.rk-3 .qc-prog-fill { background: linear-gradient(90deg, #ec4899, #f43f5e); }
+    .qc.rk-l .qc-prog-fill { background: linear-gradient(90deg, #f43f5e, #facc15); }
+    .qc-prog-text {
+        font-size: 0.6875rem; font-weight: 700; color: #a1a1aa; white-space: nowrap;
+    }
+
+    .qc-stamp {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-12deg);
+        font-size: 1rem; font-weight: 800; color: #16a34a;
+        border: 2px solid #16a34a; border-radius: 0.5rem; padding: 0.25rem 0.875rem;
+        pointer-events: none; letter-spacing: 0.08em;
+        background: rgba(255,255,255,0.85);
+    }
+
+    /* ===== Empty ===== */
+    .qp-empty { text-align: center; padding: 3rem 0; color: #a1a1aa; }
+    .qp-empty .iconify { margin-bottom: 0.5rem; }
+
+    /* ===== Modal ===== */
+    .qm-overlay {
+        display: none; position: fixed; inset: 0; z-index: 100;
+        background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+        align-items: center; justify-content: center; padding: 1rem;
+    }
+    .qm-overlay.open { display: flex; }
+    .qm {
+        background: #fff;
+        border: 1px solid #e4e4e7;
+        border-radius: 0.75rem; width: 100%; max-width: 480px;
+        max-height: 85vh; overflow-y: auto; color: #18181b;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    }
+    .qm-head {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 1.25rem 1.5rem 0.75rem; border-bottom: 1px solid #f4f4f5;
+    }
+    .qm-title { font-size: 1rem; font-weight: 800; color: #18181b; }
+    .qm-close {
+        width: 2rem; height: 2rem; border-radius: 50%; border: none;
+        background: #f4f4f5; color: #71717a; cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: background 0.15s;
+    }
+    .qm-close:hover { background: #e4e4e7; }
+    .qm-body { padding: 1rem 1.5rem 1.25rem; }
+    .qm-desc { font-size: 0.8125rem; color: #71717a; margin-bottom: 1rem; }
+    .qm-rw-row {
+        display: flex; align-items: center; gap: 0.5rem;
+        margin-bottom: 1rem; padding: 0.625rem 0.875rem;
+        background: #fdf2f8; border: 1px solid #fce7f3;
+        border-radius: 0.625rem;
+    }
+    .qm-rw-icon {
+        width: 2rem; height: 2rem; border-radius: 50%;
+        background: #fce7f3;
+        display: flex; align-items: center; justify-content: center; color: #db2777;
+    }
+    .qm-rw-label { font-size: 0.75rem; color: #a1a1aa; }
+    .qm-rw-val { font-size: 1rem; font-weight: 800; color: #db2777; }
+    .qm-rw-details { margin-top: 0.5rem; font-size: 0.75rem; color: #71717a; line-height: 1.6; }
+    .qm-rw-details span { color: #3f3f46; font-weight: 600; }
+    .qm-mi {
+        display: flex; align-items: center; gap: 0.625rem;
+        padding: 0.625rem 0; border-bottom: 1px solid #f4f4f5;
+    }
+    .qm-mi:last-child { border-bottom: none; }
+    .qm-mi-icon {
+        width: 1.375rem; height: 1.375rem; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .qm-mi-icon.done { background: #16a34a; color: #fff; }
+    .qm-mi-icon.pend { background: #f4f4f5; color: #a1a1aa; }
+    .qm-mi-label { font-size: 0.8125rem; }
+    .qm-mi-label.done { color: #a1a1aa; text-decoration: line-through; }
+    .qm-mi-label.pend { color: #3f3f46; }
+    .qm-prog { display: flex; align-items: center; gap: 0.5rem; margin: 1rem 0 0.75rem; }
+    .qm-prog-bar { flex: 1; height: 8px; background: #f4f4f5; border-radius: 9999px; overflow: hidden; }
+    .qm-prog-fill { height: 100%; border-radius: 9999px; background: linear-gradient(90deg, #ec4899, #db2777); }
+    .qm-prog-text { font-size: 0.8125rem; font-weight: 700; color: #71717a; }
+    .qm-action { padding: 0 1.5rem 1.25rem; }
+    .qm-claim-btn {
+        width: 100%; display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+        background: linear-gradient(135deg, #ec4899, #db2777);
+        color: #fff; font-size: 0.875rem; font-weight: 700;
+        padding: 0.75rem; border-radius: 0.5rem; border: none; cursor: pointer;
+        box-shadow: 0 2px 8px rgba(219,39,119,0.25);
+        transition: transform 0.15s, box-shadow 0.2s;
+    }
+    .qm-claim-btn:hover { transform: scale(1.02); box-shadow: 0 4px 16px rgba(219,39,119,0.35); }
+    .qm-claim-btn:disabled { opacity: 0.5; cursor: wait; transform: none; }
+    .qm-done-badge {
+        width: 100%; text-align: center; padding: 0.75rem;
+        font-size: 0.875rem; font-weight: 700; color: #16a34a;
+        border: 1px solid #dcfce7; border-radius: 0.5rem;
+        background: #f0fdf4;
+    }
+    .qm-hint {
+        width: 100%; text-align: center; padding: 0.75rem;
+        font-size: 0.8125rem; color: #71717a;
+        border: 1px solid #e4e4e7; border-radius: 0.5rem;
+        background: #fafafa;
+    }
+
+    /* ===== Mobile ===== */
+    .qp-mobile-sel {
+        display: none; width: 100%; padding: 0.5rem 0.75rem;
+        font-size: 0.8125rem; font-weight: 600; color: #3f3f46;
+        border: 1px solid #e4e4e7; border-radius: 0.5rem; background: #fff;
+        margin-bottom: 1rem;
+    }
+    @media (max-width: 1024px) {
+        .qg { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+        .qp-layout { flex-direction: column; }
+        .qp-side { display: none; }
+        .qp-mobile-sel { display: block; }
+        .qp { padding: 1rem; }
+        .qg { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="qp">
+
+    <div class="qp-header">
+        <span class="iconify text-pink-500" data-icon="lucide:trophy" data-width="22"></span>
+        <span class="qp-header-title">クエスト</span>
+    </div>
+
+    <div class="qp-layout">
+
+        <!-- ===== Sidebar ===== -->
+        <aside class="qp-side">
+            <div class="qp-side-group">
+                <div class="qp-side-label">期間限定</div>
+                <button class="qp-side-item" data-group="limited" onclick="showGroup('limited', this)">
+                    <span class="iconify" data-icon="lucide:flame" data-width="16"></span>
+                    期間限定
+                    <span class="qp-side-count">{{ limited_incomplete }}</span>
+                </button>
+            </div>
+
+            <div class="qp-side-group">
+                <div class="qp-side-label">チュートリアル</div>
+                <button class="qp-side-item active" data-group="tutorial" onclick="showGroup('tutorial', this)">
+                    <span class="iconify" data-icon="lucide:compass" data-width="16"></span>
+                    チュートリアル
+                    <span class="qp-side-count">{{ tutorial_incomplete }}</span>
+                </button>
+            </div>
+
+            {% if category_names %}
+            <div class="qp-side-group">
+                <div class="qp-side-label">趣味</div>
+                {% for cn in category_names %}
+                <button class="qp-side-item" data-group="hobby-{{ forloop.counter }}" onclick="showGroup('hobby-{{ forloop.counter }}', this)">
+                    <span class="iconify" data-icon="lucide:sparkles" data-width="16"></span>
+                    {{ cn }}
+                    {% for cat_name, cnt in category_incomplete.items %}
+                        {% if cat_name == cn %}
+                        <span class="qp-side-count">{{ cnt }}</span>
+                        {% endif %}
+                    {% endfor %}
+                </button>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </aside>
+
+        <!-- ===== Main ===== -->
+        <div class="qp-main">
+
+            <!-- Mobile: select -->
+            <select class="qp-mobile-sel" onchange="showGroupMobile(this.value)">
+                <option value="limited">期間限定</option>
+                <option value="tutorial" selected>チュートリアル</option>
+                {% for cn in category_names %}
+                <option value="hobby-{{ forloop.counter }}">{{ cn }}</option>
+                {% endfor %}
+            </select>
+
+            <!-- Limited -->
+            <div class="qp-panel" id="panel-limited" style="display:none">
+                <div class="qp-main-head">
+                    <span class="iconify text-red-400" data-icon="lucide:flame" data-width="20"></span>
+                    <span class="qp-main-title">期間限定</span>
+                </div>
+                {% if limited_quests %}
+                <div class="qg">
+                    {% for qd in limited_quests %}
+                    <div class="qc rk-l {% if qd.reward_claimed %}qc-done{% endif %}"
+                         data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
+                         onclick="openQuest({{ qd.quest.quest_id }})">
+                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        <div class="qc-stripe"></div>
+                        <div class="qc-top">
+                            <div class="qc-stars">
+                                <span class="iconify qc-star" data-icon="lucide:flame" data-width="13" style="color:#f43f5e"></span>
+                            </div>
+                            <div class="qc-rw">
+                                <span class="iconify" data-icon="lucide:ticket" data-width="10"></span>
+                                {% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}
+                            </div>
+                        </div>
+                        <div class="qc-body">
+                            <div class="qc-name">{{ qd.quest.quest_name }}</div>
+                            <div class="qc-desc">{{ qd.quest.quest_description }}</div>
+                        </div>
+                        <div class="qc-missions">
+                            {% for mr in qd.missions %}
+                            <div class="qc-mi">
+                                <div class="qc-mi-icon {% if mr.done %}done{% else %}pend{% endif %}">
+                                    <span class="iconify" data-icon="{% if mr.done %}lucide:check{% else %}lucide:minus{% endif %}" data-width="10"></span>
+                                </div>
+                                <span class="qc-mi-name {% if mr.done %}done{% else %}pend{% endif %}">{{ mr.mission.mission_name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="qc-prog">
+                            <div class="qc-prog-bar"><div class="qc-prog-fill" style="width:{% widthratio qd.done_count qd.total 100 %}%"></div></div>
+                            <span class="qc-prog-text">{{ qd.done_count }}/{{ qd.total }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="qp-empty">
+                    <span class="iconify" data-icon="lucide:flame" data-width="36"></span>
+                    <p class="text-sm">期間限定のクエストはありません</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Tutorial -->
+            <div class="qp-panel active" id="panel-tutorial">
+                <div class="qp-main-head">
+                    <span class="iconify text-indigo-400" data-icon="lucide:compass" data-width="20"></span>
+                    <span class="qp-main-title">チュートリアル</span>
+                </div>
+                {% if tutorial_quests %}
+                <div class="qg">
+                    {% for qd in tutorial_quests %}
+                    <div class="qc rk-t {% if qd.reward_claimed %}qc-done{% endif %}"
+                         data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
+                         onclick="openQuest({{ qd.quest.quest_id }})">
+                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        <div class="qc-stripe"></div>
+                        <div class="qc-top">
+                            <div class="qc-stars">
+                                <span class="iconify qc-star" data-icon="lucide:compass" data-width="13" style="color:#818cf8"></span>
+                            </div>
+                            <div class="qc-rw">
+                                <span class="iconify" data-icon="lucide:ticket" data-width="10"></span>
+                                {% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}
+                            </div>
+                        </div>
+                        <div class="qc-body">
+                            <div class="qc-name">{{ qd.quest.quest_name }}</div>
+                            <div class="qc-desc">{{ qd.quest.quest_description }}</div>
+                        </div>
+                        <div class="qc-missions">
+                            {% for mr in qd.missions %}
+                            <div class="qc-mi">
+                                <div class="qc-mi-icon {% if mr.done %}done{% else %}pend{% endif %}">
+                                    <span class="iconify" data-icon="{% if mr.done %}lucide:check{% else %}lucide:minus{% endif %}" data-width="10"></span>
+                                </div>
+                                <span class="qc-mi-name {% if mr.done %}done{% else %}pend{% endif %}">{{ mr.mission.mission_name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="qc-prog">
+                            <div class="qc-prog-bar"><div class="qc-prog-fill" style="width:{% widthratio qd.done_count qd.total 100 %}%"></div></div>
+                            <span class="qc-prog-text">{{ qd.done_count }}/{{ qd.total }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="qp-empty">
+                    <span class="iconify" data-icon="lucide:compass" data-width="36"></span>
+                    <p class="text-sm">クエストはありません</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Hobby panels -->
+            {% for cat_name, quests_list in category_quests.items %}
+            <div class="qp-panel" id="panel-hobby-{{ forloop.counter }}" style="display:none">
+                <div class="qp-main-head">
+                    <span class="iconify text-amber-400" data-icon="lucide:sparkles" data-width="20"></span>
+                    <span class="qp-main-title">{{ cat_name }}</span>
+                </div>
+                <div class="qg">
+                    {% for qd in quests_list %}
+                    <div class="qc rk-{{ qd.quest.difficulty }} {% if qd.reward_claimed %}qc-done{% endif %}"
+                         data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
+                         onclick="openQuest({{ qd.quest.quest_id }})">
+                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        <div class="qc-stripe"></div>
+                        <div class="qc-top">
+                            <div class="qc-stars">
+                                {% if qd.quest.difficulty == 1 %}
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star off" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star off" data-icon="lucide:star" data-width="12"></span>
+                                {% elif qd.quest.difficulty == 2 %}
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star off" data-icon="lucide:star" data-width="12"></span>
+                                {% elif qd.quest.difficulty == 3 %}
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                <span class="iconify qc-star" data-icon="lucide:star" data-width="12"></span>
+                                {% endif %}
+                            </div>
+                            <div class="qc-rw">
+                                <span class="iconify" data-icon="lucide:ticket" data-width="10"></span>
+                                {% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}
+                            </div>
+                        </div>
+                        <div class="qc-body">
+                            <div class="qc-name">{{ qd.quest.quest_name }}</div>
+                            <div class="qc-desc">{{ qd.quest.quest_description }}</div>
+                        </div>
+                        <div class="qc-missions">
+                            {% for mr in qd.missions %}
+                            <div class="qc-mi">
+                                <div class="qc-mi-icon {% if mr.done %}done{% else %}pend{% endif %}">
+                                    <span class="iconify" data-icon="{% if mr.done %}lucide:check{% else %}lucide:minus{% endif %}" data-width="10"></span>
+                                </div>
+                                <span class="qc-mi-name {% if mr.done %}done{% else %}pend{% endif %}">{{ mr.mission.mission_name }}</span>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="qc-prog">
+                            <div class="qc-prog-bar"><div class="qc-prog-fill" style="width:{% widthratio qd.done_count qd.total 100 %}%"></div></div>
+                            <span class="qc-prog-text">{{ qd.done_count }}/{{ qd.total }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== Quest Detail Modal ===== -->
+<div id="quest-modal" class="qm-overlay" onclick="if(event.target===this)closeQuest()">
+    <div class="qm">
+        <div class="qm-head">
+            <div class="qm-title" id="qm-title"></div>
+            <button class="qm-close" onclick="closeQuest()">
+                <span class="iconify" data-icon="lucide:x" data-width="16"></span>
+            </button>
+        </div>
+        <div class="qm-body">
+            <div class="qm-desc" id="qm-desc"></div>
+            <div class="qm-rw-row" id="qm-reward" style="display:none">
+                <div class="qm-rw-icon"><span class="iconify" data-icon="lucide:ticket" data-width="16"></span></div>
+                <div style="flex:1">
+                    <div class="qm-rw-label">クリア報酬</div>
+                    <div class="qm-rw-val" id="qm-rw-val"></div>
+                    <div class="qm-rw-details" id="qm-rw-details"></div>
+                </div>
+            </div>
+            <div id="qm-missions"></div>
+            <div class="qm-prog">
+                <div class="qm-prog-bar"><div class="qm-prog-fill" id="qm-prog-fill"></div></div>
+                <span class="qm-prog-text" id="qm-prog-text"></span>
+            </div>
+        </div>
+        <div class="qm-action" id="qm-action"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+/* ===== Quest data ===== */
+const QD = {};
+{% for qd in limited_quests %}
+QD[{{ qd.quest.quest_id }}] = {
+    id: {{ qd.quest.quest_id }},
+    name: "{{ qd.quest.quest_name|escapejs }}",
+    desc: "{{ qd.quest.quest_description|escapejs }}",
+    reward: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}",
+    couponName: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.coupon_name|escapejs }}{% endif %}",
+    couponExpires: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.expires_at|date:'Y/m/d' }}{% endif %}",
+    couponCategories: "{% if qd.quest.reward_coupon %}{% for tc in qd.quest.reward_coupon.target_categories.all %}{{ tc.product_category.category_name|escapejs }}{% if not forloop.last %}、{% endif %}{% endfor %}{% endif %}",
+    done: {{ qd.done_count }}, total: {{ qd.total }},
+    allDone: {{ qd.all_done|yesno:"true,false" }},
+    claimed: {{ qd.reward_claimed|yesno:"true,false" }},
+    missions: [{% for mr in qd.missions %}{ name: "{{ mr.mission.mission_name|escapejs }}", done: {{ mr.done|yesno:"true,false" }} },{% endfor %}]
+};
+{% endfor %}
+{% for qd in tutorial_quests %}
+QD[{{ qd.quest.quest_id }}] = {
+    id: {{ qd.quest.quest_id }},
+    name: "{{ qd.quest.quest_name|escapejs }}",
+    desc: "{{ qd.quest.quest_description|escapejs }}",
+    reward: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}",
+    couponName: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.coupon_name|escapejs }}{% endif %}",
+    couponExpires: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.expires_at|date:'Y/m/d' }}{% endif %}",
+    couponCategories: "{% if qd.quest.reward_coupon %}{% for tc in qd.quest.reward_coupon.target_categories.all %}{{ tc.product_category.category_name|escapejs }}{% if not forloop.last %}、{% endif %}{% endfor %}{% endif %}",
+    done: {{ qd.done_count }}, total: {{ qd.total }},
+    allDone: {{ qd.all_done|yesno:"true,false" }},
+    claimed: {{ qd.reward_claimed|yesno:"true,false" }},
+    missions: [{% for mr in qd.missions %}{ name: "{{ mr.mission.mission_name|escapejs }}", done: {{ mr.done|yesno:"true,false" }} },{% endfor %}]
+};
+{% endfor %}
+{% for cat_name, quests_list in category_quests.items %}{% for qd in quests_list %}
+QD[{{ qd.quest.quest_id }}] = {
+    id: {{ qd.quest.quest_id }},
+    name: "{{ qd.quest.quest_name|escapejs }}",
+    desc: "{{ qd.quest.quest_description|escapejs }}",
+    reward: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.discount_amount|floatformat:0 }}円OFF{% endif %}",
+    couponName: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.coupon_name|escapejs }}{% endif %}",
+    couponExpires: "{% if qd.quest.reward_coupon %}{{ qd.quest.reward_coupon.expires_at|date:'Y/m/d' }}{% endif %}",
+    couponCategories: "{% if qd.quest.reward_coupon %}{% for tc in qd.quest.reward_coupon.target_categories.all %}{{ tc.product_category.category_name|escapejs }}{% if not forloop.last %}、{% endif %}{% endfor %}{% endif %}",
+    done: {{ qd.done_count }}, total: {{ qd.total }},
+    allDone: {{ qd.all_done|yesno:"true,false" }},
+    claimed: {{ qd.reward_claimed|yesno:"true,false" }},
+    missions: [{% for mr in qd.missions %}{ name: "{{ mr.mission.mission_name|escapejs }}", done: {{ mr.done|yesno:"true,false" }} },{% endfor %}]
+};
+{% endfor %}{% endfor %}
+
+/* ===== CSRF ===== */
+function getCSRFToken() {
+    return document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+}
+
+/* ===== Sidebar navigation ===== */
+function showGroup(id, btn) {
+    document.querySelectorAll('.qp-side-item').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.qp-panel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById('panel-' + id);
+    if (panel) panel.style.display = '';
+}
+function showGroupMobile(id) {
+    document.querySelectorAll('.qp-panel').forEach(p => p.style.display = 'none');
+    const panel = document.getElementById('panel-' + id);
+    if (panel) panel.style.display = '';
+    document.querySelectorAll('.qp-side-item').forEach(b => {
+        b.classList.toggle('active', b.dataset.group === id);
+    });
+}
+
+/* ===== Modal ===== */
+function openQuest(qid) {
+    const q = QD[qid];
+    if (!q) return;
+    document.getElementById('qm-title').textContent = q.name;
+    document.getElementById('qm-desc').textContent = q.desc;
+    const rwRow = document.getElementById('qm-reward');
+    if (q.reward) {
+        rwRow.style.display = '';
+        document.getElementById('qm-rw-val').textContent = q.reward;
+        let details = '';
+        if (q.couponName) details += 'クーポン名: <span>' + q.couponName + '</span><br>';
+        if (q.couponCategories) details += '対象カテゴリ: <span>' + q.couponCategories + '</span><br>';
+        if (q.couponExpires) details += '有効期限: <span>' + q.couponExpires + '</span>';
+        document.getElementById('qm-rw-details').innerHTML = details;
+    } else { rwRow.style.display = 'none'; }
+    let html = '';
+    q.missions.forEach(m => {
+        const st = m.done ? 'done' : 'pend';
+        const icon = m.done ? 'lucide:check' : 'lucide:minus';
+        html += `<div class="qm-mi"><div class="qm-mi-icon ${st}"><span class="iconify" data-icon="${icon}" data-width="12"></span></div><span class="qm-mi-label ${st}">${m.name}</span></div>`;
+    });
+    document.getElementById('qm-missions').innerHTML = html;
+    const pct = q.total > 0 ? (q.done / q.total * 100) : 0;
+    document.getElementById('qm-prog-fill').style.width = pct + '%';
+    document.getElementById('qm-prog-text').textContent = q.done + ' / ' + q.total;
+    const actEl = document.getElementById('qm-action');
+    if (q.claimed) {
+        actEl.innerHTML = '<div class="qm-done-badge"><span class="iconify" data-icon="lucide:check-circle-2" data-width="18" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>COMPLETE</div>';
+    } else if (q.allDone) {
+        actEl.innerHTML = `<button class="qm-claim-btn" onclick="claimReward(${q.id})"><span class="iconify" data-icon="lucide:gift" data-width="18"></span>報酬を受け取る</button>`;
+    } else {
+        actEl.innerHTML = '<div class="qm-hint">全ミッションをクリアすると報酬を受け取れます</div>';
+    }
+    document.getElementById('quest-modal').classList.add('open');
+}
+function closeQuest() { document.getElementById('quest-modal').classList.remove('open'); }
+
+async function claimReward(qid) {
+    const q = QD[qid];
+    const rewardText = q && q.reward ? q.reward : '報酬';
+
+    // 確認モーダル
+    const confirmed = await showConfirm(
+        `${rewardText} のクーポンを受け取りますか？`,
+        { title: '報酬を受け取る', confirmText: '受け取る', cancelText: 'キャンセル' }
+    );
+    if (!confirmed) return;
+
+    const btn = document.querySelector('.qm-claim-btn');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<span class="iconify" data-icon="lucide:loader-2" data-width="18" style="animation:spin .7s linear infinite"></span> 処理中...'; }
+
+    const csrfToken = getCSRFToken();
+    if (!csrfToken) {
+        await showAlert('CSRFトークンが取得できませんでした。ページを再読み込みしてください。');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="iconify" data-icon="lucide:gift" data-width="18"></span> 報酬を受け取る'; }
+        return;
+    }
+
+    try {
+        const r = await fetch(`/monotal/quests/${qid}/claim/`, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': csrfToken, 'Content-Type': 'application/json' },
+        });
+        if (!r.ok) throw new Error(r.status);
+        const data = await r.json();
+
+        if (data.success) {
+            QD[qid].claimed = true;
+            document.querySelectorAll(`.qc[data-quest-id="${qid}"]`).forEach(card => {
+                card.classList.add('qc-done'); card.dataset.completed = '1';
+                if (!card.querySelector('.qc-stamp')) {
+                    const s = document.createElement('div'); s.className = 'qc-stamp'; s.textContent = 'CLEAR'; card.appendChild(s);
+                }
+            });
+            document.getElementById('qm-action').innerHTML = '<div class="qm-done-badge"><span class="iconify" data-icon="lucide:check-circle-2" data-width="18" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>COMPLETE</div>';
+            await showAlert(data.message);
+        } else {
+            await showAlert(data.message);
+            if (btn) { btn.disabled = false; btn.innerHTML = '<span class="iconify" data-icon="lucide:gift" data-width="18"></span> 報酬を受け取る'; }
+        }
+    } catch (err) {
+        await showAlert('エラーが発生しました。ページを再読み込みしてお試しください。');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<span class="iconify" data-icon="lucide:gift" data-width="18"></span> 報酬を受け取る'; }
+    }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeQuest(); });
+</script>
+<style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+{% endblock %}

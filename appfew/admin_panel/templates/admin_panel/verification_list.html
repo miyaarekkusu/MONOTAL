@@ -1,0 +1,81 @@
+﻿{% extends 'admin_panel/base.html' %}
+{% load static %}
+
+{% block title %}本人確認審査一覧 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1 class="page-title">本人確認審査一覧</h1>
+        <span class="total-count">未審査: {{ total_count }}件</span>
+    </div>
+
+    {% if verifications %}
+    <table class="verification-table">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>ユーザー名</th>
+                <th>表示名</th>
+                <th>メールアドレス</th>
+                <th>申請日時</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in verifications %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ v.user.user_name }}</td>
+                <td>{{ v.user.display_name }}</td>
+                <td>{{ v.user.email }}</td>
+                <td>{{ v.register_datetime|date:"Y/m/d H:i" }}</td>
+                <td>
+                    <a href="{% url 'admin_verification_detail' verification_id=v.identity_verification_id %}" class="btn-review">審査</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.has_other_pages %}
+    <div class="pagination-container">
+        {% if page_obj.has_previous %}
+            <a href="?page=1">&laquo; 最初</a>
+            <a href="?page={{ page_obj.previous_page_number }}">前へ</a>
+        {% endif %}
+
+        {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <span class="current">{{ num }}</span>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <a href="?page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+
+        {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}">次へ</a>
+            <a href="?page={{ page_obj.paginator.num_pages }}">最後 &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-message">
+        <span class="iconify empty-icon" data-icon="lucide:check-circle" data-width="48"></span>
+        <p>審査待ちの申請はありません</p>
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'admin_dashboard' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            ダッシュボードに戻る
+        </a>
+    </p>
+</div>
+{% endblock %}

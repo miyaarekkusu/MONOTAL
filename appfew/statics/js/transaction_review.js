@@ -107,11 +107,11 @@ const ReviewPage = {
             e.preventDefault();
 
             if (this.selectedScore === 0) {
-                alert('評価を選択してください');
+                await showAlert('評価を選択してください');
                 return;
             }
 
-            if (!confirm('この評価を送信しますか？\n送信後は変更できません。')) return;
+            if (!await showConfirm('この評価を送信しますか？\n送信後は変更できません。')) return;
 
             const submitBtn = document.getElementById('submitBtn');
             submitBtn.disabled = true;
@@ -133,16 +133,16 @@ const ReviewPage = {
                 const data = await response.json();
 
                 if (data.success) {
-                    alert(data.message);
+                    await showAlert(data.message);
                     window.location.href = `/monotal/transaction/${RENTAL_HISTORY_ID}/`;
                 } else {
-                    alert(data.message || '評価の送信に失敗しました');
+                    showAlert(data.message || '評価の送信に失敗しました');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = '<span class="iconify" data-icon="lucide:send" data-width="18"></span> 評価を送信する';
                 }
             } catch (error) {
                 console.error('評価の送信に失敗しました:', error);
-                alert('評価の送信に失敗しました');
+                showAlert('評価の送信に失敗しました');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = '<span class="iconify" data-icon="lucide:send" data-width="18"></span> 評価を送信する';
             }

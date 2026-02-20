@@ -162,14 +162,14 @@ function initBookmarkButton() {
             } else {
                 // Show error message
                 if (response.status === 401) {
-                    alert('ブックマークするにはログインが必要です');
+                    showAlert('ブックマークするにはログインが必要です');
                 } else {
-                    alert(data.error || 'エラーが発生しました');
+                    showAlert(data.error || 'エラーが発生しました');
                 }
             }
         } catch (error) {
             console.error('Bookmark error:', error);
-            alert('通信エラーが発生しました');
+            showAlert('通信エラーが発生しました');
         } finally {
             this.disabled = false;
         }
@@ -275,7 +275,7 @@ function initCommentSection() {
             const messageId = deleteBtn.dataset.messageId;
             if (!messageId) return;
 
-            if (!confirm('このコメントを削除しますか？')) return;
+            if (!await showConfirm('このコメントを削除しますか？', {danger: true})) return;
 
             await deleteComment(messageId);
         });
@@ -308,11 +308,11 @@ function initCommentSection() {
                     commentList.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
                 }
             } else {
-                alert(data.error || 'コメントの削除に失敗しました');
+                showAlert(data.error || 'コメントの削除に失敗しました');
             }
         } catch (error) {
             console.error('Delete comment error:', error);
-            alert('通信エラーが発生しました');
+            showAlert('通信エラーが発生しました');
         }
     }
 
@@ -376,14 +376,14 @@ function initCommentSection() {
                 updateCommentCount(currentCount + 1);
             } else {
                 if (response.status === 401) {
-                    alert('コメントするにはログインが必要です');
+                    showAlert('コメントするにはログインが必要です');
                 } else {
-                    alert(data.error || 'エラーが発生しました');
+                    showAlert(data.error || 'エラーが発生しました');
                 }
             }
         } catch (error) {
             console.error('Submit comment error:', error);
-            alert('通信エラーが発生しました');
+            showAlert('通信エラーが発生しました');
         } finally {
             commentBtn.disabled = commentInput.value.trim().length === 0;
             commentBtn.textContent = 'コメントする';

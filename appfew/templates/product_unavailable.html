@@ -1,0 +1,15 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}非公開の商品 | MONOTAL{% endblock %}
+
+{% block content %}
+<div class="flex flex-col items-center justify-center min-h-[60vh] px-4 text-center">
+    <span class="iconify text-zinc-300 mb-6" data-icon="lucide:eye-off" data-width="64" data-height="64"></span>
+    <h1 class="text-xl font-bold text-zinc-800 mb-2">非公開の商品です</h1>
+    <p class="text-sm text-zinc-500 mb-8">この商品は現在公開されていません。</p>
+    <a href="{% url 'index' %}" class="inline-flex items-center gap-2 rounded-full bg-pink-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-pink-700 transition-colors">
+        <span class="iconify" data-icon="lucide:home" data-width="16"></span>
+        トップページに戻る
+    </a>
+</div>
+{% endblock %}

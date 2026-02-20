@@ -1,0 +1,109 @@
+﻿{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}中止申請管理 - 管理者{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_verification.css' %}">
+<link rel="stylesheet" type="text/css" href="{% static 'css/admin_cancellation.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <div class="page-header">
+        <h1 class="page-title">中止申請管理</h1>
+        {% if pending_count > 0 %}
+        <span class="total-count">未審査: {{ pending_count }}件</span>
+        {% endif %}
+    </div>
+
+    <!-- ステータスフィルター -->
+    <div class="filter-tabs">
+        <a href="?status=all" class="filter-tab {% if current_filter == 'all' %}active{% endif %}">
+            すべて <span class="tab-count">{{ total_count }}</span>
+        </a>
+        <a href="?status=pending" class="filter-tab {% if current_filter == 'pending' %}active{% endif %}">
+            申請中 <span class="tab-count">{{ pending_count }}</span>
+        </a>
+        <a href="?status=approved" class="filter-tab {% if current_filter == 'approved' %}active{% endif %}">
+            承認済み <span class="tab-count">{{ approved_count }}</span>
+        </a>
+        <a href="?status=rejected" class="filter-tab {% if current_filter == 'rejected' %}active{% endif %}">
+            却下 <span class="tab-count">{{ rejected_count }}</span>
+        </a>
+    </div>
+
+    {% if requests %}
+    <table class="verification-table">
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>申請者</th>
+                <th>商品名</th>
+                <th>中止理由</th>
+                <th>申請日</th>
+                <th>状態</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for req in requests %}
+            <tr>
+                <td>{{ req.cancellation_request_id }}</td>
+                <td>{{ req.requester_user.display_name }}</td>
+                <td class="product-name-cell">{{ req.rental_history.product.product_name }}</td>
+                <td>{{ req.cancellation_reason.reason_name }}</td>
+                <td>{{ req.request_datetime|date:"Y/m/d H:i" }}</td>
+                <td>
+                    {% if req.cancellation_status_id == 1 %}
+                        <span class="status-badge pending">申請中</span>
+                    {% elif req.cancellation_status_id == 2 %}
+                        <span class="status-badge approved">承認</span>
+                    {% else %}
+                        <span class="status-badge rejected">却下</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{% url 'admin_cancellation_detail' req.cancellation_request_id %}" class="btn-review">
+                        {% if req.cancellation_status_id == 1 %}審査{% else %}詳細{% endif %}
+                    </a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- ページネーション -->
+    {% if requests.has_other_pages %}
+    <div class="pagination">
+        {% if requests.has_previous %}
+        <a href="?status={{ current_filter }}&page={{ requests.previous_page_number }}" class="page-link">&laquo; 前へ</a>
+        {% endif %}
+        <span class="page-info">{{ requests.number }} / {{ requests.paginator.num_pages }}</span>
+        {% if requests.has_next %}
+        <a href="?status={{ current_filter }}&page={{ requests.next_page_number }}" class="page-link">次へ &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-message">
+        <span class="iconify empty-icon" data-icon="lucide:check-circle" data-width="48"></span>
+        <p>
+            {% if current_filter == 'pending' %}審査待ちの中止申請はありません
+            {% elif current_filter == 'approved' %}承認済みの中止申請はありません
+            {% elif current_filter == 'rejected' %}却下された中止申請はありません
+            {% else %}中止申請はありません
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+
+    <p class="back-link">
+        <a href="{% url 'index' %}">
+            <span class="iconify" data-icon="lucide:arrow-left" data-width="14"></span>
+            ホームに戻る
+        </a>
+    </p>
+</div>
+{% endblock %}

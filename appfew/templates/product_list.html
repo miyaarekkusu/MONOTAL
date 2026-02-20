@@ -120,11 +120,6 @@
                             <span class="separator">~</span>
                             <input type="number" name="max_fee" placeholder="上限" value="{{ filters.max_fee }}">
                         </div>
-                        <div class="price-presets">
-                            <button type="button" class="price-preset" data-range="under-1000">¥1,000以下</button>
-                            <button type="button" class="price-preset" data-range="1000-5000">¥1,000 - ¥5,000</button>
-                            <button type="button" class="price-preset" data-range="5000-10000">¥5,000 - ¥10,000</button>
-                        </div>
                     </div>
                 </details>
             </div>
@@ -216,10 +211,6 @@
                     </span>
                 </div>
 
-                <button class="save-search-btn">
-                    <span class="iconify" data-icon="lucide:heart" data-width="14" data-height="14"></span>
-                    この検索を保存
-                </button>
             </div>
         </div>
 
@@ -232,8 +223,9 @@
                 <a href="{% url 'product_detail' product_id=product.product_id %}" style="text-decoration: none; color: inherit;">
                     <div class="product-image-wrapper">
                         {% if product.product_status.product_status_id == 2 %}
-                        <div class="sold-badge"></div>
-                        <span class="sold-text">売切</span>
+                        <div class="rental-overlay">
+                            <span class="rental-overlay-text">レンタル中</span>
+                        </div>
                         {% endif %}
                         {% if product.images.all %}
                         <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}">

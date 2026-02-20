@@ -43,7 +43,7 @@
                 {% endif %}
                 {% if product.product_status %}
                 <div class="rental-badge status-{{ product.product_status.product_status_id }}">
-                    {{ product.product_status.status_name }}
+                    {% if product.product_status.product_status_id == 2 %}レンタル中{% else %}{{ product.product_status.status_name }}{% endif %}
                 </div>
                 {% endif %}
             </div>
@@ -205,13 +205,21 @@
                     申請中です
                 </button>
                 {% else %}
-                <form action="{% url 'rental_request' product_id=product.product_id %}" method="post" style="margin: 0;" onsubmit="return confirm('この商品のレンタルを申請しますか？');">
+                <form id="rentalRequestForm" action="{% url 'rental_request' product_id=product.product_id %}" method="post" style="margin: 0;">
                     {% csrf_token %}
                     <input type="hidden" name="plan_id" id="selectedPlanId" value="">
                     <button type="submit" class="rental-cta-btn">
                         レンタル申請
                     </button>
                 </form>
+                <script>
+                document.getElementById('rentalRequestForm').addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    if (await showConfirm('この商品のレンタルを申請しますか？')) {
+                        this.submit();
+                    }
+                });
+                </script>
                 {% endif %}
                 {% endif %}
 
