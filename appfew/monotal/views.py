@@ -6092,12 +6092,22 @@ from .views_insurance import (
 
 # ===== 掲示板関連ビュー =====
 
-@login_required(login_url='/monotal/login/')
 def board_list(request):
-    """掲示板一覧"""
-    queryset = Community.objects.select_related('creator', 'category').order_by('-created_at')
+    """掲示板一覧（HTMLおよびAJAX JSON対応）"""
+    from django.db.models import Count
     q = request.GET.get('q', '').strip()
     cat = request.GET.get('category', '')
+    sort = request.GET.get('sort', 'new')  # 'new' | 'old' | 'members'
+
+    if sort == 'old':
+        order = 'created_at'
+    elif sort == 'members':
+        order = '-member_count'
+    else:
+        order = '-created_at'
+    queryset = Community.objects.select_related('creator', 'category').annotate(
+        member_count=Count('members', distinct=True)
+    ).order_by(order)
 
     if q:
         queryset = queryset.filter(Q(name__icontains=q) | Q(description__icontains=q))
@@ -6109,6 +6119,39 @@ def board_list(request):
 
     paginator = Paginator(queryset, 20)
     page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    # AJAXリクエストの場合はJSONで返す
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        joined_ids = set()
+        if request.user.is_authenticated:
+            joined_ids = set(
+                CommunityMember.objects.filter(user=request.user).values_list('community_id', flat=True)
+            )
+        boards_data = []
+        for b in page_obj:
+            is_creator = b.creator == request.user if request.user.is_authenticated else False
+            is_member = is_creator or (b.community_id in joined_ids)
+            total_members = b.member_count + (1 if b.creator else 0)
+            boards_data.append({
+                'id': b.community_id,
+                'name': b.name,
+                'description': b.description,
+                'category': b.category.name if b.category else None,
+                'category_id': b.category_id,
+                'creator_name': (b.creator.display_name or b.creator.user_name) if b.creator else None,
+                'member_count': total_members,
+                'created_at': b.created_at.strftime('%Y/%m/%d'),
+                'url': reverse('board_detail', kwargs={'pk': b.community_id}),
+                'join_url': reverse('board_join', kwargs={'pk': b.community_id}),
+                'leave_url': reverse('board_leave', kwargs={'pk': b.community_id}),
+                'user_is_creator': is_creator,
+                'user_is_member': is_member,
+            })
+        return JsonResponse({
+            'boards': boards_data,
+            'has_next': page_obj.has_next(),
+            'total': paginator.count,
+        })
 
     try:
         selected_category_id = int(cat)
@@ -6192,9 +6235,8 @@ def board_create(request):
     })
 
 
-@login_required(login_url='/monotal/login/')
 def board_detail(request, pk):
-    """掲示板詳細・メッセージ投稿"""
+    """掲示板詳細・メッセージ投稿（未ログインは閲覧のみ）"""
     board = get_object_or_404(Community, pk=pk)
     chat_room = ChatRoom.objects.filter(community=board).first()
 
@@ -6207,17 +6249,19 @@ def board_detail(request, pk):
             .order_by('register_datetime')
         ) if chat_room else []
 
-        user_products = (
-            Product.objects
-            .filter(user=request.user, delete_datetime__isnull=True, product_status_id=1)
-            .prefetch_related('images')
-            .order_by('-register_datetime')[:20]
-        )
+        user_products = []
+        if request.user.is_authenticated:
+            user_products = (
+                Product.objects
+                .filter(user=request.user, delete_datetime__isnull=True, product_status_id=1)
+                .prefetch_related('images')
+                .order_by('-register_datetime')[:20]
+            )
 
         # AJAXリクエストの場合はJSONを返す
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            is_creator = board.creator == request.user
-            is_member = is_creator or CommunityMember.objects.filter(community=board, user=request.user).exists()
+            is_creator = request.user.is_authenticated and board.creator == request.user
+            is_member = is_creator or (request.user.is_authenticated and CommunityMember.objects.filter(community=board, user=request.user).exists())
 
             # メンバー一覧（作成者を先頭に）
             member_qs = CommunityMember.objects.filter(community=board).select_related('user').order_by('joined_at')
@@ -6242,9 +6286,21 @@ def board_detail(request, pk):
                 })
 
             def msg_to_dict(m):
+                # システムメッセージ判定
+                if m.message_content and m.message_content.startswith('__system__:'):
+                    return {
+                        'id': m.message_id,
+                        'is_system': True,
+                        'system_text': m.message_content[len('__system__:'):],
+                        'content': None, 'image_url': None, 'product': None,
+                        'user': {'name': '', 'avatar': None, 'profile_url': None},
+                        'time': m.register_datetime.strftime('%m/%d %H:%M'),
+                        'is_mine': False, 'delete_url': None,
+                    }
                 first_img = m.product_link.images.first() if m.product_link else None
                 return {
                     'id': m.message_id,
+                    'is_system': False,
                     'content': m.message_content,
                     'image_url': m.image.url if m.image else None,
                     'product': {
@@ -6261,6 +6317,14 @@ def board_detail(request, pk):
                     'time': m.register_datetime.strftime('%m/%d %H:%M'),
                     'is_mine': m.user == request.user,
                     'delete_url': reverse('message_delete', kwargs={'pk': m.message_id}) if m.user == request.user else None,
+                    'edit_url': reverse('message_edit', kwargs={'pk': m.message_id}) if m.user == request.user and m.message_content else None,
+                    'reply': {
+                        'id': m.reply_to.message_id,
+                        'user_name': m.reply_to.user.user_name,
+                        'content': m.reply_to.message_content if m.reply_to.message_content and not m.reply_to.message_content.startswith('__system__:') else None,
+                        'image_url': m.reply_to.image.url if m.reply_to.image else None,
+                        'product_name': m.reply_to.product_link.product_name if m.reply_to.product_link else None,
+                    } if m.reply_to else None,
                 }
             return JsonResponse({
                 'board': {
@@ -6275,6 +6339,7 @@ def board_detail(request, pk):
                 'is_member': is_member,
                 'join_url': reverse('board_join', kwargs={'pk': board.pk}),
                 'leave_url': reverse('board_leave', kwargs={'pk': board.pk}),
+                'delete_url': reverse('board_delete', kwargs={'pk': board.pk}) if is_creator else None,
                 'member_count': len(member_list),
                 'members': member_list,
                 'messages': [msg_to_dict(m) for m in msgs],
@@ -6293,12 +6358,17 @@ def board_detail(request, pk):
         # 通常GETはコミュニティページ（掲示板選択状態）にリダイレクト
         return redirect(reverse('community') + f'?board={pk}')
 
+    # POST: ログイン必須
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'message': 'ログインが必要です'}, status=401)
+
     # POST: FormData（image対応）
     if not chat_room:
         return JsonResponse({'success': False, 'message': 'チャットルームが存在しません'}, status=400)
 
     content = request.POST.get('message_content', '').strip()
     product_link_id = request.POST.get('product_link_id', '').strip()
+    reply_to_id = request.POST.get('reply_to_id', '').strip()
     image = request.FILES.get('image')
 
     errors = {}
@@ -6312,7 +6382,6 @@ def board_detail(request, pk):
         try:
             product_link = Product.objects.get(
                 pk=int(product_link_id),
-                user=request.user,
                 delete_datetime__isnull=True,
             )
         except (Product.DoesNotExist, ValueError, TypeError):
@@ -6321,12 +6390,17 @@ def board_detail(request, pk):
     if errors:
         return JsonResponse({'success': False, 'errors': errors}, status=400)
 
+    reply_to = None
+    if reply_to_id:
+        reply_to = Message.objects.filter(pk=reply_to_id, chat_room=chat_room).first()
+
     msg = Message.objects.create(
         chat_room=chat_room,
         user=request.user,
         message_content=content or None,
         product_link=product_link,
         image=image,
+        reply_to=reply_to,
     )
 
     first_img = msg.product_link.images.first() if msg.product_link else None
@@ -6348,7 +6422,51 @@ def board_detail(request, pk):
         'time': msg.register_datetime.strftime('%m/%d %H:%M'),
         'is_mine': True,
         'delete_url': reverse('message_delete', kwargs={'pk': msg.message_id}),
+        'edit_url': reverse('message_edit', kwargs={'pk': msg.message_id}) if content else None,
+        'reply': {
+            'id': reply_to.message_id,
+            'user_name': reply_to.user.user_name,
+            'content': reply_to.message_content if reply_to.message_content and not reply_to.message_content.startswith('__system__:') else None,
+            'image_url': reply_to.image.url if reply_to.image else None,
+            'product_name': reply_to.product_link.product_name if reply_to.product_link else None,
+        } if reply_to else None,
     }})
+
+
+@login_required(login_url='/monotal/login/')
+def board_delete(request, pk):
+    """グループチャット削除（作成者のみ）"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=405)
+    board = get_object_or_404(Community, pk=pk)
+    if board.creator != request.user:
+        return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
+
+    # 通知対象: メンバー全員（作成者除く）
+    member_users = list(
+        CommunityMember.objects.filter(community=board)
+        .select_related('user')
+        .values_list('user', flat=True)
+    )
+    target_users = list(User.objects.filter(pk__in=member_users))
+    board_name = board.name
+    link_url = reverse('community') + '?tab=chat'
+
+    board.delete()  # CASCADE: メッセージ・メンバーも削除
+
+    if target_users:
+        try:
+            create_notification(
+                notification_type_id=4,
+                title=f'「{board_name}」グループが削除されました',
+                detail=f'参加していた「{board_name}」グループチャットが削除されました',
+                link_url=link_url,
+                target_users=target_users,
+            )
+        except Exception:
+            pass
+
+    return JsonResponse({'success': True})
 
 
 @login_required(login_url='/monotal/login/')
@@ -6359,7 +6477,16 @@ def board_join(request, pk):
     board = get_object_or_404(Community, pk=pk)
     if board.creator == request.user:
         return JsonResponse({'success': False, 'message': '作成者はすでに参加しています'}, status=400)
-    CommunityMember.objects.get_or_create(community=board, user=request.user)
+    _, created = CommunityMember.objects.get_or_create(community=board, user=request.user)
+    if created:
+        chat_room = ChatRoom.objects.filter(community=board).first()
+        if chat_room:
+            display = request.user.display_name or request.user.user_name
+            Message.objects.create(
+                chat_room=chat_room,
+                user=request.user,
+                message_content=f'__system__:{display}が{board.name}グループチャットに参加しました',
+            )
     return JsonResponse({'success': True})
 
 
@@ -6372,7 +6499,27 @@ def board_leave(request, pk):
     if board.creator == request.user:
         return JsonResponse({'success': False, 'message': '作成者は退会できません'}, status=400)
     CommunityMember.objects.filter(community=board, user=request.user).delete()
-    return JsonResponse({'success': True})
+
+    # 退会システムメッセージをチャットに追加
+    system_msg = None
+    chat_room = ChatRoom.objects.filter(community=board).first()
+    if chat_room:
+        display = request.user.display_name or request.user.user_name
+        msg = Message.objects.create(
+            chat_room=chat_room,
+            user=request.user,
+            message_content=f'__system__:{display}が{board.name}グループチャットから退会しました',
+        )
+        system_msg = {
+            'id': msg.message_id,
+            'is_system': True,
+            'system_text': msg.message_content[len('__system__:'):],
+            'content': None, 'image_url': None, 'product': None,
+            'user': {'name': '', 'avatar': None, 'profile_url': None},
+            'time': msg.register_datetime.strftime('%m/%d %H:%M'),
+            'is_mine': False, 'delete_url': None,
+        }
+    return JsonResponse({'success': True, 'system_msg': system_msg})
 
 
 @login_required(login_url='/monotal/login/')
@@ -6388,8 +6535,30 @@ def delete_message(request, pk):
 
 
 @login_required(login_url='/monotal/login/')
+def edit_message(request, pk):
+    """メッセージ編集（テキストのみ・本人のみ）"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=405)
+    msg = get_object_or_404(Message, pk=pk)
+    if msg.user != request.user:
+        return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
+    import json as _json
+    try:
+        body = _json.loads(request.body)
+        content = body.get('content', '').strip()
+    except Exception:
+        content = request.POST.get('content', '').strip()
+    if not content:
+        return JsonResponse({'success': False, 'message': '内容を入力してください'}, status=400)
+    if len(content) > 1000:
+        return JsonResponse({'success': False, 'message': 'メッセージは1000文字以内にしてください'}, status=400)
+    msg.message_content = content
+    msg.save()
+    return JsonResponse({'success': True, 'content': content})
+
+
 def community(request):
-    """コミュニティページ"""
+    """コミュニティページ（未ログインは閲覧のみ）"""
     from django.db.models import Count, Exists, OuterRef
     qs = Community.objects.select_related('creator', 'category').annotate(
         member_count=Count('members', distinct=True)
@@ -6410,15 +6579,59 @@ def community(request):
 
     categories = BoardCategory.objects.all().order_by('name')
     qa_categories = QACategory.objects.all().order_by('name')
+    product_categories = ProductCategory.objects.filter(
+        parent_product_category__isnull=True
+    ).order_by('category_name')
     import json as _json
     qa_categories_json = _json.dumps(
         [{'id': c.id, 'name': c.name} for c in qa_categories]
+    )
+    categories_json = _json.dumps(
+        [{'id': c.id, 'name': c.name} for c in categories]
+    )
+    product_categories_json = _json.dumps(
+        [{'id': c.product_category_id, 'name': c.category_name} for c in product_categories]
     )
     return render(request, 'community.html', {
         'recent_boards': recent_boards,
         'categories': categories,
         'qa_categories': qa_categories,
         'qa_categories_json': qa_categories_json,
+        'categories_json': categories_json,
+        'product_categories_json': product_categories_json,
+    })
+
+
+@login_required(login_url='/monotal/login/')
+def board_user_products(request):
+    """商品リンク用: 全出品中商品を検索して返す"""
+    q = request.GET.get('q', '').strip()
+    category_id = request.GET.get('category_id', '').strip()
+    qs = Product.objects.filter(
+        delete_datetime__isnull=True,
+        product_status_id=1,
+    ).select_related('user', 'product_category').prefetch_related('images').order_by('-register_datetime')
+    if q:
+        qs = qs.filter(Q(product_name__icontains=q) | Q(product_description__icontains=q))
+    if category_id:
+        try:
+            qs = qs.filter(
+                Q(product_category_id=int(category_id)) |
+                Q(product_category__parent_product_category_id=int(category_id))
+            )
+        except (ValueError, TypeError):
+            pass
+    qs = qs[:30]
+    return JsonResponse({
+        'products': [
+            {
+                'id': p.pk,
+                'name': p.product_name,
+                'image': p.images.first().image.url if p.images.exists() else None,
+                'owner': p.user.display_name or p.user.user_name,
+            }
+            for p in qs
+        ]
     })
 
 
@@ -6428,6 +6641,39 @@ def _auto_close_expired(qs):
     """受付中で期限切れの質問を自動的に「期限切れ終了」に更新する"""
     from django.utils import timezone
     qs.filter(status_id=1, expires_at__lt=timezone.now()).update(status_id=3)
+
+
+def _send_qa_deadline_notifications():
+    """受付期限まで24時間以内のQ&A質問の質問者に通知（重複送信なし）"""
+    from django.utils import timezone as tz
+    now = tz.now()
+    soon = now + tz.timedelta(hours=24)
+
+    expiring = QAQuestion.objects.filter(
+        status_id=1,
+        expires_at__gte=now,
+        expires_at__lte=soon,
+    ).select_related('user')
+
+    for q in expiring:
+        link = reverse('community') + f'?tab=qa&qa={q.question_id}'
+        # 既に同じ通知が送信済みか確認
+        already = NotificationTargetUser.objects.filter(
+            user=q.user,
+            notification__link_url=link,
+            notification__notification_title='Q&A受付期限が近づいています',
+        ).exists()
+        if not already:
+            try:
+                create_notification(
+                    notification_type_id=4,
+                    title='Q&A受付期限が近づいています',
+                    detail=f'「{q.title[:50]}」の受付期限まで24時間を切りました',
+                    link_url=link,
+                    target_users=[q.user],
+                )
+            except Exception:
+                pass
 
 
 def _answer_to_dict(answer, request_user):
@@ -6446,13 +6692,13 @@ def _answer_to_dict(answer, request_user):
     }
 
 
-@login_required(login_url='/monotal/login/')
 def qa_list(request):
-    """Q&A質問一覧（AJAX JSON）"""
+    """Q&A質問一覧（AJAX JSON、未ログインでも閲覧可）"""
     qs = QAQuestion.objects.select_related('user', 'category', 'status').annotate(
         answer_count=Count('answers', filter=Q(answers__parent_answer__isnull=True), distinct=True)
     )
     _auto_close_expired(qs)
+    _send_qa_deadline_notifications()
     qs = qs.order_by('-created_at')[:50]
 
     questions = []
@@ -6463,10 +6709,12 @@ def qa_list(request):
             'status_id': q.status_id,
             'status_name': q.status.name,
             'category': q.category.name if q.category else None,
+            'category_id': q.category_id,
             'author': q.user.display_name or q.user.user_name,
             'answer_count': q.answer_count,
-            'created_at': q.created_at.strftime('%Y/%m/%d %H:%M'),
+            'created_at': q.created_at.strftime('%Y/%m/%d'),
             'expires_at': q.expires_at.strftime('%Y/%m/%d %H:%M'),
+            'expires_at_raw': q.expires_at.isoformat(),
         })
     return JsonResponse({'questions': questions})
 
@@ -6517,9 +6765,8 @@ def qa_create(request):
     return JsonResponse({'success': True, 'question_id': question.question_id})
 
 
-@login_required(login_url='/monotal/login/')
 def qa_detail(request, pk):
-    """Q&A質問詳細（AJAX GET）"""
+    """Q&A質問詳細（AJAX GET、未ログインでも閲覧可）"""
     question = get_object_or_404(QAQuestion.objects.select_related('user', 'category', 'status'), pk=pk)
 
     from django.utils import timezone
@@ -6564,8 +6811,9 @@ def qa_detail(request, pk):
                 'avatar': question.user.user_image.url if question.user.user_image else None,
                 'profile_url': reverse('profile', kwargs={'username': question.user.user_name}),
             },
-            'created_at': question.created_at.strftime('%Y/%m/%d %H:%M'),
+            'created_at': question.created_at.strftime('%Y/%m/%d'),
             'expires_at': question.expires_at.strftime('%Y/%m/%d %H:%M'),
+            'expires_at_raw': question.expires_at.isoformat(),
             'is_owner': is_owner,
             'is_closed': is_closed,
             'edit_url': reverse('qa_edit', kwargs={'pk': question.question_id}) if is_owner and not is_closed else None,

@@ -1909,6 +1909,7 @@ class Message(models.Model):
     # 添付機能のためのフィールドを追加
     product_link = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True, verbose_name='商品リンク')
     image = models.ImageField(upload_to='chat_images/', null=True, blank=True, verbose_name='添付画像')
+    reply_to = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='replies', verbose_name='返信元メッセージ')
 
     register_datetime = models.DateTimeField(auto_now_add=True)
     

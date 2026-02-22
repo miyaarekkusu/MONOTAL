@@ -30,7 +30,6 @@ def notification_context(request):
     """
     context = {
         'unread_notification_count': 0,
-        'unread_community_notification_count': 0,
     }
 
     if request.user.is_authenticated:
@@ -46,14 +45,6 @@ def notification_context(request):
         ).values_list('notification_id', flat=True)
 
         context['unread_notification_count'] = target_notification_ids.exclude(
-            notification_id__in=read_notification_ids
-        ).count()
-
-        # コミュニティ通知（notification_type_id=4）の未読数
-        context['unread_community_notification_count'] = NotificationTargetUser.objects.filter(
-            user=request.user,
-            notification__notification_type_id=4,
-        ).exclude(
             notification_id__in=read_notification_ids
         ).count()
 

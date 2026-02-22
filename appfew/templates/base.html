@@ -56,14 +56,11 @@
 
             <!-- Header Actions -->
             <div class="flex items-center gap-3 lg:gap-4">
-                {% if user.is_authenticated %}
-                <!-- Community -->
+                <!-- Community（全ユーザーに表示） -->
                 <a href="{% url 'community' %}" class="relative text-zinc-500 hover:text-zinc-900 transition-colors" title="コミュニティ">
                     <span class="iconify" data-icon="lucide:messages-square" data-width="20" data-height="20"></span>
-                    {% if unread_community_notification_count > 0 %}
-                    <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-pink-600 text-[9px] font-bold text-white flex items-center justify-center">{{ unread_community_notification_count }}</span>
-                    {% endif %}
                 </a>
+                {% if user.is_authenticated %}
                     <!-- Rental Management -->
                     <a href="{% url 'mypage_rental_management' %}" class="relative text-zinc-500 hover:text-zinc-900 transition-colors" title="レンタル管理">
                         <span class="iconify" data-icon="lucide:package" data-width="20" data-height="20"></span>
