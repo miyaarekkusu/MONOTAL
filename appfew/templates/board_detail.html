@@ -42,7 +42,7 @@ footer { display: none !important; }
     </div>
 
     <!-- メッセージエリア（全画面スクロール） -->
-    <div id="board-messages-area" class="flex-1 overflow-y-auto px-6 space-y-4 scrollbar-hide" style="padding-top:6rem;padding-bottom:6rem;background:#f9f9fb;">
+    <div id="board-messages-area" class="flex-1 overflow-y-auto px-6 space-y-4 scrollbar-hide" style="padding-top:1.5rem;padding-bottom:8rem;background:#f9f9fb;">
         <div id="board-messages-inner" class="max-w-4xl mx-auto">
             {% for msg in messages %}
             <div class="flex gap-3 mb-4 {% if msg.user == user %}flex-row-reverse{% endif %}" data-msg-id="{{ msg.message_id }}">
@@ -70,7 +70,7 @@ footer { display: none !important; }
                     </div>
                     <div class="{% if msg.user == user %}bubble-me{% else %}bubble-other{% endif %} rounded-2xl px-4 py-2.5 text-sm">
                         {% if msg.image %}
-                        <img src="{{ msg.image.url }}" alt="" class="max-w-full max-h-60 rounded-xl mb-2 cursor-pointer" onclick="openBoardImageModal('{{ msg.image.url }}')">
+                        <img src="{{ msg.image.url }}" alt="" class="max-w-xs max-h-60 rounded-xl mb-2 cursor-pointer" onclick="openBoardImageModal('{{ msg.image.url }}')">
                         {% endif %}
                         {% if msg.product_link %}
                         <a href="{% url 'product_detail' product_id=msg.product_link.pk %}" class="flex items-center gap-2 bg-white/80 border border-zinc-200 rounded-xl px-3 py-2 mb-2 hover:bg-zinc-50 transition-colors">
@@ -126,7 +126,7 @@ footer { display: none !important; }
                                 class="p-2 text-zinc-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-lg transition-colors" title="画像を添付">
                             <span class="iconify" data-icon="lucide:image" data-width="20"></span>
                         </button>
-                        <button type="button" id="board-product-btn" onclick="toggleBoardProductPicker()"
+                        <button type="button" id="board-product-btn" onclick="openProductModal()"
                                 class="p-2 text-zinc-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition-colors" title="商品をリンク">
                             <span class="iconify" data-icon="lucide:package" data-width="20"></span>
                         </button>
@@ -142,31 +142,65 @@ footer { display: none !important; }
                 </div>
                 <input type="file" id="board-file-input" class="hidden" accept="image/*" onchange="previewBoardImage(this)">
                 <input type="hidden" id="board-selected-product-id">
-                <!-- Product Picker -->
-                <div id="board-product-picker" class="hidden border-t border-zinc-100 mt-3 pt-3">
-                    <p class="text-xs font-semibold text-zinc-500 mb-2">商品を選択</p>
-                    <div id="board-product-list" class="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                        {% for p in user_products %}
-                        <div onclick="selectBoardProduct({{ p.pk }}, '{{ p.product_name|escapejs }}')"
-                             class="flex-shrink-0 w-20 cursor-pointer group">
-                            {% if p.images.first %}
-                            <img src="{{ p.images.first.image.url }}" class="h-20 w-20 object-cover rounded-xl border border-zinc-200 group-hover:border-pink-400 transition-colors" alt="">
-                            {% else %}
-                            <div class="h-20 w-20 bg-zinc-100 rounded-xl border border-zinc-200 flex items-center justify-center group-hover:border-pink-400 transition-colors">
-                                <span class="iconify text-zinc-300" data-icon="lucide:image-off" data-width="20"></span>
-                            </div>
-                            {% endif %}
-                            <p class="text-[10px] text-zinc-600 mt-1 truncate text-center">{{ p.product_name }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
             </div>
         </div>
     </div>
     {% endif %}
 
 </div>
+
+<!-- Product Search Modal -->
+{% if user.is_authenticated %}
+<div id="product-search-modal" class="fixed inset-0 z-[90] hidden items-center justify-center p-3 sm:p-6" style="background:rgba(0,0,0,.5);backdrop-filter:blur(4px);">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[92vh] flex flex-col" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-200">
+            <h3 class="text-base font-bold text-zinc-800">商品を選択</h3>
+            <button onclick="closeProductModal()" class="p-1.5 text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <!-- Filters -->
+        <div class="px-6 py-4 border-b border-zinc-100 space-y-3">
+            <div class="flex gap-2">
+                <input id="pm-search-input" type="text" placeholder="キーワード検索..."
+                       class="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-transparent transition"
+                       onkeydown="if(event.key==='Enter'){event.preventDefault();searchProducts()}">
+                <button onclick="searchProducts()" class="px-4 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-sm font-medium rounded-xl transition-colors flex-shrink-0">
+                    検索
+                </button>
+            </div>
+            <div class="flex flex-wrap items-center gap-3">
+                <select id="pm-category-select" onchange="searchProducts()" class="px-3 py-2 border border-zinc-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-pink-400 transition bg-white">
+                    <option value="">すべてのカテゴリ</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.product_category_id }}">{{ cat.category_name }}</option>
+                    {% for sub in cat.subcategories.all %}
+                    <option value="{{ sub.product_category_id }}">　{{ sub.category_name }}</option>
+                    {% endfor %}
+                    {% endfor %}
+                </select>
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input id="pm-bookmark-check" type="checkbox" onchange="searchProducts()" class="w-4 h-4 rounded border-zinc-300 text-pink-600 focus:ring-pink-500 transition">
+                    <span class="text-sm text-zinc-600">ブックマークのみ</span>
+                </label>
+            </div>
+        </div>
+        <!-- Results Grid -->
+        <div id="pm-results" class="flex-1 overflow-y-auto px-6 py-4">
+            <div id="pm-loading" class="hidden py-12 text-center text-zinc-400">
+                <span class="iconify animate-spin mb-2" data-icon="lucide:loader-2" data-width="28"></span>
+                <p class="text-sm">読み込み中...</p>
+            </div>
+            <div id="pm-empty" class="hidden py-12 text-center text-zinc-400">
+                <span class="iconify mb-2" data-icon="lucide:search-x" data-width="28"></span>
+                <p class="text-sm">商品が見つかりません</p>
+            </div>
+            <div id="pm-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4"></div>
+        </div>
+    </div>
+</div>
+{% endif %}
 
 <!-- Board Image Modal -->
 <div id="board-image-modal" onclick="closeBoardImageModal()" class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm hidden items-center justify-center p-4">
@@ -180,6 +214,7 @@ footer { display: none !important; }
 <script>
 const BOARD_ID = {{ board.community_id }};
 const POST_URL = "{{ post_url }}";
+const PRODUCT_SEARCH_URL = "{% url 'board_user_products' %}";
 const BOARD_CURRENT_USER = {
     name: "{{ user.user_name|escapejs }}",
     avatar: "{% if user.user_image %}{{ user.user_image.url }}{% endif %}",
