@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - ブックマーク一覧 | MONOTAL{% endblock %}
@@ -81,7 +81,7 @@
                         </button>
                     </div>
                     <div class="p-3">
-                        <h3 class="text-sm font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
+                        <h3 class="text-base font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h3>
                         <div class="mt-2 flex items-center gap-1.5 text-[10px] text-zinc-400">
                             <span class="iconify" data-icon="lucide:user" data-width="12"></span>
                             {{ product.user.display_name }}

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Django Models - レンタルプラットフォーム（Rental Platform）
 物理モデルERから自動生成 / Gerado automaticamente do modelo físico 
 テーブル総数: 45 (マスター21 + トランザクション24)
@@ -1162,6 +1162,22 @@ class RentalHistory(models.Model):
     # 超過通知済みフラグ（バッチ重複防止）
     overdue_notified_datetime = models.DateTimeField(null=True, blank=True)
 
+    # クーポン適用
+    user_coupon = models.ForeignKey(
+        'UserCoupon',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rental_histories',
+        db_column='user_coupon_id',
+        verbose_name='使用クーポン'
+    )
+    coupon_discount_amount = models.DecimalField(
+        max_digits=10, decimal_places=0,
+        null=True, blank=True,
+        verbose_name='クーポン値引き額'
+    )
+
     register_datetime = models.DateTimeField(auto_now_add=True)
     update_datetime = models.DateTimeField(auto_now=True)
 
@@ -2268,6 +2284,7 @@ class QAQuestion(models.Model):
         QAStatus, on_delete=models.PROTECT, default=1, verbose_name='ステータス'
     )
     expires_at = models.DateTimeField(verbose_name='回答受付期限')
+    expiry_notified_datetime = models.DateTimeField(null=True, blank=True, verbose_name='期限前通知日時')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='作成日時')
     updated_at = models.DateTimeField(auto_now=True, verbose_name='更新日時')
 
@@ -2306,6 +2323,200 @@ class QAAnswer(models.Model):
 
     def __str__(self):
         return f'Answer({self.answer_id}) for Q({self.question_id})'
+
+
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║  9. Coupon (クーポン)                                               ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+class Coupon(models.Model):
+    """クーポンマスター"""
+    coupon_id = models.AutoField(primary_key=True)
+    coupon_name = models.CharField(max_length=200, verbose_name='クーポン名')
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=0, verbose_name='値引き額')
+    expires_at = models.DateTimeField(verbose_name='有効期限')
+    is_active = models.BooleanField(default=True, verbose_name='有効フラグ')
+    abolished_datetime = models.DateTimeField(null=True, blank=True, verbose_name='廃止日時')
+    register_datetime = models.DateTimeField(auto_now_add=True, verbose_name='登録日時')
+    update_datetime = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+
+    class Meta:
+        db_table = 'M_Coupon'
+        verbose_name = 'クーポン'
+        verbose_name_plural = 'クーポン'
+
+    def __str__(self):
+        return self.coupon_name
+
+
+class CouponTargetCategory(models.Model):
+    """クーポン対象カテゴリマスター"""
+    id = models.AutoField(primary_key=True)
+    coupon = models.ForeignKey(
+        Coupon, on_delete=models.CASCADE,
+        related_name='target_categories', db_column='coupon_id',
+        verbose_name='クーポン'
+    )
+    product_category = models.ForeignKey(
+        ProductCategory, on_delete=models.CASCADE,
+        related_name='coupon_targets', db_column='product_category_id',
+        verbose_name='対象カテゴリ'
+    )
+
+    class Meta:
+        db_table = 'M_CouponTargetCategory'
+        verbose_name = 'クーポン対象カテゴリ'
+        verbose_name_plural = 'クーポン対象カテゴリ'
+        unique_together = [['coupon', 'product_category']]
+
+    def __str__(self):
+        return f'{self.coupon.coupon_name} - {self.product_category.category_name}'
+
+
+class UserCoupon(models.Model):
+    """ユーザー所持クーポン"""
+    user_coupon_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE,
+        related_name='user_coupons', db_column='user_id',
+        verbose_name='ユーザー'
+    )
+    coupon = models.ForeignKey(
+        Coupon, on_delete=models.CASCADE,
+        related_name='user_coupons', db_column='coupon_id',
+        verbose_name='クーポン'
+    )
+    is_possessed = models.BooleanField(default=True, verbose_name='所持フラグ')
+    used_datetime = models.DateTimeField(null=True, blank=True, verbose_name='使用日時')
+    register_datetime = models.DateTimeField(auto_now_add=True, verbose_name='登録日時')
+    update_datetime = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+
+    class Meta:
+        db_table = 'T_UserCoupon'
+        verbose_name = 'ユーザー所持クーポン'
+        verbose_name_plural = 'ユーザー所持クーポン'
+
+    def __str__(self):
+        return f'{self.user.display_name} - {self.coupon.coupon_name}'
+
+
+# ╔══════════════════════════════════════════════════════════════════════╗
+# ║  10. Quest (クエスト)                                               ║
+# ╚══════════════════════════════════════════════════════════════════════╝
+
+class Quest(models.Model):
+    """
+    クエストマスター
+    ユーザーがミッションを達成すると報酬（クーポン）を獲得できる
+    product_category が null の場合はチュートリアルクエスト
+    """
+    DIFFICULTY_CHOICES = [
+        (0, 'チュートリアル'),
+        (1, '初級'),
+        (2, '中級'),
+        (3, '上級'),
+    ]
+
+    quest_id = models.AutoField(primary_key=True)
+    product_category = models.ForeignKey(
+        ProductCategory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quests',
+        db_column='product_category_id',
+        verbose_name='商品カテゴリ'
+    )
+    quest_name = models.CharField(max_length=200, verbose_name='クエスト名')
+    quest_description = models.CharField(max_length=500, verbose_name='クエスト説明')
+    difficulty = models.IntegerField(choices=DIFFICULTY_CHOICES, default=0, verbose_name='難易度')
+    reward_coupon = models.ForeignKey(
+        Coupon,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='quests',
+        db_column='reward_coupon_id',
+        verbose_name='報酬クーポン'
+    )
+    display_order = models.IntegerField(default=0, verbose_name='表示順')
+    is_active = models.BooleanField(default=True, verbose_name='有効フラグ')
+    expires_at = models.DateTimeField(null=True, blank=True, verbose_name='有効期限')
+    register_datetime = models.DateTimeField(auto_now_add=True, verbose_name='登録日時')
+    update_datetime = models.DateTimeField(auto_now=True, verbose_name='更新日時')
+
+    class Meta:
+        db_table = 'M_Quest'
+        verbose_name = 'クエスト'
+        verbose_name_plural = 'クエスト'
+        ordering = ['display_order', 'quest_id']
+
+    def __str__(self):
+        return self.quest_name
+
+
+class QuestMission(models.Model):
+    """
+    クエストミッションマスター
+    各クエストに紐づくミッション（達成条件）を定義
+    """
+    quest_mission_id = models.AutoField(primary_key=True)
+    quest = models.ForeignKey(
+        Quest,
+        on_delete=models.CASCADE,
+        related_name='missions',
+        db_column='quest_id',
+        verbose_name='クエスト'
+    )
+    mission_name = models.CharField(max_length=200, verbose_name='ミッション名')
+    mission_description = models.CharField(max_length=500, blank=True, default='', verbose_name='ミッション説明')
+    condition_type = models.CharField(max_length=50, verbose_name='条件種別')
+    condition_params = models.JSONField(default=dict, verbose_name='条件パラメータ')
+    display_order = models.IntegerField(default=0, verbose_name='表示順')
+
+    class Meta:
+        db_table = 'M_QuestMission'
+        verbose_name = 'クエストミッション'
+        verbose_name_plural = 'クエストミッション'
+        ordering = ['display_order', 'quest_mission_id']
+
+    def __str__(self):
+        return f'{self.quest.quest_name} - {self.mission_name}'
+
+
+class UserCompletedQuest(models.Model):
+    """
+    ユーザークエスト完了テーブル
+    ユーザーが全ミッションを達成し報酬を受け取った記録
+    """
+    user_completed_quest_id = models.AutoField(primary_key=True)
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='completed_quests',
+        db_column='user_id',
+        verbose_name='ユーザー'
+    )
+    quest = models.ForeignKey(
+        Quest,
+        on_delete=models.CASCADE,
+        related_name='completions',
+        db_column='quest_id',
+        verbose_name='クエスト'
+    )
+    completed_datetime = models.DateTimeField(verbose_name='完了日時')
+    reward_claimed = models.BooleanField(default=False, verbose_name='報酬受取済み')
+    reward_claimed_datetime = models.DateTimeField(null=True, blank=True, verbose_name='報酬受取日時')
+    register_datetime = models.DateTimeField(auto_now_add=True, verbose_name='登録日時')
+
+    class Meta:
+        db_table = 'T_UserCompletedQuest'
+        verbose_name = 'ユーザークエスト完了'
+        verbose_name_plural = 'ユーザークエスト完了'
+        unique_together = [['user', 'quest']]
+
+    def __str__(self):
+        return f'{self.user.display_name} - {self.quest.quest_name}'
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗

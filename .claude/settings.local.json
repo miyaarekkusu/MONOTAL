@@ -49,7 +49,11 @@
       "Bash(git -C \"C:\\\\Users\\\\kohta\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\" ls-files)",
       "Bash(git -C \"C:/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin\" ls-files)",
       "Bash(git push:*)",
-      "Bash(cd:*)"
+      "Bash(cd C:\\\\Users\\\\kohta\\\\source\\\\repos\\\\miyaarekkusu\\\\HEWSakuhin\\\\appfew\\\\templates\\\\mypage:*)",
+      "Bash(echo:*)",
+      "Bash(printf %s: :*)",
+      "Bash(cd:*)",
+      "Bash(curl:*)"
     ]
   }
 }

@@ -5,10 +5,6 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/community.css' %}">
-<style>
-  body { overflow: hidden; }
-  footer { display: none !important; }
-</style>
 {% endblock %}
 
 {% block content %}
@@ -30,36 +26,19 @@ const QA_CATEGORIES        = {{ qa_categories_json|safe }};
 const BOARD_CATEGORIES     = {{ categories_json|safe }};
 const PRODUCT_CATEGORIES   = {{ product_categories_json|safe }};
 const IS_AUTHENTICATED     = {{ user.is_authenticated|yesno:"true,false" }};
-const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
+const LOGIN_URL            = "{% url 'login' %}?next={% url 'community_group' %}";
+const INITIAL_TAB          = "{{ active_tab|default:'chat' }}";
 </script>
 
 <div class="comm-page">
 
-  <!-- ページヘッダー -->
-  <div class="comm-header">
-    <div class="comm-header-inner">
-      <h1 class="comm-title flex items-center gap-2">
-        <span class="iconify text-pink-500" data-icon="lucide:messages-square" data-width="22"></span>
-        コミュニティ
-      </h1>
-      <div class="comm-tabs" role="tablist">
-        <button class="comm-tab active" data-tab="chat" role="tab">
-          <span class="iconify" data-icon="lucide:message-square" data-width="16"></span>
-          グループチャット
-        </button>
-        <button class="comm-tab" data-tab="qa" role="tab">
-          <span class="iconify" data-icon="lucide:help-circle" data-width="16"></span>
-          Q&amp;A
-        </button>
-      </div>
-    </div>
-  </div>
+  {% include 'community/_header.html' %}
 
   <!-- コンテンツエリア -->
   <div class="comm-body">
 
     <!-- ===== グループチャットパネル ===== -->
-    <div id="panel-chat" class="comm-panel">
+    <div id="panel-chat" class="comm-panel {% if active_tab != 'chat' %}hidden{% endif %}"
 
       <!-- グループ一覧ビュー -->
       <div id="chat-list-view" class="comm-list-view">
@@ -67,6 +46,12 @@ const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
 
           <!-- フィルターバー -->
           <div class="comm-filter-bar">
+            {% if user.is_authenticated %}
+            <div class="comm-mine-btns">
+              <button class="comm-mine-btn active" data-mine="" onclick="setChatMine('')">すべて</button>
+              <button class="comm-mine-btn" data-mine="1" onclick="setChatMine('1')">参加中</button>
+            </div>
+            {% endif %}
             <div class="comm-search-wrap">
               <span class="iconify comm-search-icon" data-icon="lucide:search" data-width="16"></span>
               <input type="text" id="chat-search-input" placeholder="グループを検索..." class="comm-search-input" autocomplete="off">
@@ -104,9 +89,9 @@ const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
         <!-- チャットヘッダー -->
         <div class="comm-chat-header">
           <div class="comm-chat-header-inner">
-            <button onclick="backToChatList()" class="comm-back-btn">
+            <a href="{% url 'community_group' %}" class="comm-back-btn">
               <span class="iconify" data-icon="lucide:arrow-left" data-width="22"></span>
-            </button>
+            </a>
             <div class="comm-chat-header-info">
               <div id="chat-header-icon" class="comm-chat-icon">
                 <span class="iconify" data-icon="lucide:message-square" data-width="20"></span>
@@ -176,7 +161,7 @@ const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
     </div><!-- /panel-chat -->
 
     <!-- ===== Q&Aパネル ===== -->
-    <div id="panel-qa" class="comm-panel hidden">
+    <div id="panel-qa" class="comm-panel {% if active_tab != 'qa' %}hidden{% endif %}"
 
       <!-- Q&A一覧ビュー -->
       <div id="qa-list-view" class="comm-list-view">
@@ -184,9 +169,20 @@ const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
 
           <!-- フィルターバー -->
           <div class="comm-filter-bar">
+            {% if user.is_authenticated %}
+            <div class="comm-mine-btns">
+              <button class="comm-mine-btn active" data-mine="" onclick="setQAMine('')">すべて</button>
+              <button class="comm-mine-btn" data-mine="1" onclick="setQAMine('1')">自分の質問</button>
+            </div>
+            {% endif %}
             <div class="comm-search-wrap">
               <span class="iconify comm-search-icon" data-icon="lucide:search" data-width="16"></span>
               <input type="text" id="qa-search-input" placeholder="質問を検索..." class="comm-search-input" autocomplete="off">
+            </div>
+            <div class="comm-status-btns">
+              <button class="comm-status-btn active" data-status="" onclick="setQAStatus('')">すべて</button>
+              <button class="comm-status-btn" data-status="open" onclick="setQAStatus('open')">受付中</button>
+              <button class="comm-status-btn" data-status="closed" onclick="setQAStatus('closed')">終了済み</button>
             </div>
             <select id="qa-category-select" class="comm-select">
               <option value="">すべてのカテゴリ</option>
@@ -213,9 +209,9 @@ const LOGIN_URL            = "{% url 'login' %}?next={% url 'community' %}";
         <!-- Q&Aヘッダー -->
         <div class="comm-chat-header">
           <div class="comm-chat-header-inner">
-            <button onclick="backToQAList()" class="comm-back-btn">
+            <a href="{% url 'community_qa' %}" class="comm-back-btn">
               <span class="iconify" data-icon="lucide:arrow-left" data-width="22"></span>
-            </button>
+            </a>
             <div class="comm-chat-header-info">
               <div class="comm-chat-icon bg-pink-50 text-pink-600 border border-pink-100">
                 <span class="iconify" data-icon="lucide:help-circle" data-width="20"></span>

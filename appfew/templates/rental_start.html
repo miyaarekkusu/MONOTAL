@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}レンタル開始 - {{ product.product_name }} | MONOTAL{% endblock %}
@@ -6,7 +6,8 @@
 {% block extra_css %}
 <style>
 .rental-start-container {
-    max-width: 800px;
+    width: 65%;
+    max-width: 100%;
     margin: 0 auto;
     padding: 24px 16px;
 }
@@ -85,6 +86,42 @@
 .detail-value.price {
     color: #ec4899;
     font-weight: 700;
+}
+
+.price-summary {
+}
+
+.price-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+}
+
+.price-row.discount {
+    color: #16a34a;
+}
+
+.price-row.total {
+    font-size: 18px;
+    font-weight: 700;
+    color: #18181b;
+    padding-top: 10px;
+    margin-top: 6px;
+    border-top: 2px solid #18181b;
+}
+
+.price-row.total .total-amount {
+    color: #ec4899;
+}
+
+.price-row .strikethrough {
+    text-decoration: line-through;
+    color: #a1a1aa;
+    font-size: 13px;
+    font-weight: 400;
+    margin-right: 8px;
 }
 
 .section {
@@ -306,6 +343,10 @@
 }
 
 @media (max-width: 640px) {
+    .rental-start-container {
+        width: 100%;
+    }
+
     .product-summary {
         flex-direction: column;
     }
@@ -460,6 +501,53 @@
             {% endif %}
         </div>
 
+        <!-- クーポン選択 -->
+        <input type="hidden" name="coupon_id" id="coupon-input" value="">
+        <div class="section">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:ticket" data-width="20"></span>
+                クーポン
+            </h2>
+            <p style="font-size:11px;color:#a1a1aa;margin:-8px 0 16px 0;">※ 1回の決済につきクーポンは1枚まで。他クーポンとの併用はできません。</p>
+            <div id="coupon-selected-display" style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:2px solid #e4e4e7;border-radius:8px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span class="iconify" data-icon="lucide:ticket" data-width="18" style="color:#a1a1aa;" id="coupon-display-icon"></span>
+                    <span id="coupon-display-text" style="font-size:14px;color:#71717a;">クーポンを使用しない</span>
+                </div>
+                {% if available_coupons %}
+                <button type="button" id="open-coupon-modal-btn" style="font-size:13px;font-weight:600;color:#ec4899;background:none;border:none;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                    <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    クーポンを選択
+                </button>
+                {% else %}
+                <span style="font-size:12px;color:#d4d4d8;">利用可能なクーポンなし</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 合計金額 -->
+        <div class="section" id="price-summary">
+            <h2 class="section-title">
+                <span class="iconify" data-icon="lucide:calculator" data-width="20"></span>
+                お支払い金額
+            </h2>
+            <div class="price-row">
+                <span>レンタル料金</span>
+                <span>¥{{ product.rental_fee|floatformat:0 }}</span>
+            </div>
+            <div class="price-row discount" id="discount-row" style="display: none;">
+                <span id="discount-label">クーポン値引き</span>
+                <span id="discount-value"></span>
+            </div>
+            <div class="price-row total">
+                <span>お支払い合計</span>
+                <span>
+                    <span class="strikethrough" id="original-price" style="display: none;"></span>
+                    <span class="total-amount" id="total-price">¥{{ product.rental_fee|floatformat:0 }}</span>
+                </span>
+            </div>
+        </div>
+
         <!-- アクションボタン -->
         <div class="form-actions">
             <a href="{% url 'mypage_rental_management' %}" class="btn-back">
@@ -473,6 +561,76 @@
         </div>
     </form>
 </div>
+
+<!-- クーポン選択モーダル -->
+{% if available_coupons %}
+<div id="coupon-modal" style="display:none;position:fixed;inset:0;z-index:100;">
+    <div id="coupon-modal-backdrop" style="position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);"></div>
+    <div style="position:fixed;inset:0;overflow-y:auto;display:flex;align-items:center;justify-content:center;padding:16px;">
+        <div style="position:relative;width:100%;max-width:520px;background:#fff;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,.15);max-height:80vh;display:flex;flex-direction:column;">
+            <!-- Header -->
+            <div style="padding:20px 24px 12px;border-bottom:1px solid #e4e4e7;flex-shrink:0;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <h3 style="font-size:18px;font-weight:700;color:#18181b;display:flex;align-items:center;gap:8px;">
+                        <span class="iconify" data-icon="lucide:ticket" data-width="20" style="color:#ec4899;"></span>
+                        クーポンを選択
+                    </h3>
+                    <button type="button" id="close-coupon-modal-btn" style="background:none;border:none;cursor:pointer;padding:4px;color:#a1a1aa;">
+                        <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                    </button>
+                </div>
+                <p style="font-size:11px;color:#a1a1aa;margin:0 0 12px 0;">※ 1回の決済につきクーポンは1枚まで。他クーポンとの併用はできません。</p>
+                <!-- ソート -->
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="iconify" data-icon="lucide:arrow-up-down" data-width="14" style="color:#a1a1aa;flex-shrink:0;"></span>
+                    <select id="coupon-modal-sort" style="font-size:12px;border:1px solid #e4e4e7;border-radius:6px;padding:4px 8px;color:#52525b;background:#fff;cursor:pointer;">
+                        <option value="expiry_asc">有効期限が近い順</option>
+                        <option value="expiry_desc">有効期限が遠い順</option>
+                        <option value="discount_desc">値引き額が大きい順</option>
+                        <option value="discount_asc">値引き額が小さい順</option>
+                    </select>
+                </div>
+            </div>
+            <!-- List -->
+            <div id="coupon-modal-list" style="overflow-y:auto;padding:16px 24px;flex:1;">
+                <!-- 使用しない -->
+                <label class="coupon-modal-item" data-coupon-id="" data-expiry="9999-12-31" data-discount="0" style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid #e4e4e7;border-radius:8px;cursor:pointer;margin-bottom:10px;transition:all .15s;">
+                    <input type="radio" name="coupon_modal_radio" value="" checked style="accent-color:#ec4899;">
+                    <div style="flex:1;">
+                        <p style="font-size:14px;font-weight:600;color:#18181b;margin:0;">クーポンを使用しない</p>
+                    </div>
+                </label>
+                {% for uc in available_coupons %}
+                <label class="coupon-modal-item" data-coupon-id="{{ uc.user_coupon_id }}" data-expiry="{{ uc.coupon.expires_at|date:'Y-m-d' }}" data-discount="{{ uc.coupon.discount_amount|floatformat:0 }}" style="display:flex;align-items:center;gap:12px;padding:14px;border:2px solid #e4e4e7;border-radius:8px;cursor:pointer;margin-bottom:10px;transition:all .15s;">
+                    <input type="radio" name="coupon_modal_radio" value="{{ uc.user_coupon_id }}" style="accent-color:#ec4899;">
+                    <div style="flex:1;min-width:0;">
+                        <p style="font-size:14px;font-weight:600;color:#18181b;margin:0 0 4px 0;">{{ uc.coupon.coupon_name }}</p>
+                        <p style="font-size:12px;color:#71717a;margin:0;">
+                            有効期限: {{ uc.coupon.expires_at|date:"Y/m/d" }}
+                            {% with cats=uc.coupon.target_categories.all %}
+                            {% if cats %}
+                            <span style="color:#d4d4d8;margin:0 4px;">|</span>
+                            対象: {% for cat in cats %}{{ cat.product_category.category_name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            {% endif %}
+                            {% endwith %}
+                        </p>
+                    </div>
+                    <span style="flex-shrink:0;background:#fdf2f8;color:#be185d;font-size:13px;font-weight:700;padding:6px 12px;border-radius:20px;white-space:nowrap;">
+                        ¥{{ uc.coupon.discount_amount|floatformat:0 }} OFF
+                    </span>
+                </label>
+                {% endfor %}
+            </div>
+            <!-- Footer -->
+            <div style="padding:16px 24px;border-top:1px solid #e4e4e7;flex-shrink:0;">
+                <button type="button" id="apply-coupon-btn" style="width:100%;padding:12px;font-size:14px;font-weight:600;color:#fff;background:#ec4899;border:none;border-radius:8px;cursor:pointer;transition:background .15s;">
+                    このクーポンを適用する
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}
@@ -480,85 +638,213 @@
 <script>
 const STORAGE_KEY = 'rentalStartFormData_{{ rental_request.rental_request_id }}';
 
-// フォームデータの保存
+// ── 定数 ──
+const BASE_PRICE = {{ product.rental_fee|floatformat:0 }};
+const couponDiscounts = {
+    '': 0,
+    {% for uc in available_coupons %}
+    '{{ uc.user_coupon_id }}': {{ uc.coupon.discount_amount|floatformat:0 }},
+    {% endfor %}
+};
+const couponNames = {
+    '': 'クーポンを使用しない',
+    {% for uc in available_coupons %}
+    '{{ uc.user_coupon_id }}': '{{ uc.coupon.coupon_name }}',
+    {% endfor %}
+};
+
+// ── 金額更新 ──
+function updatePrice() {
+    const couponId = document.getElementById('coupon-input').value;
+    const discount = couponDiscounts[couponId] || 0;
+    const total = Math.max(0, BASE_PRICE - discount);
+    const fmt = (n) => '¥' + n.toLocaleString();
+
+    const discountRow = document.getElementById('discount-row');
+    const discountLabel = document.getElementById('discount-label');
+    const discountValue = document.getElementById('discount-value');
+    const originalPrice = document.getElementById('original-price');
+    const totalPrice = document.getElementById('total-price');
+
+    if (discount > 0) {
+        discountRow.style.display = '';
+        discountLabel.textContent = couponNames[couponId] || 'クーポン値引き';
+        discountValue.textContent = '-' + fmt(discount);
+        originalPrice.style.display = '';
+        originalPrice.textContent = fmt(BASE_PRICE);
+    } else {
+        discountRow.style.display = 'none';
+        originalPrice.style.display = 'none';
+    }
+    totalPrice.textContent = fmt(total);
+}
+
+// ── クーポン表示更新 ──
+function updateCouponDisplay(couponId) {
+    const display = document.getElementById('coupon-selected-display');
+    const text = document.getElementById('coupon-display-text');
+    const icon = document.getElementById('coupon-display-icon');
+    if (couponId) {
+        const discount = couponDiscounts[couponId] || 0;
+        text.innerHTML = '<span style="font-weight:600;color:#18181b;">' + couponNames[couponId] + '</span>' +
+            ' <span style="color:#ec4899;font-weight:700;margin-left:8px;">-¥' + discount.toLocaleString() + '</span>';
+        icon.style.color = '#ec4899';
+        display.style.borderColor = '#ec4899';
+        display.style.background = '#fdf2f8';
+    } else {
+        text.innerHTML = '<span style="color:#71717a;">クーポンを使用しない</span>';
+        icon.style.color = '#a1a1aa';
+        display.style.borderColor = '#e4e4e7';
+        display.style.background = 'transparent';
+    }
+}
+
+// ── フォームデータの保存・復元 ──
 function saveFormData() {
     const selectedAddress = document.querySelector('input[name="address_id"]:checked');
     const selectedCard = document.querySelector('input[name="card_id"]:checked');
-
     const formData = {
         address_id: selectedAddress?.value || '',
-        card_id: selectedCard?.value || ''
+        card_id: selectedCard?.value || '',
+        coupon_id: document.getElementById('coupon-input').value
     };
-
     sessionStorage.setItem(STORAGE_KEY, JSON.stringify(formData));
 }
 
-// フォームデータの復元
 function restoreFormData() {
     const savedData = sessionStorage.getItem(STORAGE_KEY);
     if (!savedData) return;
-
     try {
         const formData = JSON.parse(savedData);
-
-        // 住所の復元
         if (formData.address_id) {
-            const addressRadio = document.querySelector(`input[name="address_id"][value="${formData.address_id}"]`);
-            if (addressRadio) {
-                addressRadio.checked = true;
-                document.querySelectorAll('input[name="address_id"]').forEach(r => {
-                    r.closest('.option-item')?.classList.remove('selected');
-                });
-                addressRadio.closest('.option-item')?.classList.add('selected');
+            const r = document.querySelector(`input[name="address_id"][value="${formData.address_id}"]`);
+            if (r) {
+                r.checked = true;
+                document.querySelectorAll('input[name="address_id"]').forEach(x => x.closest('.option-item')?.classList.remove('selected'));
+                r.closest('.option-item')?.classList.add('selected');
             }
         }
-
-        // カードの復元
         if (formData.card_id) {
-            const cardRadio = document.querySelector(`input[name="card_id"][value="${formData.card_id}"]`);
-            if (cardRadio) {
-                cardRadio.checked = true;
-                document.querySelectorAll('input[name="card_id"]').forEach(r => {
-                    r.closest('.option-item')?.classList.remove('selected');
-                });
-                cardRadio.closest('.option-item')?.classList.add('selected');
+            const r = document.querySelector(`input[name="card_id"][value="${formData.card_id}"]`);
+            if (r) {
+                r.checked = true;
+                document.querySelectorAll('input[name="card_id"]').forEach(x => x.closest('.option-item')?.classList.remove('selected'));
+                r.closest('.option-item')?.classList.add('selected');
             }
         }
-
-        // 復元後にクリア
+        if (formData.coupon_id !== undefined) {
+            document.getElementById('coupon-input').value = formData.coupon_id;
+            updateCouponDisplay(formData.coupon_id);
+        }
         sessionStorage.removeItem(STORAGE_KEY);
     } catch (e) {
-        console.error('Failed to restore form data:', e);
         sessionStorage.removeItem(STORAGE_KEY);
     }
 }
 
-// ページ読み込み時に復元
+// ── 初期化 ──
 restoreFormData();
 
-// オプション選択時のスタイル更新
+// 住所・カードのスタイル更新
 document.querySelectorAll('.option-item').forEach(item => {
     const radio = item.querySelector('input[type="radio"]');
-    if (radio.checked) {
-        item.classList.add('selected');
-    }
+    if (!radio) return;
+    if (radio.checked) item.classList.add('selected');
     radio.addEventListener('change', () => {
-        // 同じname属性のオプションからselectedを削除
-        document.querySelectorAll(`input[name="${radio.name}"]`).forEach(r => {
-            r.closest('.option-item').classList.remove('selected');
-        });
-        if (radio.checked) {
-            item.classList.add('selected');
-        }
+        document.querySelectorAll(`input[name="${radio.name}"]`).forEach(r => r.closest('.option-item').classList.remove('selected'));
+        if (radio.checked) item.classList.add('selected');
     });
 });
 
-// 住所・カード編集リンクをクリックした時に保存
+updatePrice();
+
+// ── クーポンモーダル ──
+const couponModal = document.getElementById('coupon-modal');
+if (couponModal) {
+    const openBtn = document.getElementById('open-coupon-modal-btn');
+    const closeBtn = document.getElementById('close-coupon-modal-btn');
+    const backdrop = document.getElementById('coupon-modal-backdrop');
+    const applyBtn = document.getElementById('apply-coupon-btn');
+    const sortSelect = document.getElementById('coupon-modal-sort');
+    const listContainer = document.getElementById('coupon-modal-list');
+
+    function openModal() {
+        // モーダル内のラジオを現在の値に同期
+        const current = document.getElementById('coupon-input').value;
+        const radio = couponModal.querySelector(`input[name="coupon_modal_radio"][value="${current}"]`);
+        if (radio) radio.checked = true;
+        highlightModalItems();
+        couponModal.style.display = '';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+        couponModal.style.display = 'none';
+        document.body.style.overflow = '';
+    }
+
+    function highlightModalItems() {
+        listContainer.querySelectorAll('.coupon-modal-item').forEach(item => {
+            const r = item.querySelector('input[type="radio"]');
+            if (r && r.checked) {
+                item.style.borderColor = '#ec4899';
+                item.style.background = '#fdf2f8';
+            } else {
+                item.style.borderColor = '#e4e4e7';
+                item.style.background = '#fff';
+            }
+        });
+    }
+
+    // ラジオ変更
+    listContainer.querySelectorAll('.coupon-modal-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const r = item.querySelector('input[type="radio"]');
+            if (r) r.checked = true;
+            highlightModalItems();
+        });
+    });
+
+    // ソート
+    sortSelect.addEventListener('change', () => {
+        const items = Array.from(listContainer.querySelectorAll('.coupon-modal-item'));
+        const noUse = items.find(i => i.dataset.couponId === '');
+        const rest = items.filter(i => i.dataset.couponId !== '');
+        const sortKey = sortSelect.value;
+        rest.sort((a, b) => {
+            if (sortKey === 'expiry_asc') return a.dataset.expiry.localeCompare(b.dataset.expiry);
+            if (sortKey === 'expiry_desc') return b.dataset.expiry.localeCompare(a.dataset.expiry);
+            if (sortKey === 'discount_desc') return Number(b.dataset.discount) - Number(a.dataset.discount);
+            if (sortKey === 'discount_asc') return Number(a.dataset.discount) - Number(b.dataset.discount);
+            return 0;
+        });
+        listContainer.innerHTML = '';
+        listContainer.appendChild(noUse);
+        rest.forEach(i => listContainer.appendChild(i));
+    });
+
+    // 適用ボタン
+    applyBtn.addEventListener('click', () => {
+        const selected = couponModal.querySelector('input[name="coupon_modal_radio"]:checked');
+        const val = selected ? selected.value : '';
+        document.getElementById('coupon-input').value = val;
+        updateCouponDisplay(val);
+        updatePrice();
+        closeModal();
+    });
+
+    openBtn.addEventListener('click', openModal);
+    closeBtn.addEventListener('click', closeModal);
+    backdrop.addEventListener('click', closeModal);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && couponModal.style.display !== 'none') closeModal(); });
+}
+
+// ── 住所・カード編集リンク ──
 document.querySelectorAll('.manage-link, .register-btn').forEach(link => {
     link.addEventListener('click', saveFormData);
 });
 
-// フォーム送信時の確認
+// ── フォーム送信 ──
 document.getElementById('rental-start-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (await showConfirm('レンタルを開始しますか？')) {

@@ -11,6 +11,7 @@ const state = {
     chatSort: 'new',
     chatCategory: '',
     chatSearch: '',
+    chatMine: '',
     chatPage: 1,
     chatHasNext: false,
 
@@ -26,6 +27,8 @@ const state = {
     qaData: [],
     qaSearch: '',
     qaCategory: '',
+    qaMine: '',
+    qaStatus: '',
     pendingQAId: null,
 
     // qa detail
@@ -129,6 +132,7 @@ async function loadBoardList(reset = false) {
     });
     if (state.chatCategory) params.set('category', state.chatCategory);
     if (state.chatSearch)   params.set('q', state.chatSearch);
+    if (state.chatMine)     params.set('mine', state.chatMine);
 
     try {
         const res = await fetch(`${BOARD_LIST_URL}?${params}`, {
@@ -169,7 +173,7 @@ function loadMoreBoards() {
 function buildGroupCard(b) {
     const div = document.createElement('div');
     div.className = 'comm-group-card';
-    div.onclick = () => openChatDetail(b.id, b.url);
+    div.onclick = () => { window.location.href = BOARD_DETAIL_URL_BASE.replace('/0/', `/${b.id}/`); };
 
     let memberBadge = '';
     if (b.user_is_creator) memberBadge = `<span class="comm-badge-creator">作成者</span>`;
@@ -221,8 +225,7 @@ async function joinFromCard(event, boardId, joinUrl) {
                 }));
             }
             showToast('グループに参加しました', 'lucide:check-circle', 'text-green-500');
-            // カードを再描画せず、open
-            openChatDetail(boardId, BOARD_DETAIL_URL_BASE.replace('/0/', `/${boardId}/`));
+            window.location.href = BOARD_DETAIL_URL_BASE.replace('/0/', `/${boardId}/`);
         } else {
             showToast(data.message || '参加できませんでした', 'lucide:alert-circle', 'text-red-500');
             if (btn) btn.disabled = false;
@@ -680,6 +683,32 @@ function updateQAClearBtn() {
     const hasFilter = !!state.qaSearch || !!state.qaCategory;
     document.getElementById('qa-clear-btn')?.classList.toggle('hidden', !hasFilter);
 }
+function setChatMine(val) {
+    state.chatMine = val;
+    document.querySelectorAll('.comm-mine-btns [data-mine]').forEach(btn => {
+        if (btn.closest('#panel-chat'))
+            btn.classList.toggle('active', btn.dataset.mine === val);
+    });
+    loadBoardList(true);
+}
+
+function setQAMine(val) {
+    state.qaMine = val;
+    document.querySelectorAll('.comm-mine-btns [data-mine]').forEach(btn => {
+        if (btn.closest('#panel-qa'))
+            btn.classList.toggle('active', btn.dataset.mine === val);
+    });
+    loadQAList();
+}
+
+function setQAStatus(val) {
+    state.qaStatus = val;
+    document.querySelectorAll('.comm-status-btns [data-status]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.status === val);
+    });
+    loadQAList();
+}
+
 function clearChatFilters() {
     document.getElementById('chat-search-input').value = '';
     document.getElementById('chat-category-select').value = '';
@@ -966,11 +995,7 @@ async function submitBoardCreate() {
         });
         const data = await res.json();
         if (data.success) {
-            closeBoardCreateModal();
-            showToast('グループを作成しました', 'lucide:check-circle', 'text-green-500');
-            // 一覧を再読み込みしてからチャット詳細を開く
-            await loadBoardList(true);
-            openChatDetail(data.board_id, data.board_url);
+            window.location.href = BOARD_DETAIL_URL_BASE.replace('/0/', `/${data.board_id}/`);
         } else {
             const msg = data.errors ? Object.values(data.errors)[0] : (data.message || 'エラーが発生しました');
             errorEl.textContent = msg;
@@ -992,14 +1017,20 @@ async function loadQAList() {
     const container = document.getElementById('qa-cards');
     container.innerHTML = `<div class="flex justify-center py-12"><div class="h-6 w-6 rounded-full border-2 border-pink-500 border-t-transparent animate-spin"></div></div>`;
     try {
-        const res = await fetch(QA_LIST_URL, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
+        const qaParams = new URLSearchParams();
+        if (state.qaMine)   qaParams.set('mine', state.qaMine);
+        if (state.qaStatus) qaParams.set('status', state.qaStatus);
+        const qaQs = qaParams.toString();
+        const qaUrl = qaQs ? QA_LIST_URL + '?' + qaQs : QA_LIST_URL;
+        const res = await fetch(qaUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } });
         const data = await res.json();
         state.qaData = data.questions || [];
         renderQACards();
         if (state.pendingQAId) {
             const id = state.pendingQAId;
             state.pendingQAId = null;
-            openQADetail(id);
+            window.location.href = QA_DETAIL_URL_BASE.replace('/0/', `/${id}/`);
+            return;
         }
     } catch (e) {
         container.innerHTML = `<div class="comm-empty"><p class="text-red-400">読み込みエラー</p></div>`;
@@ -1046,7 +1077,7 @@ function deadlineBadge(q) {
 function buildQACard(q) {
     const div = document.createElement('div');
     div.className = 'comm-qa-card';
-    div.onclick = () => openQADetail(q.id);
+    div.onclick = () => { window.location.href = QA_DETAIL_URL_BASE.replace('/0/', `/${q.id}/`); };
 
     // ヘッダーにのみステータスを表示
     const statusBadge = q.status_id === 2
@@ -1523,10 +1554,7 @@ async function submitQAQuestion() {
         });
         const data = await res.json();
         if (data.success) {
-            closeQACreateModal();
-            showToast('質問を投稿しました', 'lucide:check-circle', 'text-green-500');
-            await loadQAList();
-            openQADetail(data.question_id);
+            window.location.href = QA_DETAIL_URL_BASE.replace('/0/', `/${data.question_id}/`);
         } else {
             const msg = data.errors ? Object.values(data.errors)[0] : (data.message || 'エラーが発生しました');
             errorEl.textContent = msg;
@@ -1584,11 +1612,6 @@ function showToast(message, toastIcon, colorClass) {
 // =============================================
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    // タブ切り替え
-    document.querySelectorAll('.comm-tab').forEach(btn => {
-        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
-    });
 
     // カテゴリプルダウン初期化
     initCategorySelects();
@@ -1656,34 +1679,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // URLパラメータ処理
+    // 初期タブ処理（URLで決定済み）
     const params = new URLSearchParams(window.location.search);
-    const tabParam   = params.get('tab');
     const qaParam    = params.get('qa');
     const boardParam = params.get('board');
+    const initialTab = (typeof INITIAL_TAB !== 'undefined') ? INITIAL_TAB : 'chat';
 
-    if (tabParam === 'qa') {
-        switchTab('qa');
+    state.activeTab = initialTab;
+
+    if (initialTab === 'qa') {
         if (qaParam) {
             const qId = parseInt(qaParam, 10);
-            if (!isNaN(qId)) state.pendingQAId = qId;
+            if (!isNaN(qId)) {
+                window.location.href = QA_DETAIL_URL_BASE.replace('/0/', `/${qId}/`);
+                return;
+            }
         }
+        loadQAList();
     } else if (boardParam) {
-        // タブUIのみ切り替え（auto-loadせず手動でloadして詳細を開く）
-        state.activeTab = 'chat';
-        document.querySelectorAll('.comm-tab').forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.tab === 'chat');
-        });
-        document.getElementById('panel-chat').classList.remove('hidden');
-        document.getElementById('panel-qa').classList.add('hidden');
         const bId = parseInt(boardParam, 10);
         if (!isNaN(bId)) {
-            const boardUrl = BOARD_DETAIL_URL_BASE.replace('/0/', `/${bId}/`);
-            loadBoardList(true).then(() => openChatDetail(bId, boardUrl));
+            window.location.href = BOARD_DETAIL_URL_BASE.replace('/0/', `/${bId}/`);
+            return;
         } else {
             loadBoardList(true);
         }
     } else {
-        switchTab('chat');
+        loadBoardList(true);
     }
 });

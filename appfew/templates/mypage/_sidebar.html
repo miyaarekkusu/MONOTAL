@@ -1,5 +1,5 @@
 <!-- Sidebar Navigation -->
-<aside class="hidden lg:block lg:col-span-3 space-y-8 sticky top-24">
+<aside id="mypage-sidebar" class="hidden lg:block lg:col-span-3 space-y-8" style="position:sticky;top:5rem;align-self:start;">
 
     <!-- Group: Product Management -->
     <div>
@@ -77,6 +77,18 @@
             </a>
             {% endif %}
 
+            {% if current_page == 'coupon_list' %}
+            <a href="{% url 'mypage_coupon_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:ticket" data-width="20"></span>
+                所持クーポン
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_coupon_list' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:ticket" data-width="20"></span>
+                所持クーポン
+            </a>
+            {% endif %}
+
             {% if current_page == 'interest_selection' %}
             <a href="{% url 'interest_selection' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
                 <span class="iconify text-pink-600" data-icon="lucide:sparkles" data-width="20"></span>
@@ -91,15 +103,45 @@
         </nav>
     </div>
 
+    <!-- Group: Community -->
+    <div>
+        <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">コミュニティ</h3>
+        <nav class="space-y-0.5">
+            {% if current_page == 'community_groups' %}
+            <a href="{% url 'mypage_community' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:messages-square" data-width="20"></span>
+                所属グループ
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_community' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:messages-square" data-width="20"></span>
+                所属グループ
+            </a>
+            {% endif %}
+
+            {% if current_page == 'community_qa' %}
+            <a href="{% url 'mypage_community_qa' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-semibold text-pink-700 bg-pink-50 rounded-md transition-colors">
+                <span class="iconify text-pink-600" data-icon="lucide:help-circle" data-width="20"></span>
+                自分のQ&A
+            </a>
+            {% else %}
+            <a href="{% url 'mypage_community_qa' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+                <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
+                自分のQ&A
+            </a>
+            {% endif %}
+        </nav>
+    </div>
+
     <!-- Group: Help -->
     <div>
         <h3 class="text-base font-bold text-zinc-900 mb-3 px-3">ヘルプ</h3>
         <nav class="space-y-0.5">
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+            <a href="{% url 'help_center' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
                 <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:help-circle" data-width="20"></span>
                 ヘルプセンター
             </a>
-            <a href="#" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
+            <a href="{% url 'contact' %}" class="flex items-center gap-3 px-3 py-2 text-sm font-medium text-zinc-600 rounded-md hover:bg-zinc-100 hover:text-zinc-900 transition-colors group">
                 <span class="iconify text-zinc-400 group-hover:text-zinc-900" data-icon="lucide:mail" data-width="20"></span>
                 お問い合わせ
             </a>
@@ -192,3 +234,28 @@
 
 
 </aside>
+<script>
+(function(){
+    const sb = document.getElementById('mypage-sidebar');
+    if (!sb) return;
+    const headerH = 80;
+    let lastY = window.scrollY;
+    let topVal = headerH;
+    sb.style.top = topVal + 'px';
+    window.addEventListener('scroll', function(){
+        const y = window.scrollY;
+        const sbH = sb.offsetHeight;
+        const vpH = window.innerHeight;
+        if (sbH <= vpH - headerH) {
+            topVal = headerH;
+        } else {
+            const delta = y - lastY;
+            topVal -= delta;
+            const minTop = vpH - sbH;
+            topVal = Math.max(minTop, Math.min(headerH, topVal));
+        }
+        sb.style.top = topVal + 'px';
+        lastY = y;
+    }, {passive: true});
+})();
+</script>

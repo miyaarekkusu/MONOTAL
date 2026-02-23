@@ -1,0 +1,19 @@
+<!-- コミュニティ共通ヘッダー + タブ -->
+<div class="comm-header">
+    <div class="comm-header-inner">
+        <h1 class="comm-title flex items-center gap-2">
+            <span class="iconify text-pink-500" data-icon="lucide:messages-square" data-width="22"></span>
+            コミュニティ
+        </h1>
+        <div class="comm-tabs" role="tablist">
+            <a href="{% url 'community_group' %}" class="comm-tab {% if active_tab == 'chat' %}active{% endif %}" role="tab">
+                <span class="iconify" data-icon="lucide:message-square" data-width="16"></span>
+                グループチャット
+            </a>
+            <a href="{% url 'community_qa' %}" class="comm-tab {% if active_tab == 'qa' %}active{% endif %}" role="tab">
+                <span class="iconify" data-icon="lucide:help-circle" data-width="16"></span>
+                Q&amp;A
+            </a>
+        </div>
+    </div>
+</div>

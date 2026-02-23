@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ - 所属グループ | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- 本人確認バナー -->
+    {% if request.user.user_status_id != 2 %}
+    <div class="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+        <div class="flex items-center gap-3">
+            <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品・レンタル機能を利用するには本人確認が必要です。</p>
+            </div>
+            <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
+                本人確認する
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Breadcrumbs -->
+    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Main Area -->
+        <div class="lg:col-span-9">
+            <div class="mb-6 flex items-center justify-between">
+                <h1 class="text-xl font-bold tracking-tight text-zinc-900">所属グループ</h1>
+                <span class="text-xs font-medium text-zinc-500 bg-zinc-100 px-2 py-1 rounded">{{ groups|length }}件</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for group in groups %}
+                <a href="{% url 'board_detail' pk=group.community_id %}" class="group block bg-white rounded-lg border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all p-4">
+                    <div class="flex items-start gap-3">
+                        <div class="flex-shrink-0 w-10 h-10 rounded-lg bg-pink-50 flex items-center justify-center">
+                            <span class="iconify text-pink-500" data-icon="lucide:messages-square" data-width="20"></span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h3 class="text-sm font-semibold text-zinc-900 group-hover:text-pink-600 transition-colors truncate">{{ group.name }}</h3>
+                            <div class="mt-1 flex items-center gap-3 text-xs text-zinc-400">
+                                <span class="flex items-center gap-1">
+                                    <span class="iconify" data-icon="lucide:users" data-width="12"></span>
+                                    {{ group.member_count }}人
+                                </span>
+                                {% if group.category %}
+                                <span class="flex items-center gap-1">
+                                    <span class="iconify" data-icon="lucide:tag" data-width="12"></span>
+                                    {{ group.category.name }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
+                {% empty %}
+                <div class="col-span-full text-center py-16 text-zinc-400">
+                    <span class="iconify mx-auto mb-4" data-icon="lucide:messages-square" data-width="48" data-height="48"></span>
+                    <p class="text-sm">所属しているグループはありません</p>
+                    <a href="{% url 'board_list' %}" class="mt-4 inline-flex items-center gap-2 text-pink-600 hover:text-pink-700 text-sm font-medium">
+                        コミュニティを探す
+                        <span class="iconify" data-icon="lucide:arrow-right" data-width="16"></span>
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/mypage.js' %}"></script>
+{% endblock %}

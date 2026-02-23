@@ -25,7 +25,7 @@
 <main class="main">
 
     <!-- サイドバーフィルター -->
-    <aside class="sidebar">
+    <aside id="product-sidebar" class="sidebar">
 
         <div class="sidebar-header">
             <h2 class="sidebar-title">絞り込み検索</h2>
@@ -139,8 +139,10 @@
                 「{{ request.GET.q }}」の検索結果
                 <span class="text-zinc-400 font-normal text-base ml-2">（{{ page_obj.paginator.count }}件）</span>
             </h1>
+            {% elif selected_category_name %}
+            <h1 class="page-title">{{ selected_category_name }}</h1>
             {% else %}
-            <h1 class="page-title">おすすめ商品</h1>
+            <h1 class="page-title">検索結果</h1>
             {% endif %}
 
             <!-- 適用中のフィルター表示 -->
@@ -291,4 +293,29 @@
 
 {% block extra_js %}
 <script src="{% static 'js/product_list.js' %}"></script>
+<script>
+(function(){
+    var sb = document.getElementById('product-sidebar');
+    if (!sb || window.innerWidth < 1024) return;
+    var headerH = 96;
+    var lastY = window.scrollY;
+    var topVal = headerH;
+    sb.style.top = topVal + 'px';
+    window.addEventListener('scroll', function(){
+        var y = window.scrollY;
+        var sbH = sb.offsetHeight;
+        var vpH = window.innerHeight;
+        if (sbH <= vpH - headerH) {
+            topVal = headerH;
+        } else {
+            var delta = y - lastY;
+            topVal -= delta;
+            var minTop = vpH - sbH;
+            topVal = Math.max(minTop, Math.min(headerH, topVal));
+        }
+        sb.style.top = topVal + 'px';
+        lastY = y;
+    }, {passive: true});
+})();
+</script>
 {% endblock %}

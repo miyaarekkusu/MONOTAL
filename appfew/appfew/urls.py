@@ -23,6 +23,7 @@ from django.conf.urls.static import static
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('monotal/', include('monotal.urls')),
+    path('admin-panel/', include('admin_panel.urls')),
     path('social/', include('social_django.urls', namespace='social')),
 ]
 

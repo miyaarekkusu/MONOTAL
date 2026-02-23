@@ -1,4 +1,4 @@
-﻿from django.urls import path
+from django.urls import path
 from . import views
 from . import views_cancellation
 
@@ -29,17 +29,19 @@ urlpatterns = [
     path('product/<int:product_id>/messages/', views.product_messages, name='product_messages'),
     path('product/<int:product_id>/messages/<int:message_id>/delete/', views.product_message_delete, name='product_message_delete'),
     path('interest/', views.interest_selection, name='interest_selection'),
-    path('community/', views.community, name='community'),
+    path('community/', views.community_redirect),
+    path('community/group/', views.community_group, name='community_group'),
+    path('community/qa/', views.community_qa, name='community_qa'),
     path('community/boards/', views.board_list, name='board_list'),
     path('community/boards/create/', views.board_create, name='board_create'),
+    path('community/boards/user-products/', views.board_user_products, name='board_user_products'),
     path('community/boards/<int:pk>/', views.board_detail, name='board_detail'),
     path('community/messages/<int:pk>/delete/', views.delete_message, name='message_delete'),
     path('community/messages/<int:pk>/edit/', views.edit_message, name='message_edit'),
     path('community/boards/<int:pk>/delete/', views.board_delete, name='board_delete'),
     path('community/boards/<int:pk>/join/', views.board_join, name='board_join'),
     path('community/boards/<int:pk>/leave/', views.board_leave, name='board_leave'),
-    path('community/boards/products/', views.board_user_products, name='board_user_products'),
-    path('community/qa/', views.qa_list, name='qa_list'),
+    path('community/qa/list/', views.qa_list, name='qa_list'),
     path('community/qa/create/', views.qa_create, name='qa_create'),
     path('community/qa/<int:pk>/', views.qa_detail, name='qa_detail'),
     path('community/qa/<int:pk>/answer/', views.qa_answer_post, name='qa_answer_post'),
@@ -47,14 +49,13 @@ urlpatterns = [
     path('community/qa/<int:pk>/edit/', views.qa_edit, name='qa_edit'),
     path('terms/', views.terms_of_service, name='terms_of_service'),
     path('privacy/', views.privacy_policy, name='privacy_policy'),
+    path('guide/', views.beginner_guide, name='beginner_guide'),
+    path('insurance-info/', views.insurance_info, name='insurance_info'),
+    path('help/', views.help_center, name='help_center'),
+    path('contact/', views.contact, name='contact'),
 
     # 本人確認（ユーザー向け）
     path('identity-verification/', views.identity_verification, name='identity_verification'),
-
-    # 管理者用本人確認審査
-    path('admin/verifications/', views.admin_verification_list, name='admin_verification_list'),
-    path('admin/verifications/<int:verification_id>/', views.admin_verification_detail, name='admin_verification_detail'),
-    path('admin/verification-image/<int:image_id>/', views.verification_image, name='verification_image'),
 
     # フォロー関連
     path('user/<int:user_id>/follow/', views.follow_toggle, name='follow_toggle'),
@@ -73,6 +74,11 @@ urlpatterns = [
     path('mypage/block-list/', views.mypage_block_list, name='mypage_block_list'),
     path('mypage/bookmark-list/', views.mypage_bookmark_list, name='mypage_bookmark_list'),
     path('mypage/browsing-history/', views.mypage_browsing_history, name='mypage_browsing_history'),
+    path('mypage/coupons/', views.mypage_coupon_list, name='mypage_coupon_list'),
+    path('mypage/community/', views.mypage_community, name='mypage_community'),
+    path('mypage/community/qa/', views.mypage_community_qa, name='mypage_community_qa'),
+    path('quests/', views.quest_list_page, name='quest_list'),
+    path('quests/<int:quest_id>/claim/', views.quest_claim_reward, name='quest_claim_reward'),
     path('mypage/listing/', views.mypage_listing, name='mypage_listing'),
     path('mypage/addresses/', views.mypage_address_list, name='mypage_address_list'),
     path('mypage/addresses/<int:address_id>/edit/', views.address_edit, name='address_edit'),
@@ -129,13 +135,4 @@ urlpatterns = [
     # 取引中止申請
     path('transaction/<int:rental_history_id>/cancellation-request/', views_cancellation.cancellation_request_submit, name='cancellation_request'),
 
-    # 管理者：中止申請管理
-    path('admin/cancellations/', views_cancellation.admin_cancellation_list, name='admin_cancellation_list'),
-    path('admin/cancellations/<int:cancellation_request_id>/', views_cancellation.admin_cancellation_detail, name='admin_cancellation_detail'),
-
-    # 管理者：補償申請管理
-    path('admin/insurance/claims/', views.admin_insurance_claims, name='admin_insurance_claims'),
-    path('admin/insurance/claims/<int:claim_id>/', views.admin_insurance_claim_detail, name='admin_insurance_claim_detail'),
-    path('admin/insurance/claims/<int:claim_id>/approve/', views.insurance_claim_approve, name='insurance_claim_approve'),
-    path('admin/insurance/claims/<int:claim_id>/reject/', views.insurance_claim_reject, name='insurance_claim_reject'),
 ]

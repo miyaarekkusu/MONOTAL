@@ -1,4 +1,4 @@
-﻿/**
+/**
  * board_detail.js — 掲示板詳細ページ用
  */
 
@@ -88,8 +88,9 @@ async function sendBoardMessage() {
 
 function appendMessage(msg) {
     const area = document.getElementById('board-messages-area');
+    const inner = document.getElementById('board-messages-inner');
     // Remove empty state if exists
-    const empty = area.querySelector('.text-center.text-zinc-400');
+    const empty = inner.querySelector('.text-center.text-zinc-400');
     if (empty && empty.querySelector('[data-icon="lucide:message-square"]')) empty.remove();
 
     const isMine = msg.is_mine;
@@ -132,7 +133,7 @@ function appendMessage(msg) {
             <div class="${isMine ? 'bubble-me' : 'bubble-other'} rounded-2xl px-4 py-2.5 text-sm">${contentHtml}</div>
         </div>`;
 
-    area.appendChild(div);
+    inner.appendChild(div);
     if (typeof Iconify !== 'undefined') Iconify.scan(div);
     area.scrollTop = area.scrollHeight;
 }

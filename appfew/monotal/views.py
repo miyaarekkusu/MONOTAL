@@ -1,4 +1,4 @@
-﻿import json
+import json
 import re
 from datetime import timedelta
 from django.views import View
@@ -13,6 +13,8 @@ from django.conf import settings
 from django.utils import timezone
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.utils.decorators import method_decorator
 from .models import *
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField
@@ -73,7 +75,7 @@ class IndexView(View):
 
         # 閲覧履歴（ログインユーザーのみ）
         if request.user.is_authenticated:
-            browsing_histories = BrowsingHistory.objects.filter(
+            browsing_histories = list(BrowsingHistory.objects.filter(
                 user=request.user,
                 product__delete_datetime__isnull=True
             ).exclude(
@@ -82,8 +84,26 @@ class IndexView(View):
                 'product', 'product__product_status'
             ).prefetch_related(
                 'product__images', 'product__rental_plans'
-            ).order_by('-register_datetime')[:20]
+            ).order_by('-register_datetime')[:21])
             context['browsing_histories'] = browsing_histories
+
+            # 21件に満たない場合、新着商品で補完
+            if browsing_histories and len(browsing_histories) < 21:
+                viewed_ids = [h.product_id for h in browsing_histories]
+                fill_products = Product.objects.filter(
+                    delete_datetime__isnull=True
+                ).exclude(
+                    product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+                ).exclude(
+                    user=request.user
+                ).exclude(
+                    product_id__in=viewed_ids
+                ).select_related(
+                    'product_status'
+                ).prefetch_related(
+                    'images', 'rental_plans'
+                ).order_by('-register_datetime')[:21 - len(browsing_histories)]
+                context['fill_products'] = fill_products
 
         # おすすめ商品
         if request.user.is_authenticated:
@@ -92,7 +112,7 @@ class IndexView(View):
             recommended_products = Product.objects.filter(
                 delete_datetime__isnull=True
             ).exclude(
-                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED, PRODUCT_STATUS_RENTING]
             ).select_related(
                 'product_category', 'product_status'
             ).prefetch_related(
@@ -156,7 +176,7 @@ class IndexView(View):
             return Product.objects.filter(
                 delete_datetime__isnull=True
             ).exclude(
-                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+                product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED, PRODUCT_STATUS_RENTING]
             ).exclude(
                 user=user
             ).select_related(
@@ -191,7 +211,7 @@ class IndexView(View):
         return Product.objects.filter(
             delete_datetime__isnull=True
         ).exclude(
-            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]
+            product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED, PRODUCT_STATUS_RENTING]
         ).exclude(
             user=user
         ).select_related(
@@ -435,6 +455,30 @@ class PrivacyPolicyView(View):
     """プライバシーポリシーページ"""
     def get(self, request, *args, **kwargs):
         return render(request, 'privacy_policy.html')
+
+
+class BeginnerGuideView(View):
+    """はじめてガイドページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'beginner_guide.html')
+
+
+class InsuranceInfoView(View):
+    """補償保険制度ページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'insurance_info.html')
+
+
+class HelpCenterView(View):
+    """ヘルプセンターページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'help_center.html')
+
+
+class ContactView(View):
+    """お問い合わせページ"""
+    def get(self, request, *args, **kwargs):
+        return render(request, 'contact.html')
 
 
 class RegisterSentView(View):
@@ -1115,7 +1159,7 @@ class ProductListView(View):
     フィルター機能付き
     """
     template_name = 'product_list.html'
-    items_per_page = 20
+    items_per_page = 50
 
     def get(self, request, *args, **kwargs):
         # 公開中の商品のみ取得（delete_datetimeがnullのもの、非公開・削除商品を除外）
@@ -1152,12 +1196,24 @@ class ProductListView(View):
         # 商品状態一覧
         conditions = ProductCondition.objects.all()
 
+        # 選択中のカテゴリ名を取得
+        selected_category_name = None
+        category_id = request.GET.get('category')
+        if category_id:
+            try:
+                selected_category_name = ProductCategory.objects.get(
+                    product_category_id=int(category_id)
+                ).category_name
+            except (ValueError, ProductCategory.DoesNotExist):
+                pass
+
         context = {
             'products': page_obj,
             'categories': categories,
             'conditions': conditions,
             'page_obj': page_obj,
             'filters': self.get_active_filters(request),
+            'selected_category_name': selected_category_name,
         }
 
         return render(request, self.template_name, context)
@@ -1823,203 +1879,6 @@ class IdentityVerificationView(LoginRequiredMixin, View):
             return redirect('identity_verification')
 
 
-class AdminVerificationListView(LoginRequiredMixin, View):
-    """
-    本人確認審査一覧ページ（管理者用）
-    未確認の申請を古い順に表示
-    """
-    login_url = '/monotal/login/'
-
-    def get(self, request, *args, **kwargs):
-        # 管理者権限チェック
-        if not request.user.is_staff:
-            messages.error(request, '権限がありません')
-            return redirect('index')
-
-        # 未確認の申請を取得（古い順）
-        verifications = IdentityVerification.objects.filter(
-            identity_verification_status_id=IDENTITY_STATUS_PENDING
-        ).select_related('user').order_by('register_datetime')
-
-        # ページネーション
-        paginator = Paginator(verifications, 20)
-        page_obj = paginator.get_page(request.GET.get('page', 1))
-
-        context = {
-            'verifications': page_obj,
-            'total_count': verifications.count(),
-            'page_obj': page_obj,
-        }
-
-        return render(request, 'admin/verification_list.html', context)
-
-
-class AdminVerificationDetailView(LoginRequiredMixin, View):
-    """
-    本人確認審査詳細ページ（管理者用）
-    画像確認と承認/却下処理
-    """
-    login_url = '/monotal/login/'
-
-    def get(self, request, verification_id, *args, **kwargs):
-        # 管理者権限チェック
-        if not request.user.is_staff:
-            messages.error(request, '権限がありません')
-            return redirect('index')
-
-        try:
-            verification = IdentityVerification.objects.select_related(
-                'user', 'identity_verification_status'
-            ).prefetch_related('images').get(
-                identity_verification_id=verification_id
-            )
-        except IdentityVerification.DoesNotExist:
-            messages.error(request, '申請が見つかりません')
-            return redirect('admin_verification_list')
-
-        # 画像をBase64エンコード
-        import base64
-        images = []
-        for img in verification.images.all():
-            images.append({
-                'data': base64.b64encode(img.image_data).decode('utf-8'),
-                'id': img.identity_verification_image_id
-            })
-
-        context = {
-            'verification': verification,
-            'images': images,
-        }
-
-        return render(request, 'admin/verification_detail.html', context)
-
-    def post(self, request, verification_id, *args, **kwargs):
-        # 管理者権限チェック
-        if not request.user.is_staff:
-            return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
-
-        action = request.POST.get('action')
-
-        if action not in ['approve', 'reject']:
-            return JsonResponse({'success': False, 'message': '不正な操作です'}, status=400)
-
-        try:
-            with transaction.atomic():
-                verification = IdentityVerification.objects.select_for_update().get(
-                    identity_verification_id=verification_id
-                )
-
-                if action == 'approve':
-                    # 承認ステータス取得または作成
-                    try:
-                        approved_status = IdentityVerificationStatus.objects.get(
-                            identity_verification_status_id=IDENTITY_STATUS_APPROVED
-                        )
-                    except IdentityVerificationStatus.DoesNotExist:
-                        approved_status = IdentityVerificationStatus.objects.create(
-                            identity_verification_status_id=IDENTITY_STATUS_APPROVED,
-                            status_name='承認'
-                        )
-
-                    verification.identity_verification_status = approved_status
-                    verification.approval_datetime = timezone.now()
-                    verification.save()
-
-                    # 個人情報をUserPersonalInfoに移行（作成または更新）
-                    if verification.last_name and verification.first_name:
-                        UserPersonalInfo.objects.update_or_create(
-                            user=verification.user,
-                            defaults={
-                                'last_name': verification.last_name,
-                                'first_name': verification.first_name,
-                                'last_name_kana': verification.last_name_kana,
-                                'first_name_kana': verification.first_name_kana,
-                                'birth_date': verification.birth_date,
-                                'gender': verification.gender
-                            }
-                        )
-
-                    # ユーザーステータスを承認済み(2)に更新
-                    try:
-                        user_approved_status = UserStatus.objects.get(user_status_id=2)
-                    except UserStatus.DoesNotExist:
-                        user_approved_status = UserStatus.objects.create(
-                            user_status_id=2,
-                            status_name='承認済みユーザー'
-                        )
-
-                    verification.user.user_status = user_approved_status
-                    verification.user.save()
-
-                    # 承認通知を送信
-                    create_notification(
-                        notification_type_id=NOTIFICATION_TYPE_SYSTEM,
-                        title='本人確認が完了しました',
-                        detail='本人確認が承認されました。すべての機能をご利用いただけます。',
-                        link_url='/monotal/mypage/listing/',
-                        target_users=[verification.user]
-                    )
-
-                    message = '承認しました'
-
-                elif action == 'reject':
-                    # 却下ステータス取得または作成
-                    try:
-                        rejected_status = IdentityVerificationStatus.objects.get(
-                            identity_verification_status_id=IDENTITY_STATUS_REJECTED
-                        )
-                    except IdentityVerificationStatus.DoesNotExist:
-                        rejected_status = IdentityVerificationStatus.objects.create(
-                            identity_verification_status_id=IDENTITY_STATUS_REJECTED,
-                            status_name='却下'
-                        )
-
-                    verification.identity_verification_status = rejected_status
-                    verification.rejection_datetime = timezone.now()
-                    verification.save()
-
-                    # 却下通知を送信
-                    create_notification(
-                        notification_type_id=NOTIFICATION_TYPE_SYSTEM,
-                        title='本人確認が承認されませんでした',
-                        detail='本人確認書類を確認できませんでした。お手数ですが再度申請をお願いいたします。',
-                        link_url='/monotal/identity-verification/',
-                        target_users=[verification.user]
-                    )
-
-                    message = '却下しました'
-
-            return JsonResponse({'success': True, 'message': message})
-
-        except IdentityVerification.DoesNotExist:
-            return JsonResponse({'success': False, 'message': '申請が見つかりません'}, status=404)
-        except Exception as e:
-            return JsonResponse({'success': False, 'message': f'エラー: {str(e)}'}, status=500)
-
-
-class VerificationImageView(LoginRequiredMixin, View):
-    """
-    本人確認画像取得API（管理者用）
-    """
-    login_url = '/monotal/login/'
-
-    def get(self, request, image_id, *args, **kwargs):
-        # 管理者権限チェック
-        if not request.user.is_staff:
-            from django.http import HttpResponseForbidden
-            return HttpResponseForbidden()
-
-        try:
-            image = IdentityVerificationImage.objects.get(
-                identity_verification_image_id=image_id
-            )
-            from django.http import HttpResponse
-            return HttpResponse(image.image_data, content_type='image/jpeg')
-        except IdentityVerificationImage.DoesNotExist:
-            from django.http import HttpResponseNotFound
-            return HttpResponseNotFound()
-
-
 class FollowToggleView(View):
     """
     フォローのトグルAPI
@@ -2199,6 +2058,14 @@ class BlockToggleView(View):
                 follower_user=target_user,
                 followed_user=request.user
             ).delete()
+
+            # ブロック時: 双方向の未開始レンタル申請をキャンセル
+            from django.db.models import Q
+            RentalRequest.objects.filter(
+                Q(requester_user=request.user, requested_user=target_user) |
+                Q(requester_user=target_user, requested_user=request.user),
+                rental_request_status_id=1  # 申請中のみ
+            ).update(rental_request_status_id=4)  # キャンセル
 
         # フォロワー数を取得（フォロー解除後の最新値）
         follower_count = Follow.objects.filter(followed_user=target_user).count()
@@ -2424,7 +2291,10 @@ class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
     login_url = '/monotal/login/'
 
     def get(self, request, *args, **kwargs):
-        # 閲覧履歴を取得（最新順）
+        # ソート順
+        sort = request.GET.get('sort', 'newest')
+        order = 'register_datetime' if sort == 'oldest' else '-register_datetime'
+
         browsing_history = BrowsingHistory.objects.filter(
             user=request.user,
             product__delete_datetime__isnull=True
@@ -2434,7 +2304,7 @@ class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
             'product__user'
         ).prefetch_related(
             'product__images'
-        ).order_by('-register_datetime')
+        ).order_by(order)
 
         # 履歴数
         history_count = browsing_history.count()
@@ -2452,10 +2322,75 @@ class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
             'history_count': history_count,
             'page_obj': page_obj,
             'current_page': 'browsing_history',
+            'selected_sort': sort,
             'user_hobbies': user_hobbies,
         }
 
         return render(request, 'mypage/browsing_history.html', context)
+
+
+class MyPageCouponListView(LoginRequiredMixin, View):
+    """
+    マイページ - 所持クーポン一覧
+    ログインユーザーの所持中クーポンを表示（カテゴリ絞り込み・ソート対応）
+    """
+    login_url = '/monotal/login/'
+
+    SORT_OPTIONS = {
+        'newest': '-register_datetime',
+        'expiry_asc': 'coupon__expires_at',
+        'expiry_desc': '-coupon__expires_at',
+        'discount_asc': 'coupon__discount_amount',
+        'discount_desc': '-coupon__discount_amount',
+    }
+
+    def get(self, request, *args, **kwargs):
+        coupons = UserCoupon.objects.filter(
+            user=request.user,
+            is_possessed=True,
+        ).select_related('coupon').prefetch_related(
+            'coupon__target_categories__product_category'
+        )
+
+        # カテゴリ絞り込み
+        category_id = request.GET.get('category', '')
+        if category_id:
+            try:
+                cat_id = int(category_id)
+                coupons = coupons.filter(
+                    Q(coupon__target_categories__product_category_id=cat_id) |
+                    Q(coupon__target_categories__isnull=True)
+                ).distinct()
+            except (ValueError, TypeError):
+                category_id = ''
+
+        # ソート
+        sort_key = request.GET.get('sort', 'newest')
+        order_field = self.SORT_OPTIONS.get(sort_key, '-register_datetime')
+        coupons = coupons.order_by(order_field)
+
+        coupon_count = coupons.count()
+
+        # フィルタ用: ユーザーの所持クーポンに紐づくカテゴリ一覧を取得
+        filter_categories = ProductCategory.objects.filter(
+            coupon_targets__coupon__user_coupons__user=request.user,
+            coupon_targets__coupon__user_coupons__is_possessed=True,
+        ).distinct().order_by('category_name')
+
+        paginator = Paginator(coupons, 20)
+        page_obj = paginator.get_page(request.GET.get('page', 1))
+
+        context = {
+            'coupons': page_obj,
+            'coupon_count': coupon_count,
+            'page_obj': page_obj,
+            'current_page': 'coupon_list',
+            'filter_categories': filter_categories,
+            'selected_category': category_id,
+            'selected_sort': sort_key,
+        }
+
+        return render(request, 'mypage/coupon_list.html', context)
 
 
 class MyPageListingView(LoginRequiredMixin, View):
@@ -2752,12 +2687,13 @@ product_message_delete = ProductMessageDeleteView.as_view()
 interest_selection = InterestSelectionView.as_view()
 terms_of_service = TermsOfServiceView.as_view()
 privacy_policy = PrivacyPolicyView.as_view()
+beginner_guide = BeginnerGuideView.as_view()
+insurance_info = InsuranceInfoView.as_view()
+help_center = HelpCenterView.as_view()
+contact = ContactView.as_view()
 
 # 本人確認関連
 identity_verification = IdentityVerificationView.as_view()
-admin_verification_list = AdminVerificationListView.as_view()
-admin_verification_detail = AdminVerificationDetailView.as_view()
-verification_image = VerificationImageView.as_view()
 
 # フォロー関連
 follow_toggle = FollowToggleView.as_view()
@@ -2776,7 +2712,77 @@ report_create = ReportCreateView.as_view()
 # マイページ関連
 mypage_bookmark_list = MyPageBookmarkListView.as_view()
 mypage_browsing_history = MyPageBrowsingHistoryView.as_view()
+mypage_coupon_list = MyPageCouponListView.as_view()
 mypage_listing = MyPageListingView.as_view()
+
+
+class MyPageCommunityView(LoginRequiredMixin, View):
+    """
+    マイページ - 所属グループ一覧
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        member_community_ids = CommunityMember.objects.filter(
+            user=request.user
+        ).values_list('community_id', flat=True)
+
+        groups = Community.objects.filter(
+            Q(community_id__in=member_community_ids) | Q(creator=request.user)
+        ).annotate(
+            member_count=Count('members')
+        ).select_related('category', 'creator').distinct().order_by('-created_at')
+
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
+        context = {
+            'groups': groups,
+            'current_page': 'community_groups',
+            'user_hobbies': user_hobbies,
+        }
+
+        return render(request, 'mypage/community_groups.html', context)
+
+
+class MyPageCommunityQAView(LoginRequiredMixin, View):
+    """
+    マイページ - 自分のQ&A一覧
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        questions = QAQuestion.objects.filter(
+            user=request.user
+        ).select_related('status', 'category').annotate(
+            answer_count=Count('answers')
+        )
+
+        qa_status = request.GET.get('status', '')
+        if qa_status == 'open':
+            questions = questions.filter(status_id=1)
+        elif qa_status == 'closed':
+            questions = questions.filter(status_id__in=[2, 3])
+
+        questions = questions.order_by('-created_at')
+
+        user_hobbies = UserHobby.objects.filter(
+            user=request.user
+        ).select_related('product_category').order_by('product_category_id')
+
+        context = {
+            'questions': questions,
+            'qa_status': qa_status,
+            'current_page': 'community_qa',
+            'user_hobbies': user_hobbies,
+        }
+
+        return render(request, 'mypage/community_qa.html', context)
+
+
+mypage_community = MyPageCommunityView.as_view()
+mypage_community_qa = MyPageCommunityQAView.as_view()
 
 # 商品編集
 product_edit = ProductEditView.as_view()
@@ -4107,6 +4113,22 @@ class RentalRequestApproveView(LoginRequiredMixin, View):
                 requested_user=request.user,
                 rental_request_status_id=RENTAL_REQUEST_STATUS_PENDING
             )
+            # 同一商品で承認済みのレンタル申請があるか確認
+            approved_requests = RentalRequest.objects.filter(
+                product=rental_request.product,
+                rental_request_status_id=RENTAL_REQUEST_STATUS_APPROVED
+            ).exclude(rental_request_id=request_id)
+
+            # 同一商品で進行中のレンタル履歴があるか確認（返却済み・キャンセル・中止済みは除外）
+            active_rentals = RentalHistory.objects.filter(
+                product=rental_request.product,
+            ).exclude(
+                rental_status_id__in=[RENTAL_STATUS_COMPLETED, RENTAL_STATUS_CANCELLED, RENTAL_STATUS_CANCELLATION_APPROVED]
+            )
+
+            if approved_requests.exists() or active_rentals.exists():
+                return JsonResponse({'success': False, 'message': 'この商品は現在レンタル中または承認済みの申請があるため、承認できません'}, status=400)
+
             rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_APPROVED
             rental_request.approval_datetime = timezone.now()
             rental_request.save()
@@ -4191,6 +4213,9 @@ class RentalStartPageView(LoginRequiredMixin, View):
         # 商品に登録された発送元都道府県を取得
         shipping_prefecture = rental_request.product.shipping_prefecture
 
+        # 利用可能なクーポン一覧を取得
+        available_coupons = self._get_available_coupons(request.user, rental_request.product)
+
         context = {
             'rental_request': rental_request,
             'product': rental_request.product,
@@ -4198,8 +4223,38 @@ class RentalStartPageView(LoginRequiredMixin, View):
             'shipping_prefecture': shipping_prefecture,
             'my_addresses': my_addresses,
             'my_cards': my_cards,
+            'available_coupons': available_coupons,
         }
         return render(request, 'rental_start.html', context)
+
+    def _get_available_coupons(self, user, product):
+        """ユーザーが利用可能なクーポン一覧を取得"""
+        now = timezone.now()
+        user_coupons = UserCoupon.objects.filter(
+            user=user,
+            is_possessed=True,
+            used_datetime__isnull=True,
+            coupon__is_active=True,
+            coupon__expires_at__gt=now,
+        ).select_related('coupon').prefetch_related('coupon__target_categories')
+
+        available = []
+        product_category = product.product_category
+        for uc in user_coupons:
+            target_cats = uc.coupon.target_categories.all()
+            if not target_cats.exists():
+                # 対象カテゴリ未設定→全カテゴリ対象
+                available.append(uc)
+            else:
+                # 商品カテゴリ（親含む）と一致するかチェック
+                target_cat_ids = set(target_cats.values_list('product_category_id', flat=True))
+                cat = product_category
+                while cat:
+                    if cat.product_category_id in target_cat_ids:
+                        available.append(uc)
+                        break
+                    cat = cat.parent_product_category
+        return available
 
 
 class RentalAddressManageView(LoginRequiredMixin, View):
@@ -4488,6 +4543,25 @@ class RentalRequestStartView(LoginRequiredMixin, View):
                 messages.error(request, '選択されたカードが見つかりません')
                 return redirect('rental_start_page', request_id=request_id)
 
+            # クーポンのバリデーション（オプション）
+            coupon_id = request.POST.get('coupon_id')
+            user_coupon = None
+            coupon_discount = None
+            if coupon_id:
+                try:
+                    user_coupon = UserCoupon.objects.select_related('coupon').get(
+                        user_coupon_id=coupon_id,
+                        user=request.user,
+                        is_possessed=True,
+                        used_datetime__isnull=True,
+                        coupon__is_active=True,
+                        coupon__expires_at__gt=timezone.now(),
+                    )
+                    coupon_discount = user_coupon.coupon.discount_amount
+                except UserCoupon.DoesNotExist:
+                    messages.error(request, '選択されたクーポンは利用できません')
+                    return redirect('rental_start_page', request_id=request_id)
+
             with transaction.atomic():
                 # 1. RentalRequestを完了に
                 rental_request.rental_request_status_id = RENTAL_REQUEST_STATUS_COMPLETED
@@ -4509,8 +4583,16 @@ class RentalRequestStartView(LoginRequiredMixin, View):
                     renter_user=request.user,
                     rental_status=rental_status,
                     renter_address=address,
-                    rental_days=rental_days
+                    rental_days=rental_days,
+                    user_coupon=user_coupon,
+                    coupon_discount_amount=coupon_discount,
                 )
+
+                # クーポンを使用済みにする
+                if user_coupon:
+                    user_coupon.is_possessed = False
+                    user_coupon.used_datetime = timezone.now()
+                    user_coupon.save(update_fields=['is_possessed', 'used_datetime', 'update_datetime'])
 
                 # 3. 商品のステータスをレンタル中に変更
                 product = rental_request.product
@@ -5341,11 +5423,8 @@ class TransactionCancelView(LoginRequiredMixin, View):
             if not is_lender and not is_renter:
                 return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
 
-            # キャンセル可能な状態かチェック（発送準備中〜返送中）
-            if rental_history.rental_status_id not in [
-                RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
-                RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING
-            ]:
+            # キャンセル可能な状態かチェック（発送準備中のみ）
+            if rental_history.rental_status_id != RENTAL_STATUS_PREPARING:
                 return JsonResponse({'success': False, 'message': 'この取引はキャンセルできません'}, status=400)
 
             # リクエストデータ取得
@@ -6016,10 +6095,6 @@ from .views_insurance import (
     insurance_cancel_confirm,
     insurance_claim_page,
     insurance_claim_submit,
-    admin_insurance_claims,
-    admin_insurance_claim_detail,
-    insurance_claim_approve,
-    insurance_claim_reject,
 )
 
 
@@ -6031,6 +6106,7 @@ def board_list(request):
     q = request.GET.get('q', '').strip()
     cat = request.GET.get('category', '')
     sort = request.GET.get('sort', 'new')  # 'new' | 'old' | 'members'
+    mine = request.GET.get('mine', '')
 
     if sort == 'old':
         order = 'created_at'
@@ -6049,6 +6125,11 @@ def board_list(request):
             queryset = queryset.filter(category_id=int(cat))
         except ValueError:
             pass
+    # 参加中のグループのみ
+    if mine == '1' and request.user.is_authenticated:
+        my_ids = set(CommunityMember.objects.filter(user=request.user).values_list('community_id', flat=True))
+        creator_ids = set(Community.objects.filter(creator=request.user).values_list('community_id', flat=True))
+        queryset = queryset.filter(community_id__in=my_ids | creator_ids)
 
     paginator = Paginator(queryset, 20)
     page_obj = paginator.get_page(request.GET.get('page', 1))
@@ -6164,7 +6245,7 @@ def board_create(request):
         'board_url': reverse('board_detail', kwargs={'pk': board.pk}),
         'join_url': reverse('board_join', kwargs={'pk': board.pk}),
         'leave_url': reverse('board_leave', kwargs={'pk': board.pk}),
-        'redirect_url': reverse('community') + f'?board={board.pk}',
+        'redirect_url': reverse('board_detail', kwargs={'pk': board.pk}),
     })
 
 
@@ -6177,7 +6258,7 @@ def board_detail(request, pk):
         msgs = (
             Message.objects
             .filter(chat_room=chat_room)
-            .select_related('user', 'product_link')
+            .select_related('user', 'product_link', 'reply_to', 'reply_to__user', 'reply_to__product_link')
             .prefetch_related('product_link__images')
             .order_by('register_datetime')
         ) if chat_room else []
@@ -6288,8 +6369,13 @@ def board_detail(request, pk):
                 'post_url': reverse('board_detail', kwargs={'pk': board.pk}),
             })
 
-        # 通常GETはコミュニティページ（掲示板選択状態）にリダイレクト
-        return redirect(reverse('community') + f'?board={pk}')
+        # 通常GET: 詳細ページをレンダリング
+        return render(request, 'board_detail.html', {
+            'board': board,
+            'messages': msgs,
+            'user_products': user_products,
+            'post_url': reverse('board_detail', kwargs={'pk': board.pk}),
+        })
 
     # POST: ログイン必須
     if not request.user.is_authenticated:
@@ -6383,7 +6469,7 @@ def board_delete(request, pk):
     )
     target_users = list(User.objects.filter(pk__in=member_users))
     board_name = board.name
-    link_url = reverse('community') + '?tab=chat'
+    link_url = reverse('community_group')
 
     board.delete()  # CASCADE: メッセージ・メンバーも削除
 
@@ -6490,9 +6576,9 @@ def edit_message(request, pk):
     return JsonResponse({'success': True, 'content': content})
 
 
-def community(request):
-    """コミュニティページ（未ログインは閲覧のみ）"""
-    from django.db.models import Count, Exists, OuterRef
+def _community_view(request, active_tab='chat'):
+    """コミュニティページ共通ロジック（未ログインは閲覧のみ）"""
+    from django.db.models import Count
     qs = Community.objects.select_related('creator', 'category').annotate(
         member_count=Count('members', distinct=True)
     ).order_by('-created_at')[:20]
@@ -6532,7 +6618,23 @@ def community(request):
         'qa_categories_json': qa_categories_json,
         'categories_json': categories_json,
         'product_categories_json': product_categories_json,
+        'active_tab': active_tab,
     })
+
+
+def community_redirect(request):
+    """旧 /community/ → /community/group/ にリダイレクト"""
+    return redirect(reverse('community_group'))
+
+
+def community_group(request):
+    """コミュニティ - グループチャットページ"""
+    return _community_view(request, active_tab='chat')
+
+
+def community_qa(request):
+    """コミュニティ - Q&Aページ"""
+    return _community_view(request, active_tab='qa')
 
 
 @login_required(login_url='/monotal/login/')
@@ -6576,39 +6678,6 @@ def _auto_close_expired(qs):
     qs.filter(status_id=1, expires_at__lt=timezone.now()).update(status_id=3)
 
 
-def _send_qa_deadline_notifications():
-    """受付期限まで24時間以内のQ&A質問の質問者に通知（重複送信なし）"""
-    from django.utils import timezone as tz
-    now = tz.now()
-    soon = now + tz.timedelta(hours=24)
-
-    expiring = QAQuestion.objects.filter(
-        status_id=1,
-        expires_at__gte=now,
-        expires_at__lte=soon,
-    ).select_related('user')
-
-    for q in expiring:
-        link = reverse('community') + f'?tab=qa&qa={q.question_id}'
-        # 既に同じ通知が送信済みか確認
-        already = NotificationTargetUser.objects.filter(
-            user=q.user,
-            notification__link_url=link,
-            notification__notification_title='Q&A受付期限が近づいています',
-        ).exists()
-        if not already:
-            try:
-                create_notification(
-                    notification_type_id=4,
-                    title='Q&A受付期限が近づいています',
-                    detail=f'「{q.title[:50]}」の受付期限まで24時間を切りました',
-                    link_url=link,
-                    target_users=[q.user],
-                )
-            except Exception:
-                pass
-
-
 def _answer_to_dict(answer, request_user):
     return {
         'id': answer.answer_id,
@@ -6626,13 +6695,22 @@ def _answer_to_dict(answer, request_user):
 
 
 def qa_list(request):
-    """Q&A質問一覧（AJAX JSON、未ログインでも閲覧可）"""
+    """Q&A質問一覧（AJAX JSON）"""
+    mine = request.GET.get('mine', '')
+    status_filter = request.GET.get('status', '')
     qs = QAQuestion.objects.select_related('user', 'category', 'status').annotate(
         answer_count=Count('answers', filter=Q(answers__parent_answer__isnull=True), distinct=True)
     )
     _auto_close_expired(qs)
-    _send_qa_deadline_notifications()
-    qs = qs.order_by('-created_at')[:50]
+    # 自分の質問のみ
+    if mine == '1' and request.user.is_authenticated:
+        qs = qs.filter(user=request.user)
+    # ステータスフィルター
+    if status_filter == 'open':
+        qs = qs.filter(status_id=1)
+    elif status_filter == 'closed':
+        qs = qs.filter(status_id__in=[2, 3])
+    qs = qs.order_by('-created_at')[:20]
 
     questions = []
     for q in qs:
@@ -6642,12 +6720,10 @@ def qa_list(request):
             'status_id': q.status_id,
             'status_name': q.status.name,
             'category': q.category.name if q.category else None,
-            'category_id': q.category_id,
             'author': q.user.display_name or q.user.user_name,
             'answer_count': q.answer_count,
-            'created_at': q.created_at.strftime('%Y/%m/%d'),
+            'created_at': q.created_at.strftime('%Y/%m/%d %H:%M'),
             'expires_at': q.expires_at.strftime('%Y/%m/%d %H:%M'),
-            'expires_at_raw': q.expires_at.isoformat(),
         })
     return JsonResponse({'questions': questions})
 
@@ -6698,8 +6774,9 @@ def qa_create(request):
     return JsonResponse({'success': True, 'question_id': question.question_id})
 
 
+@login_required(login_url='/monotal/login/')
 def qa_detail(request, pk):
-    """Q&A質問詳細（AJAX GET、未ログインでも閲覧可）"""
+    """Q&A質問詳細（AJAX GET）"""
     question = get_object_or_404(QAQuestion.objects.select_related('user', 'category', 'status'), pk=pk)
 
     from django.utils import timezone
@@ -6730,29 +6807,52 @@ def qa_detail(request, pk):
         d['replies'] = [_answer_to_dict(r, request.user) for r in replies_map.get(ans.answer_id, [])]
         answers_data.append(d)
 
-    return JsonResponse({
-        'question': {
-            'id': question.question_id,
-            'title': question.title,
-            'content': question.content,
-            'status_id': question.status_id,
-            'status_name': question.status.name,
-            'category': question.category.name if question.category else None,
-            'category_id': question.category_id,
-            'author': {
-                'name': question.user.display_name or question.user.user_name,
-                'avatar': question.user.user_image.url if question.user.user_image else None,
-                'profile_url': reverse('profile', kwargs={'username': question.user.user_name}),
+    # AJAXリクエストの場合はJSONを返す
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'question': {
+                'id': question.question_id,
+                'title': question.title,
+                'content': question.content,
+                'status_id': question.status_id,
+                'status_name': question.status.name,
+                'category': question.category.name if question.category else None,
+                'category_id': question.category_id,
+                'author': {
+                    'name': question.user.display_name or question.user.user_name,
+                    'avatar': question.user.user_image.url if question.user.user_image else None,
+                    'profile_url': reverse('profile', kwargs={'username': question.user.user_name}),
+                },
+                'created_at': question.created_at.strftime('%Y/%m/%d %H:%M'),
+                'expires_at': question.expires_at.strftime('%Y/%m/%d %H:%M'),
+                'is_owner': is_owner,
+                'is_closed': is_closed,
+                'edit_url': reverse('qa_edit', kwargs={'pk': question.question_id}) if is_owner and not is_closed else None,
             },
-            'created_at': question.created_at.strftime('%Y/%m/%d'),
-            'expires_at': question.expires_at.strftime('%Y/%m/%d %H:%M'),
-            'expires_at_raw': question.expires_at.isoformat(),
-            'is_owner': is_owner,
-            'is_closed': is_closed,
-            'edit_url': reverse('qa_edit', kwargs={'pk': question.question_id}) if is_owner and not is_closed else None,
-        },
-        'answers': answers_data,
+            'answers': answers_data,
+            'post_url': reverse('qa_answer_post', kwargs={'pk': question.question_id}),
+        })
+
+    # 通常GET: テンプレートレンダリング
+    # 回答にrepliesをネストして付与
+    answers_with_replies = []
+    for ans in parent_answers:
+        ans.reply_list = replies_map.get(ans.answer_id, [])
+        ans.can_select_best = is_owner and not is_closed and not ans.is_best_answer and ans.user != request.user
+        answers_with_replies.append(ans)
+
+    import json as _json
+    qa_categories = QACategory.objects.all().order_by('name')
+
+    return render(request, 'qa_detail.html', {
+        'question': question,
+        'answers': answers_with_replies,
+        'answer_count': parent_answers.count(),
+        'is_owner': is_owner,
+        'is_closed': is_closed,
         'post_url': reverse('qa_answer_post', kwargs={'pk': question.question_id}),
+        'edit_url': reverse('qa_edit', kwargs={'pk': question.question_id}) if is_owner and not is_closed else None,
+        'qa_categories_json': _json.dumps([{'id': c.id, 'name': c.name} for c in qa_categories]),
     })
 
 
@@ -6825,7 +6925,7 @@ def qa_select_best(request, pk, answer_pk):
 
     # 回答者にベストアンサー選択通知（自分以外）
     if answer.user != request.user:
-        community_url = f'/monotal/community/?tab=qa&qa={question.question_id}'
+        community_url = reverse('qa_detail', kwargs={'pk': question.question_id})
         create_notification(
             NOTIFICATION_TYPE_COMMUNITY,
             'ベストアンサーに選ばれました',
@@ -6886,3 +6986,296 @@ def qa_edit(request, pk):
         'category': question.category.name if question.category else None,
         'category_id': question.category_id,
     })
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  クエスト関連ビュー / Quest Related Views                                       ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+def _get_descendant_category_ids(category):
+    """
+    カテゴリ階層を辿って、指定カテゴリ＋全子孫カテゴリのIDリストを返す
+    """
+    ids = [category.product_category_id]
+    children = ProductCategory.objects.filter(parent_product_category=category)
+    for child in children:
+        ids.extend(_get_descendant_category_ids(child))
+    return ids
+
+
+def _check_mission(user, condition_type, condition_params, product_category=None):
+    """
+    ミッション達成判定
+    product_category が指定されている場合、対応するcondition_typeでカテゴリ絞り込みを行う
+    """
+    count = condition_params.get('count', 1)
+
+    # カテゴリ絞り込みが必要な場合、子孫カテゴリIDを取得
+    category_ids = None
+    if product_category:
+        category_ids = _get_descendant_category_ids(product_category)
+
+    # --- ユーザー情報系（カテゴリ不要） ---
+    if condition_type == 'identity_verified':
+        return user.user_status_id == 2
+
+    if condition_type == 'profile_image_set':
+        return bool(user.user_image)
+
+    if condition_type == 'bio_set':
+        return bool(user.bio and user.bio.strip())
+
+    if condition_type == 'hobby_registered':
+        return UserHobby.objects.filter(user=user).exists()
+
+    if condition_type == 'address_registered':
+        return UserAddress.objects.filter(user=user).exists()
+
+    if condition_type == 'bank_account_registered':
+        return BankAccount.objects.filter(user=user).exists()
+
+    if condition_type == 'credit_card_registered':
+        return CreditCard.objects.filter(user=user).exists()
+
+    if condition_type == 'insurance_enrolled':
+        return InsuranceEnrollment.objects.filter(
+            user=user, insurance_enrollment_status_id=2
+        ).exists()
+
+    if condition_type == 'follow_count':
+        return Follow.objects.filter(follower_user=user).count() >= count
+
+    # --- 商品関連（カテゴリ絞り込み対応） ---
+    if condition_type == 'product_listed':
+        qs = Product.objects.filter(user=user, delete_datetime__isnull=True)
+        if category_ids:
+            qs = qs.filter(product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    if condition_type == 'bookmark_count':
+        qs = Bookmark.objects.filter(user=user)
+        if category_ids:
+            qs = qs.filter(product__product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    if condition_type == 'browsing_history_count':
+        qs = BrowsingHistory.objects.filter(user=user)
+        if category_ids:
+            qs = qs.filter(product__product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    if condition_type == 'rental_completed_renter':
+        qs = RentalHistory.objects.filter(
+            renter_user=user, rental_status_id=RENTAL_STATUS_COMPLETED
+        )
+        if category_ids:
+            qs = qs.filter(product__product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    if condition_type == 'rental_completed_lender':
+        qs = RentalHistory.objects.filter(
+            lender_user=user, rental_status_id=RENTAL_STATUS_COMPLETED
+        )
+        if category_ids:
+            qs = qs.filter(product__product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    if condition_type == 'review_written':
+        qs = UserReview.objects.filter(reviewer_user=user)
+        if category_ids:
+            qs = qs.filter(rental_history__product__product_category_id__in=category_ids)
+        return qs.count() >= count
+
+    # --- コミュニティ系（カテゴリ不要） ---
+    if condition_type == 'qa_question_posted':
+        return QAQuestion.objects.filter(user=user).count() >= count
+
+    if condition_type == 'qa_answer_posted':
+        return QAAnswer.objects.filter(user=user, parent_answer__isnull=True).count() >= count
+
+    if condition_type == 'qa_best_answer':
+        return QAAnswer.objects.filter(user=user, is_best_answer=True).count() >= count
+
+    if condition_type == 'board_created':
+        return Community.objects.filter(creator=user).count() >= count
+
+    if condition_type == 'board_post_count':
+        return Message.objects.filter(
+            user=user, chat_room__community__isnull=False
+        ).count() >= count
+
+    if condition_type == 'community_joined':
+        return CommunityMember.objects.filter(user=user).count() >= count
+
+    if condition_type == 'coupon_used':
+        return UserCoupon.objects.filter(
+            user=user, is_possessed=False, used_datetime__isnull=False
+        ).count() >= count
+
+    return False
+
+
+@method_decorator(ensure_csrf_cookie, name='dispatch')
+class QuestListView(LoginRequiredMixin, View):
+    """
+    クエスト一覧（独立ページ）
+    チュートリアルとカテゴリ別にグループ分けして表示
+    """
+    login_url = '/monotal/login/'
+
+    @staticmethod
+    def _sort_quests(quest_list):
+        """未達成を先頭、達成済みを後ろにソート"""
+        return sorted(quest_list, key=lambda qd: (qd['reward_claimed'], qd['quest'].display_order))
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        now = timezone.now()
+
+        # 完了済みクエストを取得
+        completed_map = {}
+        for uc in UserCompletedQuest.objects.filter(user=user).select_related('quest'):
+            completed_map[uc.quest_id] = uc
+
+        # アクティブなクエストを全取得（期限切れを除外）
+        quests = Quest.objects.filter(is_active=True).select_related(
+            'product_category', 'reward_coupon'
+        ).prefetch_related(
+            'missions',
+            'reward_coupon__target_categories__product_category',
+        ).exclude(
+            expires_at__isnull=False, expires_at__lt=now
+        )
+
+        # チュートリアルクエスト
+        tutorial_quests = []
+        # カテゴリ別クエスト {category_name: [quests]}
+        category_quests = {}
+        # 期間限定クエスト
+        limited_quests = []
+
+        for quest in quests:
+            missions = list(quest.missions.all())
+            mission_results = []
+            all_done = True
+
+            for m in missions:
+                done = _check_mission(
+                    user, m.condition_type, m.condition_params,
+                    product_category=quest.product_category
+                )
+                mission_results.append({
+                    'mission': m,
+                    'done': done,
+                })
+                if not done:
+                    all_done = False
+
+            completed_record = completed_map.get(quest.quest_id)
+
+            quest_data = {
+                'quest': quest,
+                'missions': mission_results,
+                'total': len(missions),
+                'done_count': sum(1 for mr in mission_results if mr['done']),
+                'all_done': all_done,
+                'completed': completed_record,
+                'reward_claimed': completed_record.reward_claimed if completed_record else False,
+            }
+
+            # 期間限定クエスト
+            if quest.expires_at is not None:
+                limited_quests.append(quest_data)
+
+            if quest.product_category is None:
+                tutorial_quests.append(quest_data)
+            else:
+                cat_name = quest.product_category.category_name
+                if cat_name not in category_quests:
+                    category_quests[cat_name] = []
+                category_quests[cat_name].append(quest_data)
+
+        # 未達成→達成済みの順にソート
+        tutorial_quests = self._sort_quests(tutorial_quests)
+        limited_quests = self._sort_quests(limited_quests)
+        for cat_name in category_quests:
+            category_quests[cat_name] = self._sort_quests(category_quests[cat_name])
+
+        # カテゴリ名リスト（表示順）
+        category_names = list(category_quests.keys())
+
+        # 未達成件数
+        def _incomplete_count(qlist):
+            return sum(1 for qd in qlist if not qd['reward_claimed'])
+
+        category_incomplete = {
+            cn: _incomplete_count(ql) for cn, ql in category_quests.items()
+        }
+
+        context = {
+            'limited_quests': limited_quests,
+            'limited_incomplete': _incomplete_count(limited_quests),
+            'tutorial_quests': tutorial_quests,
+            'tutorial_incomplete': _incomplete_count(tutorial_quests),
+            'category_quests': category_quests,
+            'category_names': category_names,
+            'category_incomplete': category_incomplete,
+        }
+        return render(request, 'quest_list.html', context)
+
+
+class QuestClaimRewardView(LoginRequiredMixin, View):
+    """
+    クエスト報酬受取（AJAX POST）
+    全ミッション達成を再確認後、UserCompletedQuestとUserCouponを作成
+    """
+    login_url = '/monotal/login/'
+
+    def post(self, request, quest_id, *args, **kwargs):
+        user = request.user
+        quest = get_object_or_404(Quest, quest_id=quest_id, is_active=True)
+
+        # 既に報酬受取済みか確認
+        existing = UserCompletedQuest.objects.filter(user=user, quest=quest).first()
+        if existing and existing.reward_claimed:
+            return JsonResponse({'success': False, 'message': '既に報酬を受け取っています。'})
+
+        # 全ミッション達成確認
+        missions = quest.missions.all()
+        for m in missions:
+            if not _check_mission(user, m.condition_type, m.condition_params, product_category=quest.product_category):
+                return JsonResponse({'success': False, 'message': 'まだ全てのミッションが完了していません。'})
+
+        now = timezone.now()
+
+        with transaction.atomic():
+            # UserCompletedQuest作成または更新
+            uc, created = UserCompletedQuest.objects.get_or_create(
+                user=user, quest=quest,
+                defaults={
+                    'completed_datetime': now,
+                    'reward_claimed': True,
+                    'reward_claimed_datetime': now,
+                }
+            )
+            if not created:
+                uc.reward_claimed = True
+                uc.reward_claimed_datetime = now
+                uc.save(update_fields=['reward_claimed', 'reward_claimed_datetime'])
+
+            # クーポン付与
+            if quest.reward_coupon:
+                UserCoupon.objects.create(
+                    user=user,
+                    coupon=quest.reward_coupon,
+                    is_possessed=True,
+                )
+
+        return JsonResponse({
+            'success': True,
+            'message': '報酬を受け取りました！クーポンが付与されました。',
+        })
+
+
+quest_list_page = QuestListView.as_view()
+quest_claim_reward = QuestClaimRewardView.as_view()

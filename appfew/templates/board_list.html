@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% load static %}
 
 {% block title %}掲示板一覧 - MONOTAL{% endblock %}
@@ -14,7 +14,7 @@
     <div class="flex items-center justify-between mb-6">
         <div>
             <div class="flex items-center gap-2 text-sm text-zinc-400 mb-1">
-                <a href="{% url 'community' %}" class="hover:text-zinc-600 transition-colors">コミュニティ</a>
+                <a href="{% url 'community_group' %}" class="hover:text-zinc-600 transition-colors">コミュニティ</a>
                 <span class="iconify" data-icon="lucide:chevron-right" data-width="14"></span>
                 <span>掲示板</span>
             </div>
@@ -62,7 +62,7 @@
     {% if boards %}
     <div class="space-y-3">
         {% for board in boards %}
-        <a href="{% url 'community' %}?board={{ board.community_id }}"
+        <a href="{% url 'board_detail' pk=board.community_id %}"
            class="board-card block bg-white border border-zinc-100 rounded-2xl p-5 hover:border-pink-200 hover:shadow-md transition-all">
             <div class="flex items-start justify-between gap-4">
                 <div class="flex-1 min-w-0">

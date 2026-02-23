@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}申請完了 - MONOTAL{% endblock %}
@@ -194,6 +194,10 @@
             <a href="{% url 'index' %}" class="btn-secondary">
                 <span class="iconify" data-icon="lucide:home" data-width="18"></span>
                 ホームへ
+            </a>
+            <a href="{% url 'mypage_rental_management' %}" class="btn-secondary">
+                <span class="iconify" data-icon="lucide:clipboard-list" data-width="18"></span>
+                レンタル管理ページへ
             </a>
         </div>
 

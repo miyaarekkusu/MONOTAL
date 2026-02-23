@@ -1,4 +1,4 @@
-﻿/**
+/**
  * qa_detail.js — Q&A詳細ページ用
  */
 
@@ -29,6 +29,20 @@ function showToast(msg, type) {
     }, 3000);
 }
 
+/* ===== Answer Modal ===== */
+function openAnswerModal() {
+    const modal = document.getElementById('qa-answer-modal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.getElementById('qa-answer-input').focus();
+    }
+}
+
+function closeAnswerModal() {
+    const modal = document.getElementById('qa-answer-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
 /* ===== Post Answer ===== */
 async function postQAAnswer() {
     const input = document.getElementById('qa-answer-input');
@@ -51,6 +65,7 @@ async function postQAAnswer() {
         const data = await res.json();
         if (data.success) {
             input.value = '';
+            closeAnswerModal();
             appendAnswer(data.answer);
             showToast('回答を投稿しました', 'success');
         } else {

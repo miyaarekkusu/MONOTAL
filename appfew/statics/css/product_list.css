@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 * {
     margin: 0;
@@ -297,6 +297,9 @@ details > summary::-webkit-details-marker {
 @media (min-width: 1024px) {
     .sidebar {
         width: 256px;
+        position: sticky;
+        top: 96px;
+        align-self: flex-start;
     }
 }
 
@@ -718,7 +721,7 @@ details[open] .filter-summary .icon {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 500;
     color: #18181b;
 }
