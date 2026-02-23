@@ -1459,6 +1459,15 @@ class BookmarkToggleView(View):
         else:
             is_bookmarked = True
 
+            # 商品オーナーにいいね通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_SYSTEM,
+                title=f'{request.user.display_name}さんがあなたの商品にいいねしました',
+                detail=product.product_name,
+                link_url=f'/monotal/product/{product.product_id}/',
+                target_users=[product.user]
+            )
+
         # 最新のブックマーク数を取得
         bookmark_count = Bookmark.objects.filter(product=product).count()
 
@@ -1935,6 +1944,15 @@ class FollowToggleView(View):
                 followed_user=target_user
             )
             is_following = True
+
+            # フォローされたユーザーに通知を送信
+            create_notification(
+                notification_type_id=NOTIFICATION_TYPE_SYSTEM,
+                title=f'{request.user.display_name}さんにフォローされました',
+                detail='',
+                link_url=f'/monotal/profile/{request.user.user_name}/',
+                target_users=[target_user]
+            )
 
         # フォロワー数を取得
         follower_count = Follow.objects.filter(followed_user=target_user).count()
@@ -7298,6 +7316,16 @@ class QuestClaimRewardView(LoginRequiredMixin, View):
                     coupon=quest.reward_coupon,
                     is_possessed=True,
                 )
+
+        # クエストクリア＆クーポン取得通知を送信
+        coupon_name = quest.reward_coupon.coupon_name if quest.reward_coupon else ''
+        create_notification(
+            notification_type_id=NOTIFICATION_TYPE_SYSTEM,
+            title=f'クエスト「{quest.quest_name}」をクリア！クーポン「{coupon_name}」を獲得！',
+            detail='',
+            link_url='/monotal/mypage/coupons/',
+            target_users=[user]
+        )
 
         return JsonResponse({
             'success': True,
