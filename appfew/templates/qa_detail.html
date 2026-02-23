@@ -5,10 +5,13 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/community.css' %}">
+<style>
+footer { display: none !important; }
+</style>
 {% endblock %}
 
 {% block content %}
-<div class="comm-page" style="height:auto;min-height:calc(100vh - 4rem);">
+<div class="comm-page">
 
     {% include 'community/_header.html' with active_tab='qa' %}
 
@@ -40,8 +43,8 @@
     </div>
 
     <!-- コンテンツ -->
-    <div class="flex-1" style="background:#f9f9fb;">
-        <div class="max-w-3xl mx-auto px-4 py-6">
+    <div class="flex-1 overflow-y-auto" style="background:#f9f9fb;padding:3rem 1.5rem;">
+        <div class="max-w-3xl mx-auto">
 
             <!-- Question Card -->
             <div class="bg-white border border-zinc-200 rounded-2xl overflow-hidden mb-6">
