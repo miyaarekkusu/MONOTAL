@@ -1,4 +1,4 @@
-/**
+﻿/**
  * board_detail.js — 掲示板詳細ページ用
  */
 
@@ -95,7 +95,7 @@ function appendMessage(msg) {
 
     const isMine = msg.is_mine;
     const div = document.createElement('div');
-    div.className = `flex gap-3 ${isMine ? 'flex-row-reverse' : ''}`;
+    div.className = `flex gap-3 mb-4 ${isMine ? 'flex-row-reverse' : ''}`;
     div.setAttribute('data-msg-id', msg.id);
 
     let avatarHtml = '';
@@ -107,7 +107,7 @@ function appendMessage(msg) {
 
     let contentHtml = '';
     if (msg.image_url) {
-        contentHtml += `<img src="${escapeHtml(msg.image_url)}" class="max-w-full max-h-60 rounded-xl mb-2 cursor-pointer" onclick="openBoardImageModal('${escapeHtml(msg.image_url)}')">`;
+        contentHtml += `<img src="${escapeHtml(msg.image_url)}" style="max-width:320px;max-height:240px;" class="rounded-xl mb-2 cursor-pointer" onclick="openBoardImageModal('${escapeHtml(msg.image_url)}')">`;
     }
     if (msg.product) {
         const pImg = msg.product.image ? `<img src="${escapeHtml(msg.product.image)}" class="h-10 w-10 rounded-lg object-cover" alt="">` : '';
@@ -124,7 +124,7 @@ function appendMessage(msg) {
 
     div.innerHTML = `
         <a href="${escapeHtml(msg.user.profile_url)}" class="flex-shrink-0">${avatarHtml}</a>
-        <div class="max-w-[70%]">
+        <div style="max-width:70%;">
             <div class="flex items-center gap-2 mb-1 ${isMine ? 'justify-end' : ''}">
                 <a href="${escapeHtml(msg.user.profile_url)}" class="text-xs font-semibold text-zinc-700 hover:text-pink-600 transition-colors">${escapeHtml(msg.user.name)}</a>
                 <span class="text-[10px] text-zinc-400">${escapeHtml(msg.time)}</span>
@@ -187,17 +187,95 @@ function closeBoardImageModal() {
     modal.classList.add('hidden');
 }
 
-/* ===== Product Picker ===== */
-function toggleBoardProductPicker() {
-    const picker = document.getElementById('board-product-picker');
-    picker.classList.toggle('hidden');
+/* ===== Product Search Modal ===== */
+let _pmInitialLoaded = false;
+
+function openProductModal() {
+    const modal = document.getElementById('product-search-modal');
+    if (!modal) return;
+    modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    document.getElementById('pm-search-input').focus();
+    if (!_pmInitialLoaded) {
+        _pmInitialLoaded = true;
+        searchProducts();
+    }
+}
+
+function closeProductModal() {
+    const modal = document.getElementById('product-search-modal');
+    if (!modal) return;
+    modal.style.display = '';
+    modal.classList.add('hidden');
+}
+
+async function searchProducts() {
+    const q = document.getElementById('pm-search-input').value.trim();
+    const categoryId = document.getElementById('pm-category-select').value;
+    const bookmarkEl = document.getElementById('pm-bookmark-check');
+    const bookmark = bookmarkEl && bookmarkEl.checked ? '1' : '';
+
+    const grid = document.getElementById('pm-grid');
+    const loading = document.getElementById('pm-loading');
+    const empty = document.getElementById('pm-empty');
+
+    grid.innerHTML = '';
+    empty.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (categoryId) params.set('category_id', categoryId);
+    if (bookmark) params.set('bookmark', bookmark);
+
+    try {
+        const res = await fetch(PRODUCT_SEARCH_URL + '?' + params.toString());
+        const data = await res.json();
+        loading.classList.add('hidden');
+
+        if (!data.products || data.products.length === 0) {
+            empty.classList.remove('hidden');
+            return;
+        }
+
+        data.products.forEach(p => {
+            const card = document.createElement('div');
+            card.className = 'cursor-pointer group';
+            card.onclick = () => selectModalProduct(p.id, p.name);
+
+            const imgHtml = p.image
+                ? `<img src="${escapeHtml(p.image)}" class="w-full aspect-square object-cover rounded-xl border border-zinc-200 group-hover:border-pink-400 transition-colors" alt="">`
+                : `<div class="w-full aspect-square bg-zinc-100 rounded-xl border border-zinc-200 flex items-center justify-center group-hover:border-pink-400 transition-colors"><span class="iconify text-zinc-300" data-icon="lucide:image-off" data-width="24"></span></div>`;
+
+            const feeHtml = p.fee != null
+                ? `<p class="text-[10px] text-pink-600 font-semibold mt-0.5">¥${Number(p.fee).toLocaleString()}〜</p>`
+                : '';
+
+            card.innerHTML = `
+                ${imgHtml}
+                <p class="text-xs text-zinc-800 font-medium mt-1.5 truncate">${escapeHtml(p.name)}</p>
+                <p class="text-[10px] text-zinc-400 truncate">${escapeHtml(p.owner)}</p>
+                ${feeHtml}
+            `;
+            grid.appendChild(card);
+        });
+
+        if (typeof Iconify !== 'undefined') Iconify.scan(grid);
+    } catch {
+        loading.classList.add('hidden');
+        empty.classList.remove('hidden');
+    }
+}
+
+function selectModalProduct(id, name) {
+    selectBoardProduct(id, name);
+    closeProductModal();
 }
 
 function selectBoardProduct(id, name) {
     document.getElementById('board-selected-product-id').value = id;
     document.getElementById('board-product-name').textContent = name;
     document.getElementById('board-product-preview').classList.remove('hidden');
-    document.getElementById('board-product-picker').classList.add('hidden');
 }
 
 function clearBoardProduct() {
@@ -205,4 +283,14 @@ function clearBoardProduct() {
     document.getElementById('board-product-preview').classList.add('hidden');
     document.getElementById('board-product-name').textContent = '';
 }
+
+/* Close modal on backdrop click */
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('product-search-modal');
+    if (modal) {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeProductModal();
+        });
+    }
+});
 

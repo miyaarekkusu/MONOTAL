@@ -6370,11 +6370,15 @@ def board_detail(request, pk):
             })
 
         # 通常GET: 詳細ページをレンダリング
+        categories = ProductCategory.objects.filter(
+            parent_product_category__isnull=True
+        ).prefetch_related('subcategories').order_by('product_category_id')
         return render(request, 'board_detail.html', {
             'board': board,
             'messages': msgs,
             'user_products': user_products,
             'post_url': reverse('board_detail', kwargs={'pk': board.pk}),
+            'categories': categories,
         })
 
     # POST: ログイン必須
@@ -6642,10 +6646,14 @@ def board_user_products(request):
     """商品リンク用: 全出品中商品を検索して返す"""
     q = request.GET.get('q', '').strip()
     category_id = request.GET.get('category_id', '').strip()
+    bookmark = request.GET.get('bookmark', '').strip()
+    condition = request.GET.get('condition', '').strip()
+    min_fee = request.GET.get('min_fee', '').strip()
+    max_fee = request.GET.get('max_fee', '').strip()
     qs = Product.objects.filter(
         delete_datetime__isnull=True,
         product_status_id=1,
-    ).select_related('user', 'product_category').prefetch_related('images').order_by('-register_datetime')
+    ).select_related('user', 'product_category').prefetch_related('images', 'rental_plans').order_by('-register_datetime')
     if q:
         qs = qs.filter(Q(product_name__icontains=q) | Q(product_description__icontains=q))
     if category_id:
@@ -6656,18 +6664,38 @@ def board_user_products(request):
             )
         except (ValueError, TypeError):
             pass
+    if bookmark == '1' and request.user.is_authenticated:
+        bm_ids = Bookmark.objects.filter(user=request.user).values_list('product_id', flat=True)
+        qs = qs.filter(pk__in=bm_ids)
+    if condition:
+        try:
+            qs = qs.filter(product_condition_id=int(condition))
+        except (ValueError, TypeError):
+            pass
+    if min_fee:
+        try:
+            qs = qs.filter(rental_plans__rental_fee__gte=int(min_fee)).distinct()
+        except (ValueError, TypeError):
+            pass
+    if max_fee:
+        try:
+            qs = qs.filter(rental_plans__rental_fee__lte=int(max_fee)).distinct()
+        except (ValueError, TypeError):
+            pass
     qs = qs[:30]
-    return JsonResponse({
-        'products': [
-            {
-                'id': p.pk,
-                'name': p.product_name,
-                'image': p.images.first().image.url if p.images.exists() else None,
-                'owner': p.user.display_name or p.user.user_name,
-            }
-            for p in qs
-        ]
-    })
+    products = []
+    for p in qs:
+        plans = list(p.rental_plans.all())
+        min_plan = min(plans, key=lambda x: x.rental_fee) if plans else None
+        products.append({
+            'id': p.pk,
+            'name': p.product_name,
+            'image': p.images.first().image.url if p.images.exists() else None,
+            'owner': p.user.display_name or p.user.user_name,
+            'category': p.product_category.category_name if p.product_category else None,
+            'fee': int(min_plan.rental_fee) if min_plan else None,
+        })
+    return JsonResponse({'products': products})
 
 
 # ===== Q&A ビュー =====

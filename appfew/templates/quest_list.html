@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}クエスト | MONOTAL{% endblock %}
@@ -332,7 +332,7 @@
                     <div class="qc rk-l {% if qd.reward_claimed %}qc-done{% endif %}"
                          data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
                          onclick="openQuest({{ qd.quest.quest_id }})">
-                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        {% if qd.reward_claimed %}<div class="qc-stamp">COMPLETE</div>{% endif %}
                         <div class="qc-stripe"></div>
                         <div class="qc-top">
                             <div class="qc-stars">
@@ -384,7 +384,7 @@
                     <div class="qc rk-t {% if qd.reward_claimed %}qc-done{% endif %}"
                          data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
                          onclick="openQuest({{ qd.quest.quest_id }})">
-                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        {% if qd.reward_claimed %}<div class="qc-stamp">COMPLETE</div>{% endif %}
                         <div class="qc-stripe"></div>
                         <div class="qc-top">
                             <div class="qc-stars">
@@ -436,7 +436,7 @@
                     <div class="qc rk-{{ qd.quest.difficulty }} {% if qd.reward_claimed %}qc-done{% endif %}"
                          data-quest-id="{{ qd.quest.quest_id }}" data-completed="{{ qd.reward_claimed|yesno:'1,0' }}"
                          onclick="openQuest({{ qd.quest.quest_id }})">
-                        {% if qd.reward_claimed %}<div class="qc-stamp">CLEAR</div>{% endif %}
+                        {% if qd.reward_claimed %}<div class="qc-stamp">COMPLETE</div>{% endif %}
                         <div class="qc-stripe"></div>
                         <div class="qc-top">
                             <div class="qc-stars">
@@ -661,7 +661,7 @@ async function claimReward(qid) {
             document.querySelectorAll(`.qc[data-quest-id="${qid}"]`).forEach(card => {
                 card.classList.add('qc-done'); card.dataset.completed = '1';
                 if (!card.querySelector('.qc-stamp')) {
-                    const s = document.createElement('div'); s.className = 'qc-stamp'; s.textContent = 'CLEAR'; card.appendChild(s);
+                    const s = document.createElement('div'); s.className = 'qc-stamp'; s.textContent = 'COMPLETE'; card.appendChild(s);
                 }
             });
             document.getElementById('qm-action').innerHTML = '<div class="qm-done-badge"><span class="iconify" data-icon="lucide:check-circle-2" data-width="18" style="display:inline-block;vertical-align:middle;margin-right:4px"></span>COMPLETE</div>';
