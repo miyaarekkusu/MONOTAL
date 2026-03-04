@@ -1,4 +1,4 @@
-﻿// Product Detail Page JavaScript
+// Product Detail Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Image gallery functionality

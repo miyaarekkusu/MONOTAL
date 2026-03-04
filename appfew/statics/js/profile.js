@@ -1,4 +1,4 @@
-﻿// Profile Page JavaScript
+// Profile Page JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching functionality

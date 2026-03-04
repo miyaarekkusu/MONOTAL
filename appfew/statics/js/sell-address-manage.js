@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('addAddressModal');
     const openModalBtns = document.querySelectorAll('#openAddModalBtn');
     const closeModalBtn = document.getElementById('closeModalBtn');

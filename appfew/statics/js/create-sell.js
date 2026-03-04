@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const sellForm = document.getElementById('sellForm');
     const FORM_STORAGE_KEY = 'createSellFormData';
 

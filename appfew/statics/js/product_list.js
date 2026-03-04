@@ -1,4 +1,4 @@
-﻿// AP Collections - JavaScript
+// AP Collections - JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize all functionality
