@@ -253,6 +253,16 @@ const TransactionPage = {
         if (modal) modal.classList.add('hidden');
     },
 
+    showLoading(text = '追跡情報を登録中...') {
+        const el = document.getElementById('loadingModalText');
+        if (el) el.textContent = text;
+        this.openModal('loadingModal');
+    },
+
+    hideLoading() {
+        this.closeModal('loadingModal');
+    },
+
     // ==========================================
     // 発送モーダル
     // ==========================================
@@ -283,6 +293,11 @@ const TransactionPage = {
         if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
 
+        if (trackingNumber) {
+            this.closeModal('shipModal');
+            this.showLoading('追跡番号を登録中...');
+        }
+
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/ship/`, {
                 method: 'POST',
@@ -297,9 +312,12 @@ const TransactionPage = {
             });
             const data = await response.json();
 
+            this.hideLoading();
+
             if (data.success) {
                 location.reload();
             } else {
+                this.openModal('shipModal');
                 if (errorEl) {
                     errorEl.textContent = data.message || '発送通知に失敗しました';
                     errorEl.classList.remove('hidden');
@@ -308,6 +326,8 @@ const TransactionPage = {
                 }
             }
         } catch (error) {
+            this.hideLoading();
+            this.openModal('shipModal');
             console.error('発送通知に失敗しました:', error);
             showAlert('発送通知に失敗しました');
         } finally {
@@ -345,6 +365,11 @@ const TransactionPage = {
         if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
 
+        if (trackingNumber) {
+            this.closeModal('returnShipModal');
+            this.showLoading('追跡番号を登録中...');
+        }
+
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-ship/`, {
                 method: 'POST',
@@ -359,9 +384,12 @@ const TransactionPage = {
             });
             const data = await response.json();
 
+            this.hideLoading();
+
             if (data.success) {
                 location.reload();
             } else {
+                this.openModal('returnShipModal');
                 if (errorEl) {
                     errorEl.textContent = data.message || '返送通知に失敗しました';
                     errorEl.classList.remove('hidden');
@@ -370,6 +398,8 @@ const TransactionPage = {
                 }
             }
         } catch (error) {
+            this.hideLoading();
+            this.openModal('returnShipModal');
             console.error('返送通知に失敗しました:', error);
             showAlert('返送通知に失敗しました');
         } finally {
@@ -538,6 +568,11 @@ const TransactionPage = {
         if (errorEl) errorEl.classList.add('hidden');
         if (confirmBtn) confirmBtn.disabled = true;
 
+        if (trackingNumber) {
+            this.closeModal('returnShipRefundModal');
+            this.showLoading('追跡番号を登録中...');
+        }
+
         try {
             const response = await fetch(`/monotal/transaction/${this.rentalHistoryId}/return-ship-refund/`, {
                 method: 'POST',
@@ -552,9 +587,12 @@ const TransactionPage = {
             });
             const data = await response.json();
 
+            this.hideLoading();
+
             if (data.success) {
                 location.reload();
             } else {
+                this.openModal('returnShipRefundModal');
                 if (errorEl) {
                     errorEl.textContent = data.message || '返品発送通知に失敗しました';
                     errorEl.classList.remove('hidden');
@@ -563,6 +601,8 @@ const TransactionPage = {
                 }
             }
         } catch (error) {
+            this.hideLoading();
+            this.openModal('returnShipRefundModal');
             console.error('返品発送通知に失敗しました:', error);
             showAlert('返品発送通知に失敗しました');
         } finally {
@@ -595,7 +635,7 @@ const TransactionPage = {
 
     async showTracking(type) {
         const body = document.getElementById('trackingModalBody');
-        body.innerHTML = '<div class="chat-loading"><span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="24"></span></div>';
+        body.innerHTML = '<div class="chat-loading"><span class="iconify animate-spin" data-icon="lucide:loader-2" data-width="24"></span><p style="margin-top:8px;color:#71717a;font-size:13px;">追跡情報を取得中...</p></div>';
         this.openModal('trackingModal');
 
         try {

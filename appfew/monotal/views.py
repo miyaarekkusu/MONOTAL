@@ -4066,15 +4066,21 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
         )
 
         # 取引中（RentalHistory）: 出品者・購入者まとめて取得
-        transactions_all = RentalHistory.objects.filter(
+        # 返却済み(5)は双方レビュー完了(2件)まで表示
+        from django.db.models import Count
+        transactions_all = RentalHistory.objects.annotate(
+            review_count=Count('reviews')
+        ).filter(
             Q(lender_user=request.user) | Q(renter_user=request.user),
-            rental_status_id__in=[
+        ).filter(
+            Q(rental_status_id__in=[
                 RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
                 RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING,
                 RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED,
                 RENTAL_STATUS_RETURN_SHIPPING,
                 RENTAL_STATUS_CANCELLATION_REQUESTED
-            ]
+            ]) |
+            Q(rental_status_id=RENTAL_STATUS_COMPLETED, review_count__lt=2)
         ).select_related(
             'product', 'lender_user', 'renter_user', 'rental_status'
         ).prefetch_related(
@@ -5187,10 +5193,11 @@ class TransactionShipView(LoginRequiredMixin, View):
 
             # 追跡番号がある場合、17trackに事前登録を試みる
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5311,10 +5318,11 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
 
             # 追跡番号がある場合、17trackに事前登録を試みる
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5707,10 +5715,11 @@ class ReturnShipView(LoginRequiredMixin, View):
             carrier_code = body.get('carrier_code', '').strip()
 
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5894,35 +5903,70 @@ class TransactionReviewView(LoginRequiredMixin, View):
 
 # 取引関連ビュー
 def _register_tracking_17track(tracking_number, carrier_code=''):
-    """17track APIに追跡番号を登録する。成功時True、失敗時False。"""
+    """
+    17track APIに追跡番号を登録し、追跡情報が取得できるか検証する。
+    戻り値: (成功: True/False, エラーメッセージ: str or None)
+    """
     import urllib.request
     import urllib.error
+    import time
 
     api_key = settings.SEVENTEEN_TRACK_API_KEY
     if not api_key or not tracking_number:
-        return True  # APIキー未設定時はスキップ（エラーにしない）
+        return True, None
 
+    carrier = int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
+    payload = json.dumps([{'number': tracking_number, 'carrier': carrier}])
+    headers = {'17token': api_key, 'Content-Type': 'application/json'}
+
+    # 1. 追跡番号を登録
     try:
-        payload = json.dumps([{
-            'number': tracking_number,
-            'carrier': int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
-        }])
         req = urllib.request.Request(
             'https://api.17track.net/track/v2.2/register',
             data=payload.encode('utf-8'),
-            headers={
-                '17token': api_key,
-                'Content-Type': 'application/json'
-            }
+            headers=headers
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             rejected = data.get('data', {}).get('rejected', [])
             if rejected:
-                return False
-        return True
+                err = rejected[0].get('error', {})
+                # 既に登録済み（code=-18010012等）は OK として続行
+                if err.get('code') != -18010012:
+                    return False, '追跡番号の登録に失敗しました。番号が正しいか確認してください。'
     except Exception:
-        return True  # 通信エラー時はブロックしない
+        return True, None  # 通信エラー時はブロックしない
+
+    # 2. 登録後に追跡情報を取得して検証（最大3回リトライ）
+    for attempt in range(3):
+        time.sleep(2)
+        try:
+            req = urllib.request.Request(
+                'https://api.17track.net/track/v2.2/gettrackinfo',
+                data=payload.encode('utf-8'),
+                headers=headers
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+
+            accepted = data.get('data', {}).get('accepted', [])
+            if accepted:
+                track_info = accepted[0].get('track_info', {})
+                latest_status = track_info.get('latest_status', {}).get('status', '')
+                tracking = track_info.get('tracking', {})
+                has_events = any(
+                    provider.get('events', [])
+                    for provider in tracking.get('providers', [])
+                )
+                # 情報が取れた or まだ反映されていないだけ（NotFound以外）
+                if has_events or latest_status not in ('', 'NotFound'):
+                    return True, None
+                # NotFoundでもリトライ中は続行
+        except Exception:
+            pass
+
+    # 3回リトライしても情報なし → エラー
+    return False, '発送情報が見つかりません。追跡番号または配送業者が正しいか確認してください。'
 
 
 class TransactionTrackingView(LoginRequiredMixin, View):
@@ -6017,17 +6061,35 @@ class TransactionTrackingView(LoginRequiredMixin, View):
 
             # 未登録の場合は自動登録を試みる
             if rejected:
-                error_msg = rejected[0].get('error', {}).get('message', '')
-                if 'register' in error_msg.lower():
-                    _register_tracking_17track(tracking_number, carrier_code or '')
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code or '')
+                if not ok:
                     return JsonResponse({
-                        'success': True,
-                        'tracking_number': tracking_number,
-                        'carrier_code': carrier_code or '',
-                        'events': [],
-                        'latest_status': '',
-                        'message': '追跡番号を登録しました。しばらくしてから再度ご確認ください。'
-                    })
+                        'success': False,
+                        'message': err_msg or '追跡番号が見つかりません。'
+                    }, status=404)
+                # 登録成功後、再取得
+                try:
+                    retry_req = urllib.request.Request(
+                        'https://api.17track.net/track/v2.2/gettrackinfo',
+                        data=payload,
+                        headers={'17token': api_key, 'Content-Type': 'application/json'}
+                    )
+                    with urllib.request.urlopen(retry_req, timeout=10) as retry_resp:
+                        retry_data = json.loads(retry_resp.read().decode('utf-8'))
+                    retry_accepted = retry_data.get('data', {}).get('accepted', [])
+                    if retry_accepted:
+                        track_info = retry_accepted[0].get('track_info', {})
+                        ls = track_info.get('latest_status', {})
+                        latest_status = ls.get('status', '')
+                        for provider in track_info.get('tracking', {}).get('providers', []):
+                            for event in provider.get('events', []):
+                                events.append({
+                                    'date': event.get('time_iso', ''),
+                                    'status': event.get('description', ''),
+                                    'location': event.get('location', ''),
+                                })
+                except Exception:
+                    pass
 
             return JsonResponse({
                 'success': True,
@@ -6917,9 +6979,6 @@ def qa_answer_post(request, pk):
     if question.status_id != 1:
         return JsonResponse({'success': False, 'message': 'この質問は受付を終了しています'}, status=400)
 
-    if question.user == request.user:
-        return JsonResponse({'success': False, 'message': '自分の質問には回答できません'}, status=403)
-
     try:
         body = _json.loads(request.body)
     except Exception:
@@ -6927,6 +6986,10 @@ def qa_answer_post(request, pk):
 
     content = body.get('content', '').strip()
     parent_answer_id = body.get('parent_answer_id')
+
+    # 自分の質問への「回答」は不可、ただし「返信」（parent_answer_idあり）は許可
+    if question.user == request.user and not parent_answer_id:
+        return JsonResponse({'success': False, 'message': '自分の質問には回答できません'}, status=403)
 
     if not content:
         return JsonResponse({'success': False, 'message': '回答内容を入力してください'}, status=400)
@@ -6936,9 +6999,11 @@ def qa_answer_post(request, pk):
     parent_answer = None
     if parent_answer_id:
         try:
-            parent_answer = QAAnswer.objects.get(pk=parent_answer_id, question=question, parent_answer__isnull=True)
+            target = QAAnswer.objects.get(pk=parent_answer_id, question=question)
         except QAAnswer.DoesNotExist:
             return JsonResponse({'success': False, 'message': '返信先の回答が見つかりません'}, status=400)
+        # 返信先が子回答（返信）の場合、その親回答にぶら下げる
+        parent_answer = target if target.parent_answer_id is None else target.parent_answer
 
     answer = QAAnswer.objects.create(
         question=question,
@@ -6946,6 +7011,19 @@ def qa_answer_post(request, pk):
         parent_answer=parent_answer,
         content=content,
     )
+
+    # 質問者に通知（自分自身への回答は除外済み）
+    try:
+        create_notification(
+            notification_type_id=4,  # コミュニティ通知
+            title='質問に回答がありました',
+            detail=f'「{question.title}」に{request.user.display_name or request.user.user_name}さんが回答しました。',
+            link_url=f'/monotal/community/qa/{question.question_id}/',
+            target_users=[question.user],
+        )
+    except Exception:
+        pass
+
     d = _answer_to_dict(answer, request.user)
     d['parent_answer_id'] = parent_answer.answer_id if parent_answer else None
     return JsonResponse({'success': True, 'answer': d})
