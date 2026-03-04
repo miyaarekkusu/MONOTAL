@@ -965,3 +965,9 @@ details[open] .filter-summary .icon {
 .footer-icons svg {
     color: #d4d4d8;
 }
+
+@media (max-width: 480px) {
+    .main { padding: 16px 12px; }
+    .product-grid { gap: 8px; }
+    .page-title { font-size: 1.25rem; }
+}

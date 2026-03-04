@@ -18,7 +18,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-zinc-50 text-zinc-900 antialiased selection:bg-pink-600 selection:text-white flex flex-col min-h-screen pb-20 md:pb-0">
+<body class="bg-zinc-50 text-zinc-900 antialiased selection:bg-pink-600 selection:text-white flex flex-col min-h-screen pb-16 md:pb-0">
 
     <!-- Header -->
     <header class="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/95 backdrop-blur-md">
@@ -73,7 +73,7 @@
                             {% endif %}
                         </button>
                         <!-- Notification Dropdown -->
-                        <div id="notification-dropdown-menu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
+                        <div id="notification-dropdown-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
                             <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                                 <h3 class="font-semibold text-sm text-zinc-900">通知</h3>
                                 <button id="mark-all-read-btn" class="text-xs text-pink-600 hover:text-pink-700 font-medium">すべて既読</button>
@@ -96,7 +96,7 @@
                             {% endif %}
                         </button>
                         <!-- Dropdown Menu -->
-                        <div id="profile-dropdown-menu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
+                        <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
                             <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
                                 <span class="iconify text-zinc-400" data-icon="lucide:layout-dashboard" data-width="16"></span>
                                 マイページ
@@ -204,14 +204,14 @@
                 <span class="iconify" data-icon="lucide:home" data-width="24"></span>
                 <span class="text-[10px] font-bold">ホーム</span>
             </a>
-            <a href="{% url 'product_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:search" data-width="24"></span>
-                <span class="text-[10px] font-medium">さがす</span>
+            <a href="{% url 'community_group' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:messages-square" data-width="24"></span>
+                <span class="text-[10px] font-medium">コミュニティ</span>
             </a>
             <div class="w-8"></div> <!-- Spacer for Sell Button -->
-            <a href="#" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:message-square" data-width="24"></span>
-                <span class="text-[10px] font-medium">メッセージ</span>
+            <a href="{% url 'quest_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:trophy" data-width="24"></span>
+                <span class="text-[10px] font-medium">クエスト</span>
             </a>
             {% if user.is_authenticated %}
             <a href="{% url 'mypage_browsing_history' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">

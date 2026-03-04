@@ -1,4 +1,4 @@
-/* ============================================
+﻿/* ============================================
    product_detail.css - 商品詳細ページ
    ============================================ */
 
@@ -994,6 +994,9 @@ body {
     .rental-section {
         padding: 16px;
     }
+
+    .comment-item { gap: 8px; }
+    .comment-avatar { width: 28px; height: 28px; }
 }
 
 /* Bottom padding for mobile sticky CTA */

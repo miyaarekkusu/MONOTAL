@@ -732,6 +732,8 @@ input[type="number"] {
     .postal-input {
         width: 100%;
     }
+
+    .plan-input { padding: 8px 10px; font-size: 13px; }
 }
 
 /* ============================================

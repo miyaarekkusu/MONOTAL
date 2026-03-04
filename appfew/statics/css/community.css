@@ -1,4 +1,4 @@
-/* =============================================
+﻿/* =============================================
    Community Page Styles
    ============================================= */
 
@@ -859,8 +859,39 @@
    Responsive
    ============================================= */
 
+/* Q&A Detail scroll area */
+.qa-detail-scroll { padding: 3rem 1.5rem; }
+
 @media (max-width: 640px) {
     .comm-filter-bar { gap: 0.4rem; }
     .comm-sort-btns  { order: 3; }
     .comm-create-btn { order: 4; }
+
+    /* 幅制限の解除 */
+    .comm-header-inner { max-width: 100%; padding: 0 0.75rem; }
+    .comm-list-inner { max-width: 100%; padding: 0.75rem 0.75rem 4rem; }
+    .comm-chat-header-inner { width: 100%; padding: 0.75rem; }
+    .comm-messages-area { padding: 1rem 0.75rem; }
+    .comm-input-bar-inner { width: 100%; padding: 0 0.75rem; }
+
+    /* dvh対応 */
+    .comm-page { height: calc(100dvh - 4rem); }
+
+    /* タブの横スクロール */
+    .comm-tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .comm-tab { white-space: nowrap; font-size: 0.75rem; }
+
+    /* カード・タイトル調整 */
+    .comm-title { font-size: 1rem; }
+    .comm-group-card, .comm-qa-card { padding: 0.75rem 1rem; }
+
+    /* Q&A Detail */
+    .qa-detail-scroll { padding: 1.5rem 0.75rem; }
+
+    /* Board Detail - px-6 override */
+    #board-messages-area { padding-left: 0.75rem !important; padding-right: 0.75rem !important; }
+
+    /* Q&A answer input area */
+    .comm-qa-answer-input { padding: 0.5rem 0.75rem; }
+    .comm-qa-inner { width: 100%; padding: 1rem 0 4rem; }
 }

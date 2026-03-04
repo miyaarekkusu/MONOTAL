@@ -1,4 +1,4 @@
-/* 補償申請管理画面 追加スタイル */
+﻿/* 補償申請管理画面 追加スタイル */
 
 /* ステータスフィルタータブ */
 .filter-tabs {
@@ -188,4 +188,10 @@
     .reject-modal-actions .btn {
         width: 100%;
     }
+}
+
+@media (max-width: 480px) {
+    .filter-tab { padding: 10px 12px; font-size: 13px; }
+    .product-name-cell { max-width: 140px; }
+    .reject-modal-content { padding: 16px; }
 }
