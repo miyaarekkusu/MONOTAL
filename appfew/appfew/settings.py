@@ -159,6 +159,8 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
 }
 
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/monotal/'  # ログイン成功時はトップへ
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',
