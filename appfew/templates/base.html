@@ -139,6 +139,17 @@
             </div>
         </div>
 
+        <!-- Mobile Search Bar -->
+        <div class="md:hidden border-t border-zinc-100 px-4 py-2">
+            <form method="GET" action="{% url 'product_list' %}" class="relative">
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="商品名・カテゴリから探す" autocomplete="off"
+                    class="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2 pl-4 pr-10 text-sm text-zinc-900 placeholder-zinc-400 focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none focus:bg-white transition-all">
+                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-pink-600 transition-all">
+                    <span class="iconify" data-icon="lucide:search" data-width="18" data-height="18"></span>
+                </button>
+            </form>
+        </div>
+
         <!-- Secondary Nav (トップページのみ表示) -->
         {% block secondary_nav %}{% endblock %}
     </header>

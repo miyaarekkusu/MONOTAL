@@ -1,57 +1,57 @@
 <!-- Mobile Navigation (lg以下で表示) -->
 <div class="lg:hidden col-span-full mb-4">
     <nav class="grid grid-cols-3 gap-2">
-        <a href="{% url 'mypage_browsing_history' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'browsing_history' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:history" data-width="20"></span>
+        <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'browsing_history' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:history" data-width="16"></span>
             <span class="text-[11px] font-semibold">閲覧履歴</span>
         </a>
-        <a href="{% url 'mypage_bookmark_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'bookmark_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:heart" data-width="20"></span>
+        <a href="{% url 'mypage_bookmark_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'bookmark_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:heart" data-width="16"></span>
             <span class="text-[11px] font-semibold">ブックマーク</span>
         </a>
-        <a href="{% url 'mypage_follow_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'follow_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:users" data-width="20"></span>
+        <a href="{% url 'mypage_follow_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'follow_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:users" data-width="16"></span>
             <span class="text-[11px] font-semibold">フォロー</span>
         </a>
-        <a href="{% url 'mypage_block_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'block_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:ban" data-width="20"></span>
+        <a href="{% url 'mypage_block_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'block_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:ban" data-width="16"></span>
             <span class="text-[11px] font-semibold">ブロック</span>
         </a>
-        <a href="{% url 'mypage_listing' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'listing' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:store" data-width="20"></span>
+        <a href="{% url 'mypage_listing' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'listing' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:store" data-width="16"></span>
             <span class="text-[11px] font-semibold">出品一覧</span>
         </a>
-        <a href="{% url 'mypage_rental_management' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'rental_management' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:package" data-width="20"></span>
+        <a href="{% url 'mypage_rental_management' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'rental_management' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:package" data-width="16"></span>
             <span class="text-[11px] font-semibold">レンタル管理</span>
         </a>
-        <a href="{% url 'mypage_coupon_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'coupon_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:ticket" data-width="20"></span>
+        <a href="{% url 'mypage_coupon_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'coupon_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:ticket" data-width="16"></span>
             <span class="text-[11px] font-semibold">クーポン</span>
         </a>
-        <a href="{% url 'mypage_community' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'community_groups' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:messages-square" data-width="20"></span>
+        <a href="{% url 'mypage_community' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'community_groups' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:messages-square" data-width="16"></span>
             <span class="text-[11px] font-semibold">グループ</span>
         </a>
-        <a href="{% url 'mypage_community_qa' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'community_qa' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:help-circle" data-width="20"></span>
+        <a href="{% url 'mypage_community_qa' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'community_qa' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:help-circle" data-width="16"></span>
             <span class="text-[11px] font-semibold">Q&A</span>
         </a>
         {% if request.user.user_status_id == 2 %}
-        <a href="{% url 'mypage_address_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'address_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:map-pin" data-width="20"></span>
+        <a href="{% url 'mypage_address_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'address_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:map-pin" data-width="16"></span>
             <span class="text-[11px] font-semibold">住所管理</span>
         </a>
-        <a href="{% url 'mypage_bank_account_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'bank_account_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:building-2" data-width="20"></span>
+        <a href="{% url 'mypage_bank_account_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'bank_account_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:building-2" data-width="16"></span>
             <span class="text-[11px] font-semibold">口座管理</span>
         </a>
-        <a href="{% url 'mypage_credit_card_list' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'credit_card_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:credit-card" data-width="20"></span>
+        <a href="{% url 'mypage_credit_card_list' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'credit_card_list' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:credit-card" data-width="16"></span>
             <span class="text-[11px] font-semibold">カード管理</span>
         </a>
-        <a href="{% url 'insurance_page' %}" class="flex flex-col items-center gap-1 py-3 rounded-lg border text-center transition-colors {% if current_page == 'insurance' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
-            <span class="iconify" data-icon="lucide:shield-check" data-width="20"></span>
+        <a href="{% url 'insurance_page' %}" class="flex items-center gap-2 px-3 py-2.5 rounded-lg border transition-colors {% if current_page == 'insurance' %}bg-pink-50 text-pink-700 border-pink-200{% else %}bg-white text-zinc-600 border-zinc-200 hover:bg-zinc-50{% endif %}">
+            <span class="iconify" data-icon="lucide:shield-check" data-width="16"></span>
             <span class="text-[11px] font-semibold">補償保険</span>
         </a>
         {% endif %}
