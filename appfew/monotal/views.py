@@ -2302,6 +2302,18 @@ class MyPageBookmarkListView(LoginRequiredMixin, View):
         return render(request, 'mypage/bookmark_list.html', context)
 
 
+class MyPageIndexView(LoginRequiredMixin, View):
+    """マイページ - メニュー一覧"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        return render(request, 'mypage/index.html', {
+            'current_page': 'index',
+        })
+
+mypage_index = MyPageIndexView.as_view()
+
+
 class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
     """
     マイページ - 閲覧履歴
@@ -6340,7 +6352,10 @@ def board_create(request):
 
 def board_detail(request, pk):
     """掲示板詳細・メッセージ投稿（未ログインは閲覧のみ）"""
-    board = get_object_or_404(Community, pk=pk)
+    try:
+        board = Community.objects.get(pk=pk)
+    except Community.DoesNotExist:
+        return redirect('community_group')
     chat_room = ChatRoom.objects.filter(community=board).first()
 
     if request.method == 'GET':
@@ -6459,6 +6474,8 @@ def board_detail(request, pk):
             })
 
         # 通常GET: 詳細ページをレンダリング
+        is_creator = request.user.is_authenticated and board.creator == request.user
+        is_member = is_creator or (request.user.is_authenticated and CommunityMember.objects.filter(community=board, user=request.user).exists())
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories').order_by('product_category_id')
@@ -6468,11 +6485,19 @@ def board_detail(request, pk):
             'user_products': user_products,
             'post_url': reverse('board_detail', kwargs={'pk': board.pk}),
             'categories': categories,
+            'is_member': is_member,
+            'is_creator': is_creator,
         })
 
     # POST: ログイン必須
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'message': 'ログインが必要です'}, status=401)
+
+    # POST: メンバーのみ投稿可能（作成者もOK）
+    is_creator = board.creator == request.user
+    is_member = is_creator or CommunityMember.objects.filter(community=board, user=request.user).exists()
+    if not is_member:
+        return JsonResponse({'success': False, 'message': 'グループに参加してからメッセージを送信してください'}, status=403)
 
     # POST: FormData（image対応）
     if not chat_room:
@@ -6640,6 +6665,8 @@ def delete_message(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=405)
     msg = get_object_or_404(Message, pk=pk)
+    if msg.message_content and msg.message_content.startswith('__system__:'):
+        return JsonResponse({'success': False, 'message': 'システムメッセージは削除できません'}, status=403)
     if msg.user != request.user:
         return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
     msg.delete()

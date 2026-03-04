@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>{% block title %}MONOTAL{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
@@ -158,7 +158,7 @@
     {% block content %}{% endblock %}
 
     <!-- Footer -->
-    <footer class="border-t border-zinc-200 bg-white pt-16 pb-24 md:pb-12 mt-auto">
+    <footer class="border-t border-zinc-200 bg-white pt-16 pb-24 md:pb-12 mt-16 sm:mt-auto">
         <div class="mx-auto max-w-[1200px] px-6">
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-16">
                 <div class="col-span-2 space-y-4">
@@ -202,36 +202,33 @@
         </div>
     </footer>
 
-    <!-- Floating Action Button -->
-    <a href="{% url 'create_sell' %}" class="fixed bottom-20 right-4 z-50 flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full bg-pink-600 text-white shadow-xl shadow-pink-900/20 transition-transform hover:scale-105 active:scale-95 sm:hidden">
-        <span class="text-[9px] font-bold">出品</span>
-        <span class="iconify" data-icon="lucide:camera" data-width="20"></span>
-    </a>
-
     <!-- Mobile Navigation Bar -->
     <div class="fixed bottom-0 left-0 z-40 w-full border-t border-zinc-200 bg-white pb-safe sm:hidden">
         <div class="grid h-16 grid-cols-5 items-center justify-items-center">
             <a href="{% url 'index' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:home" data-width="24"></span>
+                <span class="iconify" data-icon="lucide:home" data-width="22"></span>
                 <span class="text-[10px] font-medium">ホーム</span>
             </a>
             <a href="{% url 'community_group' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:messages-square" data-width="24"></span>
+                <span class="iconify" data-icon="lucide:messages-square" data-width="22"></span>
                 <span class="text-[10px] font-medium">コミュニティ</span>
             </a>
-            <div class="w-8"></div> <!-- Spacer for Sell Button -->
+            <a href="{% url 'create_sell' %}" class="flex flex-col items-center gap-1 text-pink-600 hover:text-pink-700">
+                <span class="iconify" data-icon="lucide:plus-circle" data-width="26"></span>
+                <span class="text-[10px] font-bold">出品</span>
+            </a>
             <a href="{% url 'quest_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:trophy" data-width="24"></span>
+                <span class="iconify" data-icon="lucide:trophy" data-width="22"></span>
                 <span class="text-[10px] font-medium">クエスト</span>
             </a>
             {% if user.is_authenticated %}
-            <a href="{% url 'mypage_browsing_history' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+            <a href="{% url 'mypage_index' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:user" data-width="22"></span>
                 <span class="text-[10px] font-medium">マイページ</span>
             </a>
             {% else %}
             <a href="{% url 'login' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+                <span class="iconify" data-icon="lucide:user" data-width="22"></span>
                 <span class="text-[10px] font-medium">ログイン</span>
             </a>
             {% endif %}

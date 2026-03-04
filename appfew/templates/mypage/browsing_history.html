@@ -26,12 +26,14 @@
     </div>
     {% endif %}
 
-    <!-- Breadcrumbs -->
-    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+    <!-- Breadcrumbs (Desktop) -->
+    <nav class="mb-8 hidden lg:flex text-xs font-medium text-zinc-500">
         <ol class="flex items-center space-x-2">
             <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
-            <li class="text-zinc-900">マイページ</li>
+            <li><a href="{% url 'mypage_index' %}" class="hover:underline hover:text-pink-600">マイページ</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">閲覧履歴</li>
         </ol>
     </nav>
 

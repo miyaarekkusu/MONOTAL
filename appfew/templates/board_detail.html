@@ -30,14 +30,30 @@ footer { display: none !important; }
                     <p class="comm-chat-sub">{% if board.category %}{{ board.category.name }}{% endif %}{% if board.description %} · {{ board.description }}{% endif %}</p>
                 </div>
             </div>
-            {% if board.creator %}
-            <div class="comm-chat-header-actions">
+            <div class="comm-chat-header-actions" style="display:flex;align-items:center;gap:8px;">
+                {% if board.creator %}
                 <span class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium text-zinc-400 bg-zinc-100">
                     <span class="iconify" data-icon="lucide:user" data-width="11"></span>
                     {{ board.creator.display_name|default:board.creator.user_name }}
                 </span>
+                {% endif %}
+                {% if is_creator %}
+                <button type="button" id="deleteGroupBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-red-500 bg-red-50 hover:bg-red-100 transition-colors">
+                    <span class="iconify" data-icon="lucide:trash-2" data-width="11"></span>
+                    削除
+                </button>
+                {% elif is_member %}
+                <button type="button" id="leaveGroupBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-red-500 bg-red-50 hover:bg-red-100 transition-colors">
+                    <span class="iconify" data-icon="lucide:log-out" data-width="11"></span>
+                    退出
+                </button>
+                {% elif user.is_authenticated %}
+                <button type="button" id="joinGroupBtn" class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium text-white bg-pink-600 hover:bg-pink-700 transition-colors">
+                    <span class="iconify" data-icon="lucide:user-plus" data-width="11"></span>
+                    参加
+                </button>
+                {% endif %}
             </div>
-            {% endif %}
         </div>
     </div>
 
@@ -97,8 +113,23 @@ footer { display: none !important; }
         </div>
     </div>
 
+    <!-- 参加を促すバー（未参加ユーザー向け） -->
+    {% if user.is_authenticated and not is_member %}
+    <div class="fixed bottom-0 left-0 right-0 z-50" style="background:linear-gradient(transparent, #f9f9fb 12px);">
+        <div class="max-w-4xl mx-auto px-4 pb-4 pt-2">
+            <div class="bg-white rounded-2xl shadow-lg border border-zinc-200/80 px-4 py-4 text-center">
+                <p class="text-sm text-zinc-600 mb-3">メッセージを送るにはグループに参加してください</p>
+                <button type="button" id="joinGroupBtnBottom" class="px-6 py-2.5 bg-pink-600 hover:bg-pink-700 text-white text-sm font-semibold rounded-xl transition-colors">
+                    <span class="iconify inline-block align-middle mr-1" data-icon="lucide:user-plus" data-width="16"></span>
+                    グループに参加
+                </button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- 浮き入力バー（画面下固定） -->
-    {% if user.is_authenticated %}
+    {% if is_member %}
     <div id="board-input-bar" class="fixed bottom-0 left-0 right-0 z-50" style="background:linear-gradient(transparent, #f9f9fb 12px);">
         <div class="max-w-4xl mx-auto px-4 pb-4 pt-2">
             <div class="bg-white rounded-2xl shadow-lg border border-zinc-200/80 px-4 py-3">
@@ -220,6 +251,9 @@ const BOARD_CURRENT_USER = {
     avatar: "{% if user.user_image %}{{ user.user_image.url }}{% endif %}",
     profile_url: "{% if user.is_authenticated %}{% url 'profile' username=user.user_name %}{% endif %}"
 };
+const BOARD_JOIN_URL = "{% url 'board_join' pk=board.pk %}";
+const BOARD_LEAVE_URL = "{% url 'board_leave' pk=board.pk %}";
+const BOARD_DELETE_URL = "{% url 'board_delete' pk=board.pk %}";
 </script>
 
 {% endblock %}

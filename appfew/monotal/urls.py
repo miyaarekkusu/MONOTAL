@@ -71,6 +71,7 @@ urlpatterns = [
     path('user/<int:user_id>/report/', views.report_create, name='report_create'),
 
     # マイページ
+    path('mypage/', views.mypage_index, name='mypage_index'),
     path('mypage/follow-list/', views.mypage_follow_list, name='mypage_follow_list'),
     path('mypage/block-list/', views.mypage_block_list, name='mypage_block_list'),
     path('mypage/bookmark-list/', views.mypage_bookmark_list, name='mypage_bookmark_list'),

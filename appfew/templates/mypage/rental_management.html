@@ -393,8 +393,10 @@
 <main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
 
     <!-- Breadcrumbs -->
-    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
-        <a href="{% url 'index' %}" class="hover:text-zinc-900">ホーム</a>
+    <nav class="mb-8 hidden lg:flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+        <a href="{% url 'index' %}" class="hover:text-zinc-900">MONOTAL</a>
+        <span class="mx-2 text-zinc-300">/</span>
+        <a href="{% url 'mypage_index' %}" class="hover:text-zinc-900">マイページ</a>
         <span class="mx-2 text-zinc-300">/</span>
         <span class="text-zinc-900">レンタル管理</span>
     </nav>

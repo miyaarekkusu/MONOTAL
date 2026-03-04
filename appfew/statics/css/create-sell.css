@@ -734,6 +734,8 @@ input[type="number"] {
     }
 
     .plan-input { padding: 8px 10px; font-size: 13px; }
+    .plan-input.days-input { padding-right: 28px; }
+    .plan-input.price-input { padding-left: 24px; }
 }
 
 /* ============================================

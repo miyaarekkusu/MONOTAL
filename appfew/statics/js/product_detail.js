@@ -213,7 +213,7 @@ function getCSRFToken() {
  * Initialize comment section
  */
 function initCommentSection() {
-    const commentsSection = document.querySelector('.comments-section');
+    const commentsSection = document.querySelector('.comments-section') || document.querySelector('.comments-section-mobile');
     const commentInput = document.getElementById('commentInput');
     const commentBtn = document.getElementById('commentBtn');
     const commentList = document.getElementById('commentList');
@@ -221,6 +221,14 @@ function initCommentSection() {
     const commentCount = document.getElementById('commentCount');
     const commentCountMobile = document.getElementById('commentCountMobile');
     const mobileCommentBtn = document.getElementById('mobileCommentBtn');
+
+    // Mobile comment elements
+    const commentListMobile = document.getElementById('commentListMobile');
+    const commentLoadingMobile = document.getElementById('commentLoadingMobile');
+    const mobileCommentOverlay = document.getElementById('mobileCommentOverlay');
+    const mobileCommentClose = document.getElementById('mobileCommentClose');
+    const mobileCommentInput = document.getElementById('mobileCommentInput');
+    const mobileCommentSubmit = document.getElementById('mobileCommentSubmit');
 
     if (!commentsSection) return;
 
@@ -233,7 +241,7 @@ function initCommentSection() {
     // Load comments on page load
     loadComments();
 
-    // Enable/disable comment button based on input
+    // Enable/disable comment button based on input (desktop)
     if (commentInput && commentBtn) {
         commentInput.addEventListener('input', function() {
             commentBtn.disabled = this.value.trim().length === 0;
@@ -242,7 +250,7 @@ function initCommentSection() {
         // Submit comment
         commentBtn.addEventListener('click', async function(e) {
             e.preventDefault();
-            await submitComment();
+            await submitComment(commentInput, commentBtn);
         });
 
         // Enter key to submit (Shift+Enter for new line)
@@ -250,25 +258,50 @@ function initCommentSection() {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (this.value.trim().length > 0) {
-                    await submitComment();
+                    await submitComment(commentInput, commentBtn);
                 }
             }
         });
     }
 
-    // Mobile comment button - scroll to comment section
-    if (mobileCommentBtn) {
+    // Mobile comment modal
+    if (mobileCommentBtn && mobileCommentOverlay) {
         mobileCommentBtn.addEventListener('click', function() {
-            commentsSection.scrollIntoView({ behavior: 'smooth' });
-            if (commentInput) {
-                setTimeout(() => commentInput.focus(), 500);
+            mobileCommentOverlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            setTimeout(() => { if (mobileCommentInput) mobileCommentInput.focus(); }, 300);
+        });
+
+        mobileCommentClose.addEventListener('click', function() {
+            mobileCommentOverlay.classList.remove('active');
+            document.body.style.overflow = '';
+        });
+
+        mobileCommentOverlay.addEventListener('click', function(e) {
+            if (e.target === mobileCommentOverlay) {
+                mobileCommentOverlay.classList.remove('active');
+                document.body.style.overflow = '';
             }
         });
+
+        if (mobileCommentInput && mobileCommentSubmit) {
+            mobileCommentInput.addEventListener('input', function() {
+                mobileCommentSubmit.disabled = this.value.trim().length === 0;
+            });
+
+            mobileCommentSubmit.addEventListener('click', async function(e) {
+                e.preventDefault();
+                await submitComment(mobileCommentInput, mobileCommentSubmit);
+                mobileCommentOverlay.classList.remove('active');
+                document.body.style.overflow = '';
+            });
+        }
     }
 
     // 削除ボタンのイベント委譲（出品者のみ）
-    if (isSeller && commentList) {
-        commentList.addEventListener('click', async function(e) {
+    function attachDeleteHandler(listEl) {
+        if (!isSeller || !listEl) return;
+        listEl.addEventListener('click', async function(e) {
             const deleteBtn = e.target.closest('.comment-delete-btn');
             if (!deleteBtn) return;
 
@@ -280,6 +313,8 @@ function initCommentSection() {
             await deleteComment(messageId);
         });
     }
+    attachDeleteHandler(commentList);
+    attachDeleteHandler(commentListMobile);
 
     async function deleteComment(messageId) {
         try {
@@ -294,19 +329,18 @@ function initCommentSection() {
             const data = await response.json();
 
             if (data.success) {
-                // コメントをDOMから削除
-                const commentItem = commentList.querySelector(`.comment-item[data-message-id="${messageId}"]`);
-                if (commentItem) {
-                    commentItem.remove();
-                }
+                // コメントを両方のリストから削除
+                [commentList, commentListMobile].forEach(list => {
+                    if (!list) return;
+                    const item = list.querySelector(`.comment-item[data-message-id="${messageId}"]`);
+                    if (item) item.remove();
 
-                // コメント数を更新
+                    if (data.remaining_count === 0) {
+                        list.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
+                    }
+                });
+
                 updateCommentCount(data.remaining_count);
-
-                // コメントがなくなった場合
-                if (data.remaining_count === 0) {
-                    commentList.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
-                }
             } else {
                 showAlert(data.error || 'コメントの削除に失敗しました');
             }
@@ -327,9 +361,9 @@ function initCommentSection() {
 
             const data = await response.json();
 
-            if (commentLoading) {
-                commentLoading.style.display = 'none';
-            }
+            // ローディング非表示
+            if (commentLoading) commentLoading.style.display = 'none';
+            if (commentLoadingMobile) commentLoadingMobile.style.display = 'none';
 
             if (data.success) {
                 renderComments(data.messages);
@@ -337,18 +371,18 @@ function initCommentSection() {
             }
         } catch (error) {
             console.error('Load comments error:', error);
-            if (commentLoading) {
-                commentLoading.innerHTML = '<span class="comment-empty">コメントを読み込めませんでした</span>';
-            }
+            const errMsg = '<span class="comment-empty">コメントを読み込めませんでした</span>';
+            if (commentLoading) commentLoading.innerHTML = errMsg;
+            if (commentLoadingMobile) commentLoadingMobile.innerHTML = errMsg;
         }
     }
 
-    async function submitComment() {
-        const content = commentInput.value.trim();
+    async function submitComment(inputEl, btnEl) {
+        const content = inputEl.value.trim();
         if (!content) return;
 
-        commentBtn.disabled = true;
-        commentBtn.textContent = '送信中...';
+        btnEl.disabled = true;
+        btnEl.textContent = '送信中...';
 
         try {
             const response = await fetch(`/monotal/product/${productId}/messages/`, {
@@ -365,14 +399,14 @@ function initCommentSection() {
 
             if (data.success) {
                 // Clear input
-                commentInput.value = '';
-                commentInput.dispatchEvent(new Event('input'));
+                inputEl.value = '';
+                inputEl.dispatchEvent(new Event('input'));
 
-                // Add new comment to list
+                // Add new comment to both lists
                 appendComment(data.message);
 
                 // Update count
-                const currentCount = parseInt(commentCount?.textContent || '0');
+                const currentCount = parseInt(commentCount?.textContent || commentCountMobile?.textContent || '0');
                 updateCommentCount(currentCount + 1);
             } else {
                 if (response.status === 401) {
@@ -385,37 +419,37 @@ function initCommentSection() {
             console.error('Submit comment error:', error);
             showAlert('通信エラーが発生しました');
         } finally {
-            commentBtn.disabled = commentInput.value.trim().length === 0;
-            commentBtn.textContent = 'コメントする';
+            btnEl.disabled = inputEl.value.trim().length === 0;
+            btnEl.textContent = 'コメントする';
         }
     }
 
     function renderComments(messages) {
-        if (!commentList) return;
+        const html = messages.length === 0
+            ? '<div class="comment-empty">まだコメントはありません</div>'
+            : messages.map(msg => createCommentHTML(msg)).join('');
 
-        if (messages.length === 0) {
-            commentList.innerHTML = '<div class="comment-empty">まだコメントはありません</div>';
-            return;
-        }
-
-        commentList.innerHTML = messages.map(msg => createCommentHTML(msg)).join('');
+        if (commentList) commentList.innerHTML = html;
+        if (commentListMobile) commentListMobile.innerHTML = html;
     }
 
     function appendComment(message) {
-        if (!commentList) return;
+        [commentList, commentListMobile].forEach(list => {
+            if (!list) return;
 
-        // Remove empty message if exists
-        const emptyMsg = commentList.querySelector('.comment-empty');
-        if (emptyMsg) {
-            emptyMsg.remove();
-        }
+            const emptyMsg = list.querySelector('.comment-empty');
+            if (emptyMsg) emptyMsg.remove();
 
-        commentList.insertAdjacentHTML('beforeend', createCommentHTML(message));
+            list.insertAdjacentHTML('beforeend', createCommentHTML(message));
+        });
 
-        // Scroll to new comment
-        const newComment = commentList.lastElementChild;
-        if (newComment) {
-            newComment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Scroll to new comment (mobile list priority)
+        const targetList = commentListMobile || commentList;
+        if (targetList) {
+            const newComment = targetList.lastElementChild;
+            if (newComment) {
+                newComment.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
         }
     }
 

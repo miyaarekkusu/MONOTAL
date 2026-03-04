@@ -1,4 +1,4 @@
-// =============================================
+﻿// =============================================
 // Community Page JavaScript
 // =============================================
 
@@ -243,11 +243,13 @@ async function joinFromCard(event, boardId, joinUrl) {
 function showChatListView() {
     document.getElementById('chat-list-view').classList.remove('hidden');
     document.getElementById('chat-detail-view').classList.add('hidden');
+    document.body.classList.remove('comm-detail-open');
 }
 
 function showChatDetailView() {
     document.getElementById('chat-list-view').classList.add('hidden');
     document.getElementById('chat-detail-view').classList.remove('hidden');
+    document.body.classList.add('comm-detail-open');
 }
 
 function backToChatList() {
@@ -709,6 +711,77 @@ function setQAStatus(val) {
     loadQAList();
 }
 
+// --- Mobile Filter Modal ---
+const filterPlaceholders = {};
+
+function openCommFilter(panel) {
+    const overlay = document.getElementById(panel + 'FilterOverlay');
+    const body = document.getElementById(panel + 'FilterBody');
+    const bar = document.querySelector('#panel-' + panel + ' .comm-filter-bar');
+    if (!overlay || !body || !bar) return;
+
+    const sections = panel === 'chat'
+        ? [
+            { sel: '.comm-mine-btns', label: '表示' },
+            { sel: '#chat-category-select', label: 'カテゴリ' },
+            { sel: '.comm-sort-btns', label: '並び順' },
+          ]
+        : [
+            { sel: '.comm-mine-btns', label: '表示' },
+            { sel: '.comm-status-btns', label: 'ステータス' },
+            { sel: '#qa-category-select', label: 'カテゴリ' },
+          ];
+
+    filterPlaceholders[panel] = [];
+    sections.forEach(({ sel, label }) => {
+        const el = sel.startsWith('#')
+            ? document.getElementById(sel.slice(1))
+            : bar.querySelector(sel);
+        if (!el) return;
+        const ph = document.createComment('ph:' + sel);
+        el.parentNode.insertBefore(ph, el);
+
+        // product_list と同じ filter-section 構造を生成
+        const section = document.createElement('div');
+        section.className = 'filter-section';
+        const summary = document.createElement('div');
+        summary.className = 'filter-summary';
+        summary.innerHTML = '<span>' + label + '</span>';
+        const content = document.createElement('div');
+        content.className = 'filter-content';
+        // select要素はfilter-selectクラスを追加
+        if (el.tagName === 'SELECT') el.classList.add('filter-select');
+        content.appendChild(el);
+        section.appendChild(summary);
+        section.appendChild(content);
+        body.appendChild(section);
+        filterPlaceholders[panel].push({ placeholder: ph, element: el, section: section });
+    });
+
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeCommFilter(panel) {
+    const overlay = document.getElementById(panel + 'FilterOverlay');
+    if (!overlay) return;
+    (filterPlaceholders[panel] || []).forEach(({ placeholder, element, section }) => {
+        if (element.tagName === 'SELECT') element.classList.remove('filter-select');
+        placeholder.parentNode.insertBefore(element, placeholder);
+        placeholder.remove();
+        if (section) section.remove();
+    });
+    filterPlaceholders[panel] = [];
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+}
+
+function resetCommFilter(panel) {
+    if (panel === 'chat') clearChatFilters();
+    else clearQAFilters();
+    closeCommFilter(panel);
+}
+
 function clearChatFilters() {
     document.getElementById('chat-search-input').value = '';
     document.getElementById('chat-category-select').value = '';
@@ -1076,7 +1149,10 @@ function deadlineBadge(q) {
 
 function buildQACard(q) {
     const div = document.createElement('div');
-    div.className = 'comm-qa-card';
+    const statusCls = q.status_id === 2 ? ' qa-status-solved'
+                    : q.status_id === 3 ? ' qa-status-expired'
+                    : ' qa-status-open';
+    div.className = 'comm-qa-card' + statusCls;
     div.onclick = () => { window.location.href = QA_DETAIL_URL_BASE.replace('/0/', `/${q.id}/`); };
 
     // ヘッダーにのみステータスを表示
@@ -1111,11 +1187,13 @@ function buildQACard(q) {
 function showQAListView() {
     document.getElementById('qa-list-view').classList.remove('hidden');
     document.getElementById('qa-detail-view').classList.add('hidden');
+    document.body.classList.remove('comm-detail-open');
 }
 
 function showQADetailView() {
     document.getElementById('qa-list-view').classList.add('hidden');
     document.getElementById('qa-detail-view').classList.remove('hidden');
+    document.body.classList.add('comm-detail-open');
 }
 
 function backToQAList() {
@@ -1615,6 +1693,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // カテゴリプルダウン初期化
     initCategorySelects();
+
+    // モバイルフィルターモーダル: オーバーレイ背景タップで閉じる
+    ['chat', 'qa'].forEach(panel => {
+        const overlay = document.getElementById(panel + 'FilterOverlay');
+        if (overlay) overlay.addEventListener('click', e => {
+            if (e.target === overlay) closeCommFilter(panel);
+        });
+    });
 
     // グループチャット: 検索・カテゴリ・ソート
     const chatSearch = document.getElementById('chat-search-input');

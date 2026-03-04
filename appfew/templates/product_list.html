@@ -220,7 +220,10 @@
                         <span class="iconify" data-icon="lucide:chevron-down" data-width="14" data-height="14"></span>
                     </span>
                 </div>
-
+                <button type="button" class="mobile-filter-btn" id="openFilterModal">
+                    <span class="iconify" data-icon="lucide:sliders-horizontal" data-width="16" data-height="16"></span>
+                    絞り込み
+                </button>
             </div>
         </div>
 
@@ -297,6 +300,96 @@
     </div>
 
 </main>
+
+<!-- Mobile Filter Modal -->
+<div class="filter-modal-overlay" id="filterModalOverlay">
+    <div class="filter-modal">
+        <div class="filter-modal-header">
+            <h3>絞り込み検索</h3>
+            <button type="button" class="filter-modal-close" id="closeFilterModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20" data-height="20"></span>
+            </button>
+        </div>
+        <div class="filter-modal-body">
+            <form id="mobileFilterForm" method="GET" action="{% url 'product_list' %}">
+                <input type="hidden" name="sort" value="{{ filters.sort }}">
+                {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>カテゴリ</span></div>
+                    <div class="filter-content">
+                        <select name="category" class="filter-select">
+                            <option value="">すべてのカテゴリ</option>
+                            {% for category in categories %}
+                            <option value="{{ category.product_category_id }}" {% if filters.category == category.product_category_id|stringformat:'d' %}selected{% endif %}>
+                                {{ category.category_name }}
+                            </option>
+                            {% if category.subcategories.exists %}
+                                {% for subcategory in category.subcategories.all %}
+                                <option value="{{ subcategory.product_category_id }}" {% if filters.category == subcategory.product_category_id|stringformat:'d' %}selected{% endif %}>
+                                    &nbsp;&nbsp;{{ subcategory.category_name }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>商品ステータス</span></div>
+                    <div class="filter-content">
+                        <select name="status" class="filter-select">
+                            <option value="">すべて</option>
+                            <option value="1" {% if filters.status == '1' %}selected{% endif %}>出品中</option>
+                            <option value="2" {% if filters.status == '2' %}selected{% endif %}>レンタル中</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>発送料の負担</span></div>
+                    <div class="filter-content">
+                        <select name="burden" class="filter-select">
+                            <option value="">すべて</option>
+                            {% for burden in shipping_burdens %}
+                            <option value="{{ burden.shipping_burden_id }}" {% if filters.burden == burden.shipping_burden_id|stringformat:'d' %}selected{% endif %}>
+                                {{ burden.burden_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>レンタル期間（日数）</span></div>
+                    <div class="filter-content">
+                        <div class="price-inputs">
+                            <input type="number" name="min_days" placeholder="最小" min="1" max="3650" value="{{ filters.min_days }}">
+                            <span class="separator">~</span>
+                            <input type="number" name="max_days" placeholder="最大" min="1" max="3650" value="{{ filters.max_days }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>価格</span></div>
+                    <div class="filter-content">
+                        <div class="price-inputs">
+                            <input type="number" name="min_fee" placeholder="下限" min="100" max="9999999" value="{{ filters.min_fee }}">
+                            <span class="separator">~</span>
+                            <input type="number" name="max_fee" placeholder="上限" min="100" max="9999999" value="{{ filters.max_fee }}">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="filter-modal-footer">
+            <button type="button" class="filter-reset-btn" id="filterResetBtn">リセット</button>
+            <button type="button" class="filter-apply-btn" id="filterApplyBtn">絞り込む</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -358,5 +451,39 @@ if (sortSelect) {
         window.location.search = params.toString();
     });
 }
+
+// Mobile Filter Modal
+(function(){
+    var overlay = document.getElementById('filterModalOverlay');
+    var openBtn = document.getElementById('openFilterModal');
+    var closeBtn = document.getElementById('closeFilterModal');
+    var resetBtn = document.getElementById('filterResetBtn');
+    var applyBtn = document.getElementById('filterApplyBtn');
+    var form = document.getElementById('mobileFilterForm');
+    if (!overlay || !openBtn) return;
+
+    openBtn.addEventListener('click', function(){
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeModal(){
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){
+        if (e.target === overlay) closeModal();
+    });
+
+    resetBtn.addEventListener('click', function(){
+        window.location.href = '{% url "product_list" %}';
+    });
+
+    applyBtn.addEventListener('click', function(){
+        form.submit();
+    });
+})();
 </script>
 {% endblock %}

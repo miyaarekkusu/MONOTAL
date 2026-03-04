@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}マイページ | MONOTAL{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/mypage.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+
+    <!-- 本人確認バナー -->
+    {% if request.user.user_status_id != 2 %}
+    <div class="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+        <div class="flex items-center gap-3">
+            <span class="iconify text-amber-600 flex-shrink-0" data-icon="lucide:alert-triangle" data-width="20"></span>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-amber-800">本人確認が完了していません</p>
+                <p class="text-xs text-amber-600 mt-0.5">出品・レンタル機能を利用するには本人確認が必要です。</p>
+            </div>
+            <a href="{% url 'identity_verification' %}" class="flex-shrink-0 rounded-full bg-amber-600 px-4 py-2 text-xs font-bold text-white hover:bg-amber-700 transition-colors">
+                本人確認する
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Breadcrumbs (Desktop) -->
+    <nav class="mb-8 hidden lg:flex text-xs font-medium text-zinc-500">
+        <ol class="flex items-center space-x-2">
+            <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">マイページ</li>
+        </ol>
+    </nav>
+
+    <div class="lg:grid lg:grid-cols-12 lg:gap-8 items-start">
+        {% include 'mypage/_sidebar.html' %}
+
+        <!-- Mobile: メニューがメインコンテンツ -->
+        <div class="lg:col-span-9">
+            <div class="hidden lg:block">
+                <h2 class="text-lg font-bold text-zinc-900 mb-4">マイページ</h2>
+                <p class="text-sm text-zinc-500">左のメニューから項目を選択してください。</p>
+            </div>
+        </div>
+    </div>
+
+</main>
+{% endblock %}

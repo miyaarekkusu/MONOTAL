@@ -290,10 +290,18 @@
                 </div>
             </section>
 
-            <section class="info-section">
+            <section class="info-section comments-section-mobile" data-product-id="{{ product.product_id }}" data-is-seller="{{ is_seller|yesno:'true,false' }}">
                 <div class="comments-header-mobile">
-                    <h3 class="info-section-title">コメント (<span id="commentCountMobile">{{ message_count }}</span>)</h3>
-                    <span class="iconify" data-icon="lucide:chevron-right" data-width="16"></span>
+                    <h3 class="info-section-title">
+                        <span class="iconify" data-icon="lucide:message-square" data-width="16"></span>
+                        コメント (<span id="commentCountMobile">{{ message_count }}</span>)
+                    </h3>
+                </div>
+                <div class="comment-list" id="commentListMobile">
+                    <div class="comment-loading" id="commentLoadingMobile">
+                        <span class="iconify" data-icon="lucide:loader-2" data-width="20"></span>
+                        読み込み中...
+                    </div>
                 </div>
                 <button class="comment-btn-mobile" id="mobileCommentBtn">コメントする</button>
             </section>
@@ -301,7 +309,30 @@
     </div>
 </main>
 
+<!-- Mobile Comment Modal -->
+<div class="mobile-comment-overlay" id="mobileCommentOverlay">
+    <div class="mobile-comment-modal">
+        <div class="mobile-comment-modal-header">
+            <h3>コメントする</h3>
+            <button type="button" class="mobile-comment-modal-close" id="mobileCommentClose">
+                <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+            </button>
+        </div>
+        <div class="mobile-comment-modal-body">
+            <p class="comment-notice">
+                <span class="iconify" data-icon="lucide:alert-circle" data-width="12"></span>
+                相手のことを考えた丁寧なコメントを心がけましょう。
+            </p>
+            <textarea id="mobileCommentInput" class="comment-textarea" placeholder="商品について質問する" maxlength="2000"></textarea>
+        </div>
+        <div class="mobile-comment-modal-footer">
+            <button type="button" id="mobileCommentSubmit" class="mobile-comment-submit-btn" disabled>コメントする</button>
+        </div>
+    </div>
+</div>
+
 <!-- Mobile Sticky CTA -->
+{% if not is_seller %}
 <div class="mobile-cta">
     <div class="mobile-cta-content">
         <div class="mobile-cta-price">
@@ -319,10 +350,11 @@
         {% elif has_pending_request %}
         <button class="mobile-cta-btn mobile-cta-pending" disabled>申請中です</button>
         {% else %}
-        <button class="mobile-cta-btn">申請へ</button>
+        <button class="mobile-cta-btn">レンタル申請</button>
         {% endif %}
     </div>
 </div>
+{% endif %}
 {% endblock %}
 
 {% block extra_js %}

@@ -292,5 +292,55 @@ document.addEventListener('DOMContentLoaded', () => {
             if (e.target === modal) closeProductModal();
         });
     }
+
+    /* ===== Join / Leave / Delete Group ===== */
+    const joinBtn = document.getElementById('joinGroupBtn');
+    const joinBtnBottom = document.getElementById('joinGroupBtnBottom');
+    const leaveBtn = document.getElementById('leaveGroupBtn');
+    const deleteBtn = document.getElementById('deleteGroupBtn');
+
+    async function postAction(url) {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/json' },
+        });
+        return await res.json();
+    }
+
+    function onJoin() {
+        postAction(BOARD_JOIN_URL).then(data => {
+            if (data.success) location.reload();
+            else showToast(data.message || 'エラーが発生しました', 'error');
+        }).catch(() => showToast('通信エラー', 'error'));
+    }
+
+    if (joinBtn) joinBtn.addEventListener('click', onJoin);
+    if (joinBtnBottom) joinBtnBottom.addEventListener('click', onJoin);
+
+    if (leaveBtn) {
+        leaveBtn.addEventListener('click', async () => {
+            if (typeof showConfirm === 'function') {
+                if (!await showConfirm('このグループから退出しますか？')) return;
+            } else if (!confirm('このグループから退出しますか？')) return;
+            try {
+                const data = await postAction(BOARD_LEAVE_URL);
+                if (data.success) location.reload();
+                else showToast(data.message || 'エラー', 'error');
+            } catch { showToast('通信エラー', 'error'); }
+        });
+    }
+
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', async () => {
+            if (typeof showConfirm === 'function') {
+                if (!await showConfirm('このグループを削除しますか？\nすべてのメッセージも削除されます。')) return;
+            } else if (!confirm('このグループを削除しますか？\nすべてのメッセージも削除されます。')) return;
+            try {
+                const data = await postAction(BOARD_DELETE_URL);
+                if (data.success) window.location.href = '/monotal/community/';
+                else showToast(data.message || 'エラー', 'error');
+            } catch { showToast('通信エラー', 'error'); }
+        });
+    }
 });
 
