@@ -176,7 +176,7 @@
                     {% if return_reason_history.return_reason_detail %}
                     <p class="return-reason-detail">{{ return_reason_history.return_reason_detail }}</p>
                     {% endif %}
-                    <p class="return-reason-date">申請日: {{ return_reason_history.return_request_datetime|date:"m/d H:i" }}</p>
+                    <p class="return-reason-date">申請日: {{ return_reason_history.return_request_datetime|date:"Y/m/d H:i" }}</p>
                 </div>
             </section>
             {% endif %}
@@ -187,30 +187,30 @@
                 <div class="timeline">
                     <div class="timeline-item">
                         <span class="timeline-label">開始</span>
-                        <span class="timeline-value">{{ rental_history.register_datetime|date:"m/d H:i" }}</span>
+                        <span class="timeline-value">{{ rental_history.register_datetime|date:"Y/m/d H:i" }}</span>
                     </div>
                     {% if rental_history.shipping_completed_datetime %}
                     <div class="timeline-item">
                         <span class="timeline-label">発送</span>
-                        <span class="timeline-value">{{ rental_history.shipping_completed_datetime|date:"m/d H:i" }}</span>
+                        <span class="timeline-value">{{ rental_history.shipping_completed_datetime|date:"Y/m/d H:i" }}</span>
                     </div>
                     {% endif %}
                     {% if rental_history.rental_start_datetime %}
                     <div class="timeline-item">
                         <span class="timeline-label">受取</span>
-                        <span class="timeline-value">{{ rental_history.rental_start_datetime|date:"m/d H:i" }}</span>
+                        <span class="timeline-value">{{ rental_history.rental_start_datetime|date:"Y/m/d H:i" }}</span>
                     </div>
                     {% endif %}
                     {% if rental_history.rental_end_datetime %}
                     <div class="timeline-item">
                         <span class="timeline-label">返送</span>
-                        <span class="timeline-value">{{ rental_history.rental_end_datetime|date:"m/d H:i" }}</span>
+                        <span class="timeline-value">{{ rental_history.rental_end_datetime|date:"Y/m/d H:i" }}</span>
                     </div>
                     {% endif %}
                     {% if rental_history.receipt_completed_datetime %}
                     <div class="timeline-item">
                         <span class="timeline-label">完了</span>
-                        <span class="timeline-value">{{ rental_history.receipt_completed_datetime|date:"m/d H:i" }}</span>
+                        <span class="timeline-value">{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</span>
                     </div>
                     {% endif %}
                 </div>
@@ -252,11 +252,11 @@
                         </div>
                         <div class="countdown-row">
                             <span class="countdown-label">返却期限</span>
-                            <span class="countdown-value">{{ rental_deadline|date:"m/d H:i" }}</span>
+                            <span class="countdown-value">{{ rental_deadline|date:"Y/m/d H:i" }}</span>
                         </div>
                         <div class="countdown-row">
                             <span class="countdown-label">返送期限</span>
-                            <span class="countdown-value">{{ return_shipping_deadline|date:"m/d H:i" }}</span>
+                            <span class="countdown-value">{{ return_shipping_deadline|date:"Y/m/d H:i" }}</span>
                         </div>
                     </div>
                 </div>

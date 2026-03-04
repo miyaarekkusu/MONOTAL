@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - 閲覧履歴 | MONOTAL{% endblock %}
@@ -56,41 +56,31 @@
             <!-- Product Grid -->
             <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
                 {% for history in browsing_history %}
-                <a href="{% url 'product_detail' product_id=history.product.product_id %}" class="group relative block bg-white rounded-lg overflow-hidden border border-zinc-200 hover:border-zinc-300 hover:shadow-md transition-all {% if history.product.product_status.product_status_id == 2 %}opacity-90{% endif %}">
-                    <div class="aspect-square w-full bg-zinc-100 relative overflow-hidden">
+                <a href="{% url 'product_detail' product_id=history.product.product_id %}" class="group flex flex-col cursor-pointer">
+                    <div class="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-100">
                         {% if history.product.images.all %}
-                        <img src="{{ history.product.images.all.0.image.url }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" alt="{{ history.product.product_name }}">
+                        <img src="{{ history.product.images.all.0.image.url }}" class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105{% if history.product.product_status.product_status_id == 2 %} opacity-80{% endif %}" alt="{{ history.product.product_name }}">
                         {% else %}
-                        <div class="h-full w-full flex items-center justify-center text-zinc-400">
-                            <span class="iconify" data-icon="lucide:image" data-width="48" data-height="48"></span>
+                        <div class="h-full w-full flex flex-col items-center justify-center text-zinc-400">
+                            <span class="iconify" data-icon="lucide:image" data-width="32" data-height="32"></span>
+                            <p class="mt-2 text-xs">画像なし</p>
                         </div>
                         {% endif %}
 
                         {% if history.product.product_status.product_status_id == 2 %}
-                        <!-- Renting Badge -->
-                        <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                            <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                        <div class="absolute inset-0 z-20 bg-black/30 flex items-center justify-center">
+                            <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">レンタル中</span>
                         </div>
                         {% endif %}
 
                         {% if history.product.min_rental_plan %}
-                        <div class="absolute bottom-0 left-0 bg-black/60 backdrop-blur-sm px-2 py-1 text-white rounded-tr-lg">
-                            <span class="text-xs font-semibold">¥{{ history.product.min_rental_plan.rental_fee|floatformat:0 }}</span>
-                            <span class="text-[10px] font-normal opacity-80">/{{ history.product.min_rental_plan.rental_days }}日〜</span>
+                        <div class="absolute bottom-0 left-0 z-10 rounded-tr-lg bg-black/50 backdrop-blur-sm px-2 py-0.5">
+                            <span class="text-sm font-semibold text-white">¥{{ history.product.min_rental_plan.rental_fee|floatformat:0 }}/{{ history.product.min_rental_plan.rental_days }}日〜</span>
                         </div>
                         {% endif %}
                     </div>
-                    <div class="p-3">
-                        <h3 class="text-base font-medium text-zinc-900 line-clamp-2 leading-snug group-hover:text-pink-600 transition-colors">{{ history.product.product_name }}</h3>
-                        <div class="mt-2 flex items-center justify-between">
-                            <span class="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                                <span class="iconify" data-icon="lucide:user" data-width="12"></span>
-                                {{ history.product.user.display_name }}
-                            </span>
-                            <span class="text-[10px] text-zinc-300">
-                                {{ history.register_datetime|date:"m/d H:i" }}
-                            </span>
-                        </div>
+                    <div>
+                        <h3 class="mt-2 text-sm font-medium text-zinc-900 line-clamp-2 group-hover:underline">{{ history.product.product_name }}</h3>
                     </div>
                 </a>
                 {% empty %}

@@ -18,6 +18,10 @@ urlpatterns = [
     path('cancellations/', views.admin_cancellation_list, name='admin_cancellation_list'),
     path('cancellations/<int:cancellation_request_id>/', views.admin_cancellation_detail, name='admin_cancellation_detail'),
 
+    # アカウント初期化
+    path('user-reset/', views.admin_user_reset_list, name='admin_user_reset_list'),
+    path('user-reset/<int:user_id>/', views.admin_user_reset_execute, name='admin_user_reset_execute'),
+
     # 補償申請審査
     path('insurance/claims/', views.admin_insurance_claims, name='admin_insurance_claims'),
     path('insurance/claims/<int:claim_id>/', views.admin_insurance_claim_detail, name='admin_insurance_claim_detail'),

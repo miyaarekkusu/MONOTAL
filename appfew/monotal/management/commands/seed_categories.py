@@ -1,9 +1,12 @@
-from django.core.management.base import BaseCommand
+﻿from django.core.management.base import BaseCommand
 from monotal.models import ProductCategory
 
 
 class Command(BaseCommand):
     help = '商品カテゴリのシードデータを登録（レンタルサービス向け）'
+
+    def add_arguments(self, parser):
+        parser.add_argument('--lite', action='store_true', help='最初の5カテゴリのみ登録')
 
     def handle(self, *args, **options):
         # 既存データをクリア
@@ -229,6 +232,13 @@ class Command(BaseCommand):
             {'id': 252, 'name': 'アンティーク/コレクション', 'parent': 250},
             {'id': 253, 'name': 'その他', 'parent': 250},
         ]
+
+        # --lite: 元の5親カテゴリ(id: 1,2,3,4,5)とその子カテゴリのみ
+        if options.get('lite'):
+            lite_parents = {1, 2, 3, 4, 5}
+            categories = [c for c in categories
+                          if (c['parent'] is None and c['id'] in lite_parents)
+                          or (c['parent'] is not None and c['parent'] in lite_parents)]
 
         # 親カテゴリを先に作成
         parent_categories = [c for c in categories if c['parent'] is None]

@@ -57,7 +57,18 @@
       "Bash(git:*)",
       "Bash(echo === $f ===:*)",
       "Bash(echo === $\\(basename $f\\) ===:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "WebFetch(domain:rental.kikito.docomo.ne.jp)",
+      "WebFetch(domain:www.119happy.net)",
+      "WebFetch(domain:www.r-mugendou.shop)",
+      "WebFetch(domain:aucfan.com)",
+      "WebFetch(domain:quotta.net)",
+      "Bash(pip freeze:*)",
+      "Bash(printf:*)",
+      "Bash(/c/Users/kohta/source/repos/miyaarekkusu/HEWSakuhin/appfew/setup_azure.bat:*)",
+      "WebFetch(domain:74.226.220.79)",
+      "Bash(az:*)",
+      "Bash(rm:*)"
     ]
   }
 }

@@ -15,7 +15,7 @@
         <ol class="flex items-center space-x-2">
             <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
-            <li><a href="{% url 'mypage_browsing_history' %}" class="hover:underline hover:text-pink-600">マイページ</a></li>
+            <li><a href="{% url 'profile' username=request.user.user_name %}" class="hover:underline hover:text-pink-600">プロフィール</a></li>
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
             <li class="text-zinc-900">趣味登録</li>
         </ol>
@@ -77,9 +77,9 @@
     <button type="button" id="submitBtn" class="w-full bg-zinc-900 text-white hover:bg-zinc-800 px-6 py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
         登録する
     </button>
-    <a href="{% url 'mypage_browsing_history' %}" class="w-full bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-6 py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
+    <a href="{% url 'profile' username=request.user.user_name %}" class="w-full bg-white border border-zinc-200 text-zinc-700 hover:bg-zinc-50 px-6 py-3.5 rounded-xl font-bold text-sm transition-colors flex items-center justify-center gap-2">
         <span class="iconify" data-icon="lucide:arrow-left" data-width="16"></span>
-        マイページに戻る
+        プロフィールに戻る
     </a>
 </div>
 {% endblock %}

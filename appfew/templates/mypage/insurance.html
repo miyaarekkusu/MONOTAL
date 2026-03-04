@@ -101,6 +101,34 @@
                             保険を解約する
                         </a>
                     </div>
+
+                    <!-- 補償申請履歴 -->
+                    {% if claim_history %}
+                    <div class="mt-6 border-t border-zinc-200 pt-6">
+                        <div class="flex items-center gap-2 mb-3">
+                            <span class="iconify text-zinc-500" data-icon="lucide:file-text" data-width="18"></span>
+                            <h3 class="text-sm font-bold text-zinc-900">申請履歴</h3>
+                        </div>
+                        <div class="space-y-3">
+                            {% for claim in claim_history %}
+                            <div class="flex items-center justify-between bg-zinc-50 rounded-lg p-3 border border-zinc-100">
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-zinc-900 truncate">{{ claim.product.product_name }}</p>
+                                    <p class="text-xs text-zinc-500 mt-0.5">申請日: {{ claim.claim_datetime|date:"Y/m/d" }}</p>
+                                </div>
+                                <div class="flex items-center gap-3 ml-4">
+                                    <span class="text-sm font-bold text-zinc-900">¥{{ claim.repair_cost|floatformat:0 }}</span>
+                                    {% if claim.insurance_claim_status.insurance_claim_status_id == 2 %}
+                                    <span class="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-bold text-emerald-700">承認</span>
+                                    {% elif claim.insurance_claim_status.insurance_claim_status_id == 3 %}
+                                    <span class="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-bold text-red-700">却下</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
                 </div>
             {% else %}
                 <!-- 未加入 -->

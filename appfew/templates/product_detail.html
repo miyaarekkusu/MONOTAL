@@ -86,12 +86,6 @@
                             <span class="spec-value">{{ product.product_category.category_name }}</span>
                         </div>
                         {% endif %}
-                        {% if product.product_condition %}
-                        <div class="spec-row">
-                            <span class="spec-label">商品の状態</span>
-                            <span class="spec-value">{{ product.product_condition.condition_name }}</span>
-                        </div>
-                        {% endif %}
                         <div class="spec-row">
                             <span class="spec-label">発送元の地域</span>
                             <span class="spec-value">{% if product.shipping_prefecture %}{{ product.shipping_prefecture.prefecture_name }}{% else %}-{% endif %}</span>
@@ -284,10 +278,6 @@
                     <div class="spec-row">
                         <span class="spec-label">カテゴリー</span>
                         <span class="spec-value">{% if product.product_category %}{{ product.product_category.category_name }}{% else %}-{% endif %}</span>
-                    </div>
-                    <div class="spec-row">
-                        <span class="spec-label">商品の状態</span>
-                        <span class="spec-value">{% if product.product_condition %}{{ product.product_condition.condition_name }}{% else %}-{% endif %}</span>
                     </div>
                     <div class="spec-row">
                         <span class="spec-label">発送までの日数</span>

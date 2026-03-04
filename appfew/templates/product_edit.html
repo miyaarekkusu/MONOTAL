@@ -128,18 +128,6 @@
                         <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="input-label">商品の状態</label>
-                    <div class="select-wrapper">
-                        <select id="condition" class="form-select">
-                            <option value="" disabled>選択してください</option>
-                            {% for condition in conditions %}
-                            <option value="{{ condition.product_condition_id }}" {% if product.product_condition and product.product_condition.product_condition_id == condition.product_condition_id %}selected{% endif %}>{{ condition.condition_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
-                    </div>
-                </div>
             </div>
 
             <input type="hidden" id="productStatus" value="{{ product.product_status.product_status_id }}">
@@ -501,7 +489,6 @@ document.addEventListener('DOMContentLoaded', function () {
             product_name: document.getElementById('productName').value.trim(),
             product_category: document.getElementById('category').value,
             product_description: document.getElementById('description').value.trim(),
-            product_condition: document.getElementById('condition').value,
             total_images: totalImages
         };
 
@@ -518,7 +505,6 @@ document.addEventListener('DOMContentLoaded', function () {
             submitData.append('product_name', formData.product_name);
             submitData.append('product_category', formData.product_category);
             submitData.append('product_description', formData.product_description);
-            submitData.append('product_condition', formData.product_condition);
             submitData.append('delete_image_ids', JSON.stringify(deleteImageIds));
 
             newImages.forEach(img => {
@@ -581,11 +567,6 @@ document.addEventListener('DOMContentLoaded', function () {
             errors.description = '商品の説明は必須です';
         } else if (formData.product_description.length > 1000) {
             errors.description = '商品の説明は1000文字以内で入力してください';
-        }
-
-        // 商品の状態
-        if (!formData.product_condition) {
-            errors.condition = '商品の状態を選択してください';
         }
 
         return errors;

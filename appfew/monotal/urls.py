@@ -1,4 +1,4 @@
-from django.urls import path
+﻿from django.urls import path
 from . import views
 from . import views_cancellation
 
@@ -15,6 +15,7 @@ urlpatterns = [
     path('profile/<str:username>/', views.profile, name='profile'),
     path('profile/profile_setting/<str:username>/', views.profile_setting, name='profile_setting'),
     path('sell/', views.create_sell, name='create_sell'),
+    path('sell/<int:product_id>/complete/', views.listing_complete, name='listing_complete'),
     path('sell/addresses/', views.sell_address_manage, name='sell_address_manage'),
     path('sell/verification-required/', views.verification_required, name='verification_required'),
     path('sell/bank-account-required/', views.bank_account_required, name='bank_account_required'),

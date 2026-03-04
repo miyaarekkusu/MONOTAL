@@ -21,7 +21,7 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'appfew.settings')
 django.setup()
 
 from monotal.models import (
-    Product, ProductCategory, ProductCondition, ProductStatus,
+    Product, ProductCategory, ProductStatus,
     ShippingDays, ProductRentalPlan, User, UserAddress
 )
 
@@ -74,7 +74,6 @@ def create_test_products_fast(count=10000):
 
     # マスターデータ取得
     categories = list(ProductCategory.objects.all())
-    conditions = list(ProductCondition.objects.all())
     shipping_days_list = list(ShippingDays.objects.all())
     users = list(User.objects.filter(user_status_id=2))
 
@@ -84,13 +83,6 @@ def create_test_products_fast(count=10000):
 
     # 商品状態マスター作成
     if not conditions:
-        print("商品状態マスターを作成中...")
-        conditions = [
-            ProductCondition.objects.create(condition_name="新品・未使用"),
-            ProductCondition.objects.create(condition_name="未使用に近い"),
-            ProductCondition.objects.create(condition_name="目立った傷や汚れなし"),
-            ProductCondition.objects.create(condition_name="やや傷や汚れあり"),
-        ]
 
     # 発送日数マスター作成
     if not shipping_days_list:
@@ -155,7 +147,6 @@ def create_test_products_fast(count=10000):
             product_description=description,
             user=random.choice(users),
             product_category=category,
-            product_condition=random.choice(conditions),
             product_status=product_status_listed,
             shipping_days=random.choice(shipping_days_list),
             rental_days=base_days,

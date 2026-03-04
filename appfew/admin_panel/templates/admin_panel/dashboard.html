@@ -40,6 +40,7 @@
     .card-icon.verification { background: #ede9fe; color: #7c3aed; }
     .card-icon.cancellation { background: #fef3c7; color: #d97706; }
     .card-icon.insurance { background: #dbeafe; color: #2563eb; }
+    .card-icon.reset { background: #fce7f3; color: #db2777; }
     .card-body { flex: 1; }
     .card-title {
         font-size: 14px;
@@ -147,6 +148,19 @@
                         <span class="iconify" data-icon="lucide:check-circle" data-width="12"></span>
                         審査完了
                     {% endif %}
+                </div>
+            </div>
+        </a>
+
+        <!-- アカウント初期化 -->
+        <a href="{% url 'admin_user_reset_list' %}" class="dashboard-card">
+            <div class="card-icon reset">
+                <span class="iconify" data-icon="lucide:rotate-ccw" data-width="28"></span>
+            </div>
+            <div class="card-body">
+                <div class="card-title">アカウント初期化</div>
+                <div class="card-count" style="font-size:16px;color:#6b7280;">
+                    デモ用リセット
                 </div>
             </div>
         </a>

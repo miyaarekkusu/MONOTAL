@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - 補償申請 | MONOTAL{% endblock %}
@@ -165,6 +165,32 @@
         </div>
     </div>
 </main>
+
+<!-- 申請完了モーダル -->
+<div id="claimCompleteModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+    <div class="relative flex items-center justify-center min-h-full p-4">
+        <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-10 text-center relative">
+            <div class="w-20 h-20 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-6">
+                <span class="iconify text-emerald-500" data-icon="lucide:check-circle" data-width="40"></span>
+            </div>
+            <h2 class="text-2xl font-bold text-zinc-900 mb-3">申請しました！</h2>
+            <p class="text-sm text-zinc-500 leading-relaxed mb-8">
+                補償申請を受け付けました。<br>審査結果は通知でお知らせします。
+            </p>
+            <div class="flex flex-col gap-3">
+                <a href="{% url 'insurance_page' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-zinc-900 text-white text-sm font-semibold rounded-lg hover:bg-zinc-800 transition-colors">
+                    <span class="iconify" data-icon="lucide:shield-check" data-width="18"></span>
+                    保険ページへ
+                </a>
+                <a href="{% url 'index' %}" class="inline-flex items-center justify-center gap-2 px-6 py-3.5 bg-white text-zinc-600 text-sm font-semibold rounded-lg border border-zinc-200 hover:bg-zinc-50 transition-colors">
+                    <span class="iconify" data-icon="lucide:home" data-width="18"></span>
+                    ホームへ
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- トースト通知 -->
 <div id="toast" class="fixed bottom-6 right-6 px-5 py-3 rounded-lg text-white text-sm font-medium shadow-lg z-50 transition-all duration-300 translate-x-[120%] opacity-0" style="display:none;"></div>
@@ -382,10 +408,7 @@
             var data = await response.json();
 
             if (data.success) {
-                showToast('補償を申請しました', true);
-                setTimeout(function() {
-                    window.location.href = '{% url "insurance_page" %}';
-                }, 1500);
+                document.getElementById('claimCompleteModal').classList.remove('hidden');
             } else {
                 // サーバー側バリデーションエラー
                 if (data.field) {

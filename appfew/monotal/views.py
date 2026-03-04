@@ -17,7 +17,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from .models import *
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField
+from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField, Min, F
 from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
@@ -838,7 +838,6 @@ class CreateSellView(View):
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
-        conditions = ProductCondition.objects.all()
         prefectures = Prefecture.objects.all()
         shipping_days_list = ShippingDays.objects.all()
         shipping_burdens = ShippingBurden.objects.all()
@@ -862,7 +861,6 @@ class CreateSellView(View):
 
         context = {
             'categories': categories,
-            'conditions': conditions,
             'prefectures': prefectures,
             'shipping_days_list': shipping_days_list,
             'shipping_burdens': shipping_burdens,
@@ -912,7 +910,6 @@ class CreateSellView(View):
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
             product_description = request.POST.get('product_description', '').strip()
-            product_condition_id = request.POST.get('product_condition', '')
             shipping_days_id = request.POST.get('shipping_days', '')
             shipping_burden_id = request.POST.get('shipping_burden', '')
 
@@ -956,10 +953,6 @@ class CreateSellView(View):
                 errors['product_description'] = '商品の説明は必須です'
             elif len(product_description) > 1000:
                 errors['product_description'] = '商品の説明は1000文字以内で入力してください'
-
-            # 商品の状態
-            if not product_condition_id:
-                errors['product_condition'] = '商品の状態を選択してください'
 
             # 発送までの日数
             if not shipping_days_id:
@@ -1025,14 +1018,6 @@ class CreateSellView(View):
                 except ProductCategory.DoesNotExist:
                     pass
 
-            # 商品状態
-            condition_obj = None
-            if product_condition_id:
-                try:
-                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
-                except ProductCondition.DoesNotExist:
-                    pass
-
             # 発送日数
             shipping_days_obj = None
             if shipping_days_id:
@@ -1079,7 +1064,6 @@ class CreateSellView(View):
                     product_description=product_description or '',
                     shipping_days=shipping_days_obj,
                     shipping_burden=shipping_burden_obj,
-                    product_condition=condition_obj,
                     product_status=status_obj,
                     product_category=category_obj,
                     rental_days=rental_days_value,
@@ -1141,11 +1125,11 @@ class CreateSellView(View):
                 return JsonResponse({
                     'success': True,
                     'message': '商品を出品しました',
-                    'redirect_url': f'/monotal/product/{product.product_id}/'
+                    'redirect_url': f'/monotal/sell/{product.product_id}/complete/'
                 })
 
             messages.success(request, '商品を出品しました')
-            return redirect('product_detail', product_id=product.product_id)
+            return redirect('listing_complete', product_id=product.product_id)
 
         except Exception as e:
             if is_ajax:
@@ -1168,17 +1152,12 @@ class ProductListView(View):
         ).exclude(
             product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]  # 非公開(3)、削除(4)を除外
         ).select_related(
-            'product_condition',
             'product_status',
             'product_category',
             'user'
         ).prefetch_related(
             'images'  # 商品画像も取得
-        ).order_by('-register_datetime')
-
-        # ログインユーザー自身の商品を除外
-        if request.user.is_authenticated:
-            products = products.exclude(user=request.user)
+        )
 
         # フィルター適用
         products = self.apply_filters(request, products)
@@ -1193,9 +1172,6 @@ class ProductListView(View):
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
 
-        # 商品状態一覧
-        conditions = ProductCondition.objects.all()
-
         # 選択中のカテゴリ名を取得
         selected_category_name = None
         category_id = request.GET.get('category')
@@ -1207,10 +1183,12 @@ class ProductListView(View):
             except (ValueError, ProductCategory.DoesNotExist):
                 pass
 
+        shipping_burdens = ShippingBurden.objects.all()
+
         context = {
             'products': page_obj,
             'categories': categories,
-            'conditions': conditions,
+            'shipping_burdens': shipping_burdens,
             'page_obj': page_obj,
             'filters': self.get_active_filters(request),
             'selected_category_name': selected_category_name,
@@ -1222,6 +1200,22 @@ class ProductListView(View):
         """
         GETパラメータからフィルター適用
         """
+        # 商品ステータスフィルター
+        status_id = request.GET.get('status')
+        if status_id:
+            try:
+                queryset = queryset.filter(product_status_id=int(status_id))
+            except ValueError:
+                pass
+
+        # 発送料の負担フィルター
+        burden_id = request.GET.get('burden')
+        if burden_id:
+            try:
+                queryset = queryset.filter(shipping_burden_id=int(burden_id))
+            except ValueError:
+                pass
+
         # カテゴリフィルター
         category_id = request.GET.get('category')
         if category_id:
@@ -1265,15 +1259,6 @@ class ProductListView(View):
             except ValueError:
                 pass
 
-        # 商品状態フィルター
-        conditions = request.GET.getlist('condition')
-        if conditions:
-            try:
-                condition_ids = [int(c) for c in conditions]
-                queryset = queryset.filter(product_condition_id__in=condition_ids)
-            except ValueError:
-                pass
-
         # テキスト検索（商品名、説明、カテゴリ名）
         search_query = request.GET.get('q')
         if search_query:
@@ -1283,6 +1268,21 @@ class ProductListView(View):
                 Q(product_category__category_name__icontains=search_query)
             )
 
+        # 並び替え
+        sort = request.GET.get('sort', 'newest')
+        if sort == 'price_asc':
+            queryset = queryset.annotate(
+                min_price=Min('rental_plans__rental_fee')
+            ).order_by(F('min_price').asc(nulls_last=True))
+        elif sort == 'price_desc':
+            queryset = queryset.annotate(
+                min_price=Min('rental_plans__rental_fee')
+            ).order_by(F('min_price').desc(nulls_last=True))
+        elif sort == 'newest':
+            queryset = queryset.order_by('-register_datetime')
+        else:
+            queryset = queryset.order_by('-register_datetime')
+
         return queryset
 
     def get_active_filters(self, request):
@@ -1290,6 +1290,8 @@ class ProductListView(View):
         現在適用中のフィルター値を返す
         """
         return {
+            'status': request.GET.get('status', ''),
+            'burden': request.GET.get('burden', ''),
             'category': request.GET.get('category', ''),
             'min_fee': request.GET.get('min_price') or request.GET.get('min_fee', ''),
             'max_fee': request.GET.get('max_price') or request.GET.get('max_fee', ''),
@@ -1297,8 +1299,8 @@ class ProductListView(View):
             'max_price': request.GET.get('max_price') or request.GET.get('max_fee', ''),
             'min_days': request.GET.get('min_days', ''),
             'max_days': request.GET.get('max_days', ''),
-            'conditions': request.GET.getlist('condition'),
             'q': request.GET.get('q', ''),
+            'sort': request.GET.get('sort', 'newest'),
         }
 
 
@@ -1313,7 +1315,6 @@ class ProductDetailView(View):
         try:
             # 商品を取得（削除されていないもの）
             product = Product.objects.select_related(
-                'product_condition',
                 'product_status',
                 'product_category',
                 'shipping_days',
@@ -1343,8 +1344,8 @@ class ProductDetailView(View):
             product=product
         ).order_by('rental_days')
 
-        # 閲覧履歴を保存（ログインユーザーのみ、自分の商品は除外）
-        if request.user.is_authenticated and product.user != request.user:
+        # 閲覧履歴を保存（ログインユーザーのみ）
+        if request.user.is_authenticated:
             # 既存の同一商品の閲覧履歴を削除して新規作成（最新日時に更新）
             BrowsingHistory.objects.filter(
                 user=request.user,
@@ -1693,7 +1694,7 @@ class InterestSelectionView(LoginRequiredMixin, View):
             UserHobby.objects.create(user=request.user, product_category_id=int(cid))
 
         next_url = request.GET.get('next', request.POST.get('next', ''))
-        return redirect(next_url or 'mypage_browsing_history')
+        return redirect(next_url or reverse('profile', kwargs={'username': request.user.user_name}))
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -2466,7 +2467,6 @@ class ProductEditView(LoginRequiredMixin, View):
         # 商品を取得
         try:
             product = Product.objects.select_related(
-                'product_condition',
                 'product_status',
                 'product_category',
                 'shipping_days',
@@ -2496,7 +2496,6 @@ class ProductEditView(LoginRequiredMixin, View):
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
-        conditions = ProductCondition.objects.all()
         prefectures = Prefecture.objects.all()
         shipping_days_list = ShippingDays.objects.all()
         shipping_burdens = ShippingBurden.objects.all()
@@ -2523,7 +2522,6 @@ class ProductEditView(LoginRequiredMixin, View):
             'product_images': list(product.images.all()),
             'rental_plans': list(rental_plans),
             'categories': categories,
-            'conditions': conditions,
             'prefectures': prefectures,
             'shipping_days_list': shipping_days_list,
             'shipping_burdens': shipping_burdens,
@@ -2578,7 +2576,6 @@ class ProductEditView(LoginRequiredMixin, View):
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
             product_description = request.POST.get('product_description', '').strip()
-            product_condition_id = request.POST.get('product_condition', '')
             new_images = request.FILES.getlist('images')
             delete_image_ids_json = request.POST.get('delete_image_ids', '[]')
 
@@ -2615,16 +2612,6 @@ class ProductEditView(LoginRequiredMixin, View):
             elif len(product_description) > 1000:
                 errors['product_description'] = '商品の説明は1000文字以内で入力してください'
 
-            # 商品の状態
-            condition_obj = None
-            if not product_condition_id:
-                errors['product_condition'] = '商品の状態を選択してください'
-            else:
-                try:
-                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
-                except ProductCondition.DoesNotExist:
-                    errors['product_condition'] = '選択された商品の状態が存在しません'
-
             # 画像チェック（既存 - 削除 + 新規 >= 1）
             current_image_count = ProductImage.objects.filter(product=product).count()
             remaining_count = current_image_count - len(delete_image_ids) + len(new_images)
@@ -2647,7 +2634,6 @@ class ProductEditView(LoginRequiredMixin, View):
                 product.product_name = product_name
                 product.product_description = product_description
                 product.product_category = category_obj
-                product.product_condition = condition_obj
                 product.save()
 
                 # 削除対象の画像を削除
@@ -3971,6 +3957,28 @@ class RentalRequestView(LoginRequiredMixin, View):
             return redirect('product_detail', product_id=product_id)
 
 
+class ListingCompleteView(LoginRequiredMixin, View):
+    """
+    出品完了画面
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, product_id, *args, **kwargs):
+        try:
+            product = Product.objects.select_related('user').prefetch_related('images').get(
+                product_id=product_id,
+                user=request.user,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return redirect('product_list')
+
+        context = {
+            'product': product,
+        }
+        return render(request, 'listing_complete.html', context)
+
+
 class RentalRequestCompleteView(LoginRequiredMixin, View):
     """
     レンタル申請完了画面
@@ -4746,6 +4754,7 @@ class RentalRequestCancelSellerView(LoginRequiredMixin, View):
 
 # レンタル関連
 rental_request = RentalRequestView.as_view()
+listing_complete = ListingCompleteView.as_view()
 rental_request_complete = RentalRequestCompleteView.as_view()
 mypage_rental_management = MyPageRentalManagementView.as_view()
 rental_request_approve = RentalRequestApproveView.as_view()
@@ -6665,7 +6674,6 @@ def board_user_products(request):
     q = request.GET.get('q', '').strip()
     category_id = request.GET.get('category_id', '').strip()
     bookmark = request.GET.get('bookmark', '').strip()
-    condition = request.GET.get('condition', '').strip()
     min_fee = request.GET.get('min_fee', '').strip()
     max_fee = request.GET.get('max_fee', '').strip()
     qs = Product.objects.filter(
@@ -6685,11 +6693,6 @@ def board_user_products(request):
     if bookmark == '1' and request.user.is_authenticated:
         bm_ids = Bookmark.objects.filter(user=request.user).values_list('product_id', flat=True)
         qs = qs.filter(pk__in=bm_ids)
-    if condition:
-        try:
-            qs = qs.filter(product_condition_id=int(condition))
-        except (ValueError, TypeError):
-            pass
     if min_fee:
         try:
             qs = qs.filter(rental_plans__rental_fee__gte=int(min_fee)).distinct()

@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block secondary_nav %}
@@ -54,46 +54,58 @@
             <h3 class="text-lg font-bold text-zinc-900 tracking-tight">閲覧した商品</h3>
             <a href="{% url 'mypage_browsing_history' %}" class="text-xs font-bold text-pink-600 hover:underline">すべて見る</a>
         </div>
-        <div class="grid grid-cols-7 gap-3">
+        <div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {% for history in browsing_histories %}
-            <a href="{% url 'product_detail' product_id=history.product.product_id %}" class="cursor-pointer group">
-                <div class="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
+            <a href="{% url 'product_detail' product_id=history.product.product_id %}" class="group flex flex-col cursor-pointer">
+                <div class="relative aspect-square overflow-hidden rounded-md bg-zinc-100">
                     {% if history.product.images.all.0 %}
-                    <img src="{{ history.product.images.all.0.image.url }}" alt="{{ history.product.product_name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110">
+                    <img src="{{ history.product.images.all.0.image.url }}" alt="{{ history.product.product_name }}" class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105{% if history.product.product_status_id == 2 %} opacity-80{% endif %}">
                     {% else %}
-                    <div class="h-full w-full flex items-center justify-center text-zinc-300">
-                        <span class="iconify" data-icon="lucide:image" data-width="32"></span>
+                    <div class="h-full w-full flex flex-col items-center justify-center text-zinc-400">
+                        <span class="iconify" data-icon="lucide:image" data-width="32" data-height="32"></span>
+                        <p class="mt-1 text-[10px]">画像なし</p>
                     </div>
                     {% endif %}
                     {% if history.product.product_status_id == 2 %}
-                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                    <div class="absolute inset-0 z-20 bg-black/30 flex items-center justify-center">
+                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">レンタル中</span>
                     </div>
                     {% endif %}
                     {% if history.product.min_rental_plan %}
-                    <div class="absolute bottom-0 left-0 rounded-tr-md bg-zinc-900/80 px-2 py-0.5 text-xs font-bold text-white">¥{{ history.product.min_rental_plan.rental_fee|floatformat:0 }}</div>
+                    <div class="absolute bottom-0 left-0 z-10 rounded-tr-lg bg-black/50 backdrop-blur-sm px-2 py-0.5">
+                        <span class="text-sm font-semibold text-white">¥{{ history.product.min_rental_plan.rental_fee|floatformat:0 }}/{{ history.product.min_rental_plan.rental_days }}日〜</span>
+                    </div>
                     {% endif %}
+                </div>
+                <div>
+                    <h3 class="mt-2 text-sm font-medium text-zinc-900 line-clamp-2 group-hover:underline">{{ history.product.product_name }}</h3>
                 </div>
             </a>
             {% endfor %}
             {% for product in fill_products %}
-            <a href="{% url 'product_detail' product_id=product.product_id %}" class="cursor-pointer group">
-                <div class="relative aspect-square overflow-hidden rounded-lg bg-zinc-100 border border-zinc-200">
+            <a href="{% url 'product_detail' product_id=product.product_id %}" class="group flex flex-col cursor-pointer">
+                <div class="relative aspect-square overflow-hidden rounded-md bg-zinc-100">
                     {% if product.images.all.0 %}
-                    <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110">
+                    <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105{% if product.product_status_id == 2 %} opacity-80{% endif %}">
                     {% else %}
-                    <div class="h-full w-full flex items-center justify-center text-zinc-300">
-                        <span class="iconify" data-icon="lucide:image" data-width="32"></span>
+                    <div class="h-full w-full flex flex-col items-center justify-center text-zinc-400">
+                        <span class="iconify" data-icon="lucide:image" data-width="32" data-height="32"></span>
+                        <p class="mt-1 text-[10px]">画像なし</p>
                     </div>
                     {% endif %}
                     {% if product.product_status_id == 2 %}
-                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                    <div class="absolute inset-0 z-20 bg-black/30 flex items-center justify-center">
+                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">レンタル中</span>
                     </div>
                     {% endif %}
                     {% if product.min_rental_plan %}
-                    <div class="absolute bottom-0 left-0 rounded-tr-md bg-zinc-900/80 px-2 py-0.5 text-xs font-bold text-white">¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}</div>
+                    <div class="absolute bottom-0 left-0 z-10 rounded-tr-lg bg-black/50 backdrop-blur-sm px-2 py-0.5">
+                        <span class="text-sm font-semibold text-white">¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}/{{ product.min_rental_plan.rental_days }}日〜</span>
+                    </div>
                     {% endif %}
+                </div>
+                <div>
+                    <h3 class="mt-2 text-sm font-medium text-zinc-900 line-clamp-2 group-hover:underline">{{ product.product_name }}</h3>
                 </div>
             </a>
             {% endfor %}
@@ -108,32 +120,29 @@
         {% if recommended_products %}
         <div class="grid grid-cols-2 gap-x-4 gap-y-6 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 2xl:grid-cols-8">
             {% for product in recommended_products %}
-            <a href="{% url 'product_detail' product_id=product.product_id %}" class="group flex flex-col gap-2">
-                <div class="relative aspect-square w-full overflow-hidden rounded-xl bg-zinc-100 border border-zinc-200">
+            <a href="{% url 'product_detail' product_id=product.product_id %}" class="group flex flex-col cursor-pointer">
+                <div class="relative aspect-square w-full overflow-hidden rounded-md bg-zinc-100">
                     {% if product.images.all.0 %}
-                    <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105">
+                    <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="h-full w-full object-cover object-center transition-transform duration-500 group-hover:scale-105{% if product.product_status_id == 2 %} opacity-80{% endif %}">
                     {% else %}
-                    <div class="h-full w-full flex items-center justify-center text-zinc-300">
-                        <span class="iconify" data-icon="lucide:image" data-width="40"></span>
+                    <div class="h-full w-full flex flex-col items-center justify-center text-zinc-400">
+                        <span class="iconify" data-icon="lucide:image" data-width="32" data-height="32"></span>
+                        <p class="mt-2 text-xs">画像なし</p>
                     </div>
                     {% endif %}
                     {% if product.product_status_id == 2 %}
-                    <div class="absolute inset-0 bg-black/30 flex items-center justify-center">
-                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-sm">レンタル中</span>
+                    <div class="absolute inset-0 z-20 bg-black/30 flex items-center justify-center">
+                        <span class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full">レンタル中</span>
                     </div>
                     {% endif %}
                     {% if product.min_rental_plan %}
-                    <div class="absolute bottom-0 left-0 bg-zinc-900/80 px-2.5 py-1 text-sm font-bold text-white rounded-tr-lg">
-                        ¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}
+                    <div class="absolute bottom-0 left-0 z-10 rounded-tr-lg bg-black/50 backdrop-blur-sm px-2 py-0.5">
+                        <span class="text-sm font-semibold text-white">¥{{ product.min_rental_plan.rental_fee|floatformat:0 }}/{{ product.min_rental_plan.rental_days }}日〜</span>
                     </div>
                     {% endif %}
                 </div>
-                <div class="space-y-1 px-1">
-                    <h4 class="text-base font-medium text-zinc-900 line-clamp-2 leading-relaxed group-hover:text-pink-600 transition-colors">{{ product.product_name }}</h4>
-                    <div class="flex items-center gap-1.5 text-[10px] text-zinc-400">
-                        <span class="iconify" data-icon="mdi:heart" data-width="12"></span>
-                        <span>{{ product.bookmark_count }}</span>
-                    </div>
+                <div>
+                    <h3 class="mt-2 text-sm font-medium text-zinc-900 line-clamp-2 group-hover:underline">{{ product.product_name }}</h3>
                 </div>
             </a>
             {% endfor %}

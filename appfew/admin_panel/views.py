@@ -20,7 +20,7 @@ ADMIN_LOGIN_URL = '/admin-panel/login/'
 
 from monotal.models import (
     IdentityVerification, IdentityVerificationStatus, IdentityVerificationImage,
-    UserPersonalInfo, UserStatus,
+    UserPersonalInfo, UserStatus, User,
     CancellationReason, CancellationStatus, CancellationRequest,
     RentalHistory, RentalStatus, ProductStatus,
     Insurance, InsuranceEnrollment, InsuranceCoveragePeriod,
@@ -732,3 +732,72 @@ def _send_claim_notification(claim, approved):
         )
     except Exception:
         pass
+
+
+# ╔══════════════════════════════════════════════════════════════════════════════╗
+# ║  ユーザー削除 / User Delete                                                    ║
+# ╚══════════════════════════════════════════════════════════════════════════════╝
+
+@login_required(login_url=ADMIN_LOGIN_URL)
+def admin_user_reset_list(request):
+    """
+    ユーザー一覧（検索付き）— ユーザー削除用
+    """
+    if not request.user.is_staff:
+        messages.error(request, '管理者権限が必要です')
+        return redirect('index')
+
+    q = request.GET.get('q', '').strip()
+    users = User.objects.all().select_related('user_status').order_by('-register_datetime')
+
+    if q:
+        users = users.filter(Q(user_name__icontains=q) | Q(display_name__icontains=q))
+
+    paginator = Paginator(users, 20)
+    page_obj = paginator.get_page(request.GET.get('page', 1))
+
+    context = {
+        'users': page_obj,
+        'q': q,
+        'total_count': users.count(),
+    }
+    return render(request, 'admin_panel/user_reset.html', context)
+
+
+@login_required(login_url=ADMIN_LOGIN_URL)
+def admin_user_reset_execute(request, user_id):
+    """
+    アカウント初期化実行（Ajax POST）
+    ユーザーの全関連データを削除し、ステータスを未認証に戻す
+    """
+    if not request.user.is_staff:
+        return JsonResponse({'success': False, 'message': '管理者権限が必要です'}, status=403)
+
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=405)
+
+    if request.headers.get('X-Requested-With') != 'XMLHttpRequest':
+        return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=400)
+
+    try:
+        target_user = User.objects.get(user_id=user_id)
+    except User.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'ユーザーが見つかりません'}, status=404)
+
+    try:
+        with transaction.atomic():
+            # 本人確認データを削除（IdentityVerificationImage は CASCADE で自動削除）
+            IdentityVerification.objects.filter(user=target_user).delete()
+            UserPersonalInfo.objects.filter(user=target_user).delete()
+
+            # ステータスを未認証に戻す
+            target_user.user_status_id = 1
+            target_user.save(update_fields=['user_status_id'])
+
+        return JsonResponse({
+            'success': True,
+            'message': f'{target_user.display_name or target_user.user_name} を未認証に戻しました'
+        })
+
+    except Exception as e:
+        return JsonResponse({'success': False, 'message': f'エラー: {str(e)}'}, status=500)

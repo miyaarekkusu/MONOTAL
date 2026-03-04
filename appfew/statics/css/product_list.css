@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 * {
     margin: 0;
@@ -279,6 +279,7 @@ details > summary::-webkit-details-marker {
     flex-direction: column;
     gap: 32px;
     padding: 32px 16px;
+    min-height: calc(100vh - 96px);
 }
 
 @media (min-width: 1024px) {
@@ -635,7 +636,8 @@ details[open] .filter-summary .icon {
 @media (min-width: 1024px) {
     .product-grid {
         grid-template-columns: repeat(5, 1fr);
-        gap: 24px 12px;
+        gap: 24px 24px;
+        max-width: 960px;
     }
 }
 
