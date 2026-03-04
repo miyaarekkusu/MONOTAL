@@ -1,4 +1,4 @@
-﻿from django.db import migrations
+from django.db import migrations
 
 
 def populate_insurance_claim_status(apps, schema_editor):

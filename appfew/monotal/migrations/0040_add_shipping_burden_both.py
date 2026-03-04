@@ -1,4 +1,4 @@
-﻿from django.db import migrations
+from django.db import migrations
 
 
 def add_both_burden(apps, schema_editor):

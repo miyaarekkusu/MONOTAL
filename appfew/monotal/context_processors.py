@@ -1,4 +1,4 @@
-﻿from django.db.models import Q, Count
+from django.db.models import Q, Count
 from .models import RentalRequest, RentalHistory, NotificationTargetUser, NotificationRead
 
 
