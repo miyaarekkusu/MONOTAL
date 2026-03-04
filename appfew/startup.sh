@@ -1,4 +1,4 @@
-﻿#!/bin/bash
+#!/bin/bash
 cd /home/site/wwwroot/appfew
 pip install -r requirements.txt
 python manage.py migrate
