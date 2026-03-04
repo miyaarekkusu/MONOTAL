@@ -1,4 +1,4 @@
-{% extends 'base.html' %}
+﻿{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ | MONOTAL{% endblock %}
@@ -8,7 +8,7 @@
 {% endblock %}
 
 {% block content %}
-<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
+<main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-3 lg:py-8">
 
     <!-- 本人確認バナー -->
     {% if request.user.user_status_id != 2 %}
