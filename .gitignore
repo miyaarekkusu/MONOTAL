@@ -33,7 +33,6 @@ venv.bak/
 # Django
 *.log
 local_settings.py
-# db.sqlite3  # コミット対象に含めるためコメントアウト
 db.sqlite3-journal
 /media
 /staticfiles
@@ -102,3 +101,7 @@ tmpclaude-*-cwd
 /appfew/.claude/settings.local.json
 /appfew/media/product_images
 /appfew/db.sqlite3
+
+# Local docs (画像以外は追跡対象外)
+/Version_info/
+/docs/*.md
