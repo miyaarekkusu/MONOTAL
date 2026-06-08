@@ -101,3 +101,7 @@ tmpclaude-*-cwd
 /appfew/.claude/settings.local.json
 /appfew/media/product_images
 /appfew/db.sqlite3
+
+# Local docs (画像以外は追跡対象外)
+/Version_info/
+/docs/*.md
