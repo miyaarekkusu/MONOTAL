@@ -1,4 +1,4 @@
-﻿"""
+"""
 取引中止機能用モデル追加マイグレーション
 - M_CancellationReason (中止理由マスター)
 - M_CancellationStatus (中止ステータスマスター)

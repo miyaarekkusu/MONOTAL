@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function () {
     const sellForm = document.getElementById('sellForm');
     const FORM_STORAGE_KEY = 'createSellFormData';
 
@@ -13,6 +13,13 @@
         sellForm.addEventListener('submit', async function (e) {
             e.preventDefault();
             await submitProduct();
+        });
+
+        // input内でEnterキーが押された時のフォーム送信を抑止
+        sellForm.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA' && e.target.type !== 'submit') {
+                e.preventDefault();
+            }
         });
     }
 
@@ -32,18 +39,54 @@
             }
         });
 
+        // 画像データを保存（dataUrl + ファイル情報）
+        const imageData = uploadedImages.map(function (img) {
+            return {
+                dataUrl: img.dataUrl,
+                fileName: img.file.name,
+                fileType: img.file.type
+            };
+        });
+
         const formData = {
             productName: document.getElementById('productName')?.value || '',
             category: document.getElementById('category')?.value || '',
-            condition: document.getElementById('condition')?.value || '',
             description: document.getElementById('description')?.value || '',
             shippingDays: document.getElementById('shippingDays')?.value || '',
             shippingBurden: document.getElementById('shippingBurden')?.value || '',
             rentalPlans: rentalPlans,
-            agreeTerms: document.getElementById('agreeTerms')?.checked || false
+            agreeTerms: document.getElementById('agreeTerms')?.checked || false,
+            images: imageData
         };
 
-        sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+        try {
+            sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+        } catch (e) {
+            // 容量超過時は画像なしで保存
+            formData.images = [];
+            sessionStorage.setItem(FORM_STORAGE_KEY, JSON.stringify(formData));
+        }
+    }
+
+    function resetForm() {
+        if (!sellForm) return;
+        sellForm.reset();
+        updateCharCount('productName', 'nameCount', 40);
+        updateCharCount('description', 'descCount', 1000);
+        uploadedImages = [];
+        renderImagePreviews();
+        // 追加されたレンタルプラン行を削除し、最初の行をクリア
+        const rows = document.querySelectorAll('.rental-plan-row');
+        rows.forEach(function (row, index) { if (index > 0) row.remove(); });
+        const firstRow = document.querySelector('.rental-plan-row');
+        if (firstRow) {
+            var d = firstRow.querySelector('.days-input');
+            var p = firstRow.querySelector('.price-input');
+            if (d) d.value = '';
+            if (p) p.value = '';
+        }
+        updatePlanButtons();
+        clearAllErrors();
     }
 
     function restoreFormData() {
@@ -64,11 +107,6 @@
             if (formData.category) {
                 const categorySelect = document.getElementById('category');
                 if (categorySelect) categorySelect.value = formData.category;
-            }
-
-            if (formData.condition) {
-                const conditionSelect = document.getElementById('condition');
-                if (conditionSelect) conditionSelect.value = formData.condition;
             }
 
             if (formData.description) {
@@ -119,12 +157,30 @@
                 if (agreeTermsCheckbox) agreeTermsCheckbox.checked = true;
             }
 
-            // 復元後にデータを削除
-            sessionStorage.removeItem(FORM_STORAGE_KEY);
+            // 画像データの復元
+            if (formData.images && formData.images.length > 0) {
+                restoreImages(formData.images);
+            }
         } catch (e) {
             console.error('フォームデータの復元に失敗:', e);
-            sessionStorage.removeItem(FORM_STORAGE_KEY);
         }
+    }
+
+    function restoreImages(imageDataArray) {
+        uploadedImages = [];
+        var loaded = 0;
+        imageDataArray.forEach(function (imgData) {
+            fetch(imgData.dataUrl)
+                .then(function (res) { return res.blob(); })
+                .then(function (blob) {
+                    var file = new File([blob], imgData.fileName, { type: imgData.fileType });
+                    uploadedImages.push({ file: file, dataUrl: imgData.dataUrl });
+                    loaded++;
+                    if (loaded === imageDataArray.length) {
+                        renderImagePreviews();
+                    }
+                });
+        });
     }
 
     function clearFormData() {
@@ -149,6 +205,27 @@
 
     // ページ読み込み時にフォームデータを復元
     restoreFormData();
+
+    // pageshow: bfcache復帰 & 非bfcacheの戻るボタン両方に対応
+    // (pageshow は load 後に発火するのでブラウザのフォーム値復元より後に走る)
+    window.addEventListener('pageshow', function (e) {
+        var hasData = !!sessionStorage.getItem(FORM_STORAGE_KEY);
+
+        if (hasData) {
+            // 住所ページからの復帰 → 復元してデータを消す
+            if (e.persisted) restoreFormData();
+            sessionStorage.removeItem(FORM_STORAGE_KEY);
+        } else if (e.persisted) {
+            // bfcache で住所ページ以外から戻った → リセット
+            resetForm();
+        } else {
+            // 非bfcache の戻る/進む → リセット
+            var navEntries = performance.getEntriesByType('navigation');
+            if (navEntries.length > 0 && navEntries[0].type === 'back_forward') {
+                resetForm();
+            }
+        }
+    });
 
     // ========================================
     // 画像アップロード
@@ -268,6 +345,44 @@
                 }
             }
         });
+    }
+
+    // ========================================
+    // レンタルプラン入力制限・フォーカス全選択
+    // ========================================
+    if (rentalPlansContainer) {
+        // 入力値の上限チェック
+        rentalPlansContainer.addEventListener('input', function (e) {
+            const input = e.target;
+            if (input.classList.contains('days-input')) {
+                const val = parseInt(input.value);
+                if (val > 3650) {
+                    input.value = 3650;
+                    showLimitMessage('上限は3650日です');
+                }
+            } else if (input.classList.contains('price-input')) {
+                const val = parseInt(input.value);
+                if (val > 9999999) {
+                    input.value = 9999999;
+                    showLimitMessage('上限は9,999,999円です');
+                }
+            }
+        });
+
+        // フォーカス時に全選択
+        rentalPlansContainer.addEventListener('focusin', function (e) {
+            const input = e.target;
+            if (input.classList.contains('days-input') || input.classList.contains('price-input')) {
+                input.select();
+            }
+        });
+    }
+
+    function showLimitMessage(message) {
+        showErrorAt('rentalPlansError', message);
+        setTimeout(function () {
+            clearError('rentalPlansError');
+        }, 3000);
     }
 
     function addPlanRow() {
@@ -407,7 +522,6 @@
             product_name: document.getElementById('productName').value.trim(),
             product_category: document.getElementById('category').value,
             product_description: document.getElementById('description').value.trim(),
-            product_condition: document.getElementById('condition').value,
             shipping_days: document.getElementById('shippingDays').value,
             shipping_burden: document.getElementById('shippingBurden')?.value || '',
             address_id: addressId,
@@ -428,7 +542,6 @@
             submitData.append('product_name', formData.product_name);
             submitData.append('product_category', formData.product_category);
             submitData.append('product_description', formData.product_description);
-            submitData.append('product_condition', formData.product_condition);
             submitData.append('shipping_days', formData.shipping_days);
             submitData.append('shipping_burden', formData.shipping_burden);
             submitData.append('address_id', formData.address_id);
@@ -519,11 +632,6 @@
             errors.description = '商品の説明は必須です';
         } else if (formData.product_description.length > 1000) {
             errors.description = '商品の説明は1000文字以内で入力してください';
-        }
-
-        // 商品の状態
-        if (!formData.product_condition) {
-            errors.condition = '商品の状態を選択してください';
         }
 
         // 発送までの日数

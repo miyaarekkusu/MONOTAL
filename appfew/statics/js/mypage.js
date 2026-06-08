@@ -1,4 +1,4 @@
-﻿// MyPage JavaScript
+// MyPage JavaScript
 
 document.addEventListener('DOMContentLoaded', function() {
     initFollowToggleButtons();

@@ -1,4 +1,4 @@
-﻿/* Profile Page Styles */
+/* Profile Page Styles */
 
 /* Additional custom styles for profile page */
 .safe-area-bottom {
@@ -240,6 +240,8 @@
     padding: 1.5rem;
     width: 100%;
     max-width: 28rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
     animation: modalFadeIn 0.2s ease;
 }
 
@@ -252,5 +254,10 @@
         opacity: 1;
         transform: scale(1) translateY(0);
     }
+}
+
+@media (max-width: 480px) {
+    .report-modal-card { padding: 1rem; }
+    .profile-tab { padding-left: 1rem; padding-right: 1rem; font-size: 13px; }
 }
 

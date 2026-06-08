@@ -41,30 +41,16 @@
                 <div class="char-count" id="nameCount">0/40</div>
             </div>
 
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="input-label">カテゴリー</label>
-                    <div class="select-wrapper">
-                        <select id="category" class="form-select">
-                            <option value="" disabled selected>選択してください</option>
-                            {% for category in categories %}
-                            <option value="{{ category.product_category_id }}">{{ category.category_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="input-label">商品の状態</label>
-                    <div class="select-wrapper">
-                        <select id="condition" class="form-select">
-                            <option value="" disabled selected>選択してください</option>
-                            {% for condition in conditions %}
-                            <option value="{{ condition.product_condition_id }}">{{ condition.condition_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
-                    </div>
+            <div class="form-group">
+                <label class="input-label">カテゴリー</label>
+                <div class="select-wrapper">
+                    <select id="category" class="form-select">
+                        <option value="" disabled selected>選択してください</option>
+                        {% for category in categories %}
+                        <option value="{{ category.product_category_id }}">{{ category.category_name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="iconify select-icon" data-icon="lucide:chevron-down" data-width="16"></span>
                 </div>
             </div>
 

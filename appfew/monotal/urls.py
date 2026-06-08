@@ -15,6 +15,7 @@ urlpatterns = [
     path('profile/<str:username>/', views.profile, name='profile'),
     path('profile/profile_setting/<str:username>/', views.profile_setting, name='profile_setting'),
     path('sell/', views.create_sell, name='create_sell'),
+    path('sell/<int:product_id>/complete/', views.listing_complete, name='listing_complete'),
     path('sell/addresses/', views.sell_address_manage, name='sell_address_manage'),
     path('sell/verification-required/', views.verification_required, name='verification_required'),
     path('sell/bank-account-required/', views.bank_account_required, name='bank_account_required'),
@@ -70,6 +71,7 @@ urlpatterns = [
     path('user/<int:user_id>/report/', views.report_create, name='report_create'),
 
     # マイページ
+    path('mypage/', views.mypage_index, name='mypage_index'),
     path('mypage/follow-list/', views.mypage_follow_list, name='mypage_follow_list'),
     path('mypage/block-list/', views.mypage_block_list, name='mypage_block_list'),
     path('mypage/bookmark-list/', views.mypage_bookmark_list, name='mypage_bookmark_list'),

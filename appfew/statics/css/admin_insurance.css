@@ -189,3 +189,9 @@
         width: 100%;
     }
 }
+
+@media (max-width: 480px) {
+    .filter-tab { padding: 10px 12px; font-size: 13px; }
+    .product-name-cell { max-width: 140px; }
+    .reject-modal-content { padding: 16px; }
+}

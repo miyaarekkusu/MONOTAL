@@ -755,7 +755,9 @@ class Product(models.Model):
     product_condition = models.ForeignKey(
         ProductCondition,
         on_delete=models.PROTECT,
-        db_column='product_condition_id'
+        db_column='product_condition_id',
+        null=True,
+        blank=True
     )
     product_status = models.ForeignKey(
         ProductStatus,

@@ -1,0 +1,211 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}出品完了 - MONOTAL{% endblock %}
+
+{% block extra_css %}
+<style>
+.complete-container {
+    min-height: 100vh;
+    background-color: #fafafa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+}
+
+.complete-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e4e4e7;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    max-width: 480px;
+    width: 100%;
+    padding: 48px 32px;
+    text-align: center;
+}
+
+.complete-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: #ecfdf5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+}
+
+.complete-icon .iconify {
+    color: #10b981;
+}
+
+.complete-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #18181b;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.025em;
+}
+
+.complete-message {
+    font-size: 14px;
+    color: #71717a;
+    line-height: 1.6;
+    margin: 0 0 32px 0;
+}
+
+.product-summary {
+    display: flex;
+    gap: 12px;
+    padding: 16px;
+    background: #fafafa;
+    border-radius: 12px;
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.product-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.product-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.product-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #18181b;
+    margin: 0 0 4px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.product-owner {
+    font-size: 12px;
+    color: #71717a;
+    margin: 0;
+}
+
+.complete-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: #18181b;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    border: none;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-primary:hover {
+    background: #27272a;
+}
+
+.btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 14px 24px;
+    background: white;
+    color: #52525b;
+    font-weight: 600;
+    font-size: 14px;
+    border: 1px solid #e4e4e7;
+    border-radius: 8px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+    background: #f4f4f5;
+    border-color: #d4d4d8;
+}
+
+.complete-note {
+    margin-top: 24px;
+    padding-top: 24px;
+    border-top: 1px solid #f4f4f5;
+}
+
+.complete-note p {
+    font-size: 12px;
+    color: #a1a1aa;
+    margin: 0;
+    line-height: 1.5;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="complete-container">
+    <div class="complete-card">
+        <div class="complete-icon">
+            <span class="iconify" data-icon="lucide:check-circle" data-width="40"></span>
+        </div>
+
+        <h1 class="complete-title">出品しました！</h1>
+
+        <p class="complete-message">
+            商品の出品が完了しました。<br>
+            レンタル申請が届くまでお待ちください。
+        </p>
+
+        <div class="product-summary">
+            {% if product.images.all %}
+            <img src="{{ product.images.all.0.image.url }}" alt="{{ product.product_name }}" class="product-image">
+            {% else %}
+            <div class="product-image" style="background: #e4e4e7; display: flex; align-items: center; justify-content: center;">
+                <span class="iconify" data-icon="lucide:image-off" data-width="24" style="color: #a1a1aa;"></span>
+            </div>
+            {% endif %}
+            <div class="product-info">
+                <h2 class="product-name">{{ product.product_name }}</h2>
+                <p class="product-owner">出品者: {{ product.user.display_name }}</p>
+            </div>
+        </div>
+
+        <div class="complete-actions">
+            <a href="{% url 'product_detail' product_id=product.product_id %}" class="btn-primary">
+                <span class="iconify" data-icon="lucide:package" data-width="18"></span>
+                商品ページへ
+            </a>
+            <a href="{% url 'index' %}" class="btn-secondary">
+                <span class="iconify" data-icon="lucide:home" data-width="18"></span>
+                ホームへ
+            </a>
+        </div>
+
+        <div class="complete-note">
+            <p>
+                出品した商品はマイページの「出品一覧」から管理できます。
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
+{% endblock %}

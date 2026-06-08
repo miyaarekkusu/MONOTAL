@@ -32,7 +32,9 @@
             <a href="{% url 'product_list' %}" class="clear-btn">すべてクリア</a>
         </div>
 
-        <form method="GET" action="{% url 'product_list' %}" class="filter-sections">
+        <form id="filterForm" method="GET" action="{% url 'product_list' %}" class="filter-sections">
+            <input type="hidden" name="sort" value="{{ filters.sort }}">
+            {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
 
             <!-- カテゴリフィルター -->
             <div class="filter-section">
@@ -63,25 +65,44 @@
                 </details>
             </div>
 
-            <!-- 商品の状態 -->
+
+            <!-- 商品ステータス -->
             <div class="filter-section">
                 <details open>
                     <summary class="filter-summary">
-                        <span>商品の状態</span>
+                        <span>商品ステータス</span>
                         <span class="icon">
                             <span class="iconify" data-icon="lucide:chevron-down" data-width="16" data-height="16"></span>
                         </span>
                     </summary>
                     <div class="filter-content">
-                        <div class="condition-grid">
-                            {% for condition in conditions %}
-                            <label class="condition-label">
-                                <input type="checkbox" name="condition" value="{{ condition.product_condition_id }}"
-                                       {% if condition.product_condition_id|stringformat:'d' in filters.conditions %}checked{% endif %}>
-                                <span>{{ condition.condition_name }}</span>
-                            </label>
+                        <select name="status" class="filter-select">
+                            <option value="">すべて</option>
+                            <option value="1" {% if filters.status == '1' %}selected{% endif %}>出品中</option>
+                            <option value="2" {% if filters.status == '2' %}selected{% endif %}>レンタル中</option>
+                        </select>
+                    </div>
+                </details>
+            </div>
+
+            <!-- 発送料の負担 -->
+            <div class="filter-section">
+                <details open>
+                    <summary class="filter-summary">
+                        <span>発送料の負担</span>
+                        <span class="icon">
+                            <span class="iconify" data-icon="lucide:chevron-down" data-width="16" data-height="16"></span>
+                        </span>
+                    </summary>
+                    <div class="filter-content">
+                        <select name="burden" class="filter-select">
+                            <option value="">すべて</option>
+                            {% for burden in shipping_burdens %}
+                            <option value="{{ burden.shipping_burden_id }}" {% if filters.burden == burden.shipping_burden_id|stringformat:'d' %}selected{% endif %}>
+                                {{ burden.burden_name }}
+                            </option>
                             {% endfor %}
-                        </div>
+                        </select>
                     </div>
                 </details>
             </div>
@@ -97,9 +118,9 @@
                     </summary>
                     <div class="filter-content">
                         <div class="price-inputs">
-                            <input type="number" name="min_days" placeholder="最小" value="{{ filters.min_days }}">
+                            <input type="number" name="min_days" placeholder="最小" min="1" max="3650" value="{{ filters.min_days }}">
                             <span class="separator">~</span>
-                            <input type="number" name="max_days" placeholder="最大" value="{{ filters.max_days }}">
+                            <input type="number" name="max_days" placeholder="最大" min="1" max="3650" value="{{ filters.max_days }}">
                         </div>
                     </div>
                 </details>
@@ -116,15 +137,13 @@
                     </summary>
                     <div class="filter-content">
                         <div class="price-inputs">
-                            <input type="number" name="min_fee" placeholder="下限" value="{{ filters.min_fee }}">
+                            <input type="number" name="min_fee" placeholder="下限" min="100" max="9999999" value="{{ filters.min_fee }}">
                             <span class="separator">~</span>
-                            <input type="number" name="max_fee" placeholder="上限" value="{{ filters.max_fee }}">
+                            <input type="number" name="max_fee" placeholder="上限" min="100" max="9999999" value="{{ filters.max_fee }}">
                         </div>
                     </div>
                 </details>
             </div>
-
-            <button type="submit" class="apply-filter-btn" style="width: 100%; margin-top: 20px; padding: 12px; background: #db2777; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">絞り込む</button>
 
         </form>
     </aside>
@@ -146,7 +165,7 @@
             {% endif %}
 
             <!-- 適用中のフィルター表示 -->
-            {% if request.GET.q or request.GET.category or request.GET.min_price or request.GET.max_price or request.GET.condition %}
+            {% if request.GET.q or request.GET.category or request.GET.min_price or request.GET.max_price %}
             <div class="flex items-center gap-2 mt-3 flex-wrap">
                 <span class="text-xs text-zinc-500 font-medium">絞り込み条件:</span>
 
@@ -186,33 +205,25 @@
                 </span>
                 {% endif %}
 
-                {% if request.GET.condition %}
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 text-green-700 text-xs font-medium rounded-full">
-                    <span class="iconify" data-icon="lucide:check-circle" data-width="12"></span>
-                    商品の状態
-                    <a href="?{% for key, value in request.GET.items %}{% if key != 'condition' %}{{ key }}={{ value }}&{% endif %}{% endfor %}" class="hover:text-green-900">
-                        <span class="iconify" data-icon="lucide:x" data-width="12"></span>
-                    </a>
-                </span>
-                {% endif %}
-
                 <a href="{% url 'product_list' %}" class="text-xs text-zinc-500 hover:text-zinc-900 font-medium underline">すべてクリア</a>
             </div>
             {% endif %}
 
             <div class="toolbar">
                 <div class="sort-select-wrapper">
-                    <select class="sort-select">
-                        <option>並び替え: おすすめ順</option>
-                        <option>価格の安い順</option>
-                        <option>価格の高い順</option>
-                        <option>新着順</option>
+                    <select class="sort-select" id="sortSelect">
+                        <option value="newest" {% if filters.sort == 'newest' or not filters.sort %}selected{% endif %}>新着順</option>
+                        <option value="price_asc" {% if filters.sort == 'price_asc' %}selected{% endif %}>価格の安い順</option>
+                        <option value="price_desc" {% if filters.sort == 'price_desc' %}selected{% endif %}>価格の高い順</option>
                     </select>
                     <span class="icon">
                         <span class="iconify" data-icon="lucide:chevron-down" data-width="14" data-height="14"></span>
                     </span>
                 </div>
-
+                <button type="button" class="mobile-filter-btn" id="openFilterModal">
+                    <span class="iconify" data-icon="lucide:sliders-horizontal" data-width="16" data-height="16"></span>
+                    絞り込み
+                </button>
             </div>
         </div>
 
@@ -289,6 +300,96 @@
     </div>
 
 </main>
+
+<!-- Mobile Filter Modal -->
+<div class="filter-modal-overlay" id="filterModalOverlay">
+    <div class="filter-modal">
+        <div class="filter-modal-header">
+            <h3>絞り込み検索</h3>
+            <button type="button" class="filter-modal-close" id="closeFilterModal">
+                <span class="iconify" data-icon="lucide:x" data-width="20" data-height="20"></span>
+            </button>
+        </div>
+        <div class="filter-modal-body">
+            <form id="mobileFilterForm" method="GET" action="{% url 'product_list' %}">
+                <input type="hidden" name="sort" value="{{ filters.sort }}">
+                {% if filters.q %}<input type="hidden" name="q" value="{{ filters.q }}">{% endif %}
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>カテゴリ</span></div>
+                    <div class="filter-content">
+                        <select name="category" class="filter-select">
+                            <option value="">すべてのカテゴリ</option>
+                            {% for category in categories %}
+                            <option value="{{ category.product_category_id }}" {% if filters.category == category.product_category_id|stringformat:'d' %}selected{% endif %}>
+                                {{ category.category_name }}
+                            </option>
+                            {% if category.subcategories.exists %}
+                                {% for subcategory in category.subcategories.all %}
+                                <option value="{{ subcategory.product_category_id }}" {% if filters.category == subcategory.product_category_id|stringformat:'d' %}selected{% endif %}>
+                                    &nbsp;&nbsp;{{ subcategory.category_name }}
+                                </option>
+                                {% endfor %}
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>商品ステータス</span></div>
+                    <div class="filter-content">
+                        <select name="status" class="filter-select">
+                            <option value="">すべて</option>
+                            <option value="1" {% if filters.status == '1' %}selected{% endif %}>出品中</option>
+                            <option value="2" {% if filters.status == '2' %}selected{% endif %}>レンタル中</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>発送料の負担</span></div>
+                    <div class="filter-content">
+                        <select name="burden" class="filter-select">
+                            <option value="">すべて</option>
+                            {% for burden in shipping_burdens %}
+                            <option value="{{ burden.shipping_burden_id }}" {% if filters.burden == burden.shipping_burden_id|stringformat:'d' %}selected{% endif %}>
+                                {{ burden.burden_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>レンタル期間（日数）</span></div>
+                    <div class="filter-content">
+                        <div class="price-inputs">
+                            <input type="number" name="min_days" placeholder="最小" min="1" max="3650" value="{{ filters.min_days }}">
+                            <span class="separator">~</span>
+                            <input type="number" name="max_days" placeholder="最大" min="1" max="3650" value="{{ filters.max_days }}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="filter-section">
+                    <div class="filter-summary"><span>価格</span></div>
+                    <div class="filter-content">
+                        <div class="price-inputs">
+                            <input type="number" name="min_fee" placeholder="下限" min="100" max="9999999" value="{{ filters.min_fee }}">
+                            <span class="separator">~</span>
+                            <input type="number" name="max_fee" placeholder="上限" min="100" max="9999999" value="{{ filters.max_fee }}">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="filter-modal-footer">
+            <button type="button" class="filter-reset-btn" id="filterResetBtn">リセット</button>
+            <button type="button" class="filter-apply-btn" id="filterApplyBtn">絞り込む</button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
@@ -316,6 +417,73 @@
         sb.style.top = topVal + 'px';
         lastY = y;
     }, {passive: true});
+})();
+
+// サイドバーフィルター自動送信
+var filterForm = document.getElementById('filterForm');
+if (filterForm) {
+    var debounceTimer = null;
+    function submitFilter() {
+        filterForm.submit();
+    }
+    function debounceSubmit() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(submitFilter, 600);
+    }
+    // select, checkbox は即時送信
+    filterForm.querySelectorAll('select, input[type="checkbox"]').forEach(function(el) {
+        el.addEventListener('change', submitFilter);
+    });
+    // number は入力停止後に送信 + フォーカス時全選択
+    filterForm.querySelectorAll('input[type="number"]').forEach(function(el) {
+        el.addEventListener('input', debounceSubmit);
+        el.addEventListener('focus', function() { this.select(); });
+    });
+}
+
+// 並び替え選択時にページをリロード
+var sortSelect = document.getElementById('sortSelect');
+if (sortSelect) {
+    sortSelect.addEventListener('change', function() {
+        var params = new URLSearchParams(window.location.search);
+        params.set('sort', this.value);
+        params.delete('page');
+        window.location.search = params.toString();
+    });
+}
+
+// Mobile Filter Modal
+(function(){
+    var overlay = document.getElementById('filterModalOverlay');
+    var openBtn = document.getElementById('openFilterModal');
+    var closeBtn = document.getElementById('closeFilterModal');
+    var resetBtn = document.getElementById('filterResetBtn');
+    var applyBtn = document.getElementById('filterApplyBtn');
+    var form = document.getElementById('mobileFilterForm');
+    if (!overlay || !openBtn) return;
+
+    openBtn.addEventListener('click', function(){
+        overlay.classList.add('active');
+        document.body.style.overflow = 'hidden';
+    });
+
+    function closeModal(){
+        overlay.classList.remove('active');
+        document.body.style.overflow = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', function(e){
+        if (e.target === overlay) closeModal();
+    });
+
+    resetBtn.addEventListener('click', function(){
+        window.location.href = '{% url "product_list" %}';
+    });
+
+    applyBtn.addEventListener('click', function(){
+        form.submit();
+    });
 })();
 </script>
 {% endblock %}

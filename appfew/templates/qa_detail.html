@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}{{ question.title }} - Q&A | MONOTAL{% endblock %}
@@ -43,7 +43,7 @@ footer { display: none !important; }
     </div>
 
     <!-- コンテンツ -->
-    <div class="flex-1 overflow-y-auto" style="background:#f9f9fb;padding:3rem 1.5rem;">
+    <div class="flex-1 overflow-y-auto qa-detail-scroll" style="background:#f9f9fb;">
         <div class="max-w-3xl mx-auto">
 
             <!-- Question Card -->
@@ -165,7 +165,7 @@ footer { display: none !important; }
                                 ベストアンサーに選ぶ
                             </button>
                             {% endif %}
-                            {% if not is_closed and user.is_authenticated and ans.user != user %}
+                            {% if not is_closed and user.is_authenticated and not ans.reply_list %}
                             <button onclick="toggleReplyForm({{ ans.answer_id }})"
                                     class="text-xs text-zinc-400 hover:text-pink-600 font-medium flex items-center gap-1 transition-colors">
                                 <span class="iconify" data-icon="lucide:corner-down-right" data-width="12"></span>
@@ -193,6 +193,13 @@ footer { display: none !important; }
                                     <span class="text-[10px] text-zinc-400">{{ reply.created_at|date:"Y/m/d H:i" }}</span>
                                 </div>
                                 <div class="text-sm text-zinc-600 whitespace-pre-wrap">{{ reply.content }}</div>
+                                {% if not is_closed and user.is_authenticated and forloop.last %}
+                                <button onclick="toggleReplyForm({{ ans.answer_id }})"
+                                        class="mt-1 text-[11px] text-zinc-400 hover:text-pink-600 font-medium flex items-center gap-1 transition-colors">
+                                    <span class="iconify" data-icon="lucide:corner-down-right" data-width="11"></span>
+                                    返信
+                                </button>
+                                {% endif %}
                             </div>
                             {% endfor %}
                         </div>

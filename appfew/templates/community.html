@@ -56,6 +56,10 @@ const INITIAL_TAB          = "{{ active_tab|default:'chat' }}";
               <span class="iconify comm-search-icon" data-icon="lucide:search" data-width="16"></span>
               <input type="text" id="chat-search-input" placeholder="グループを検索..." class="comm-search-input" autocomplete="off">
             </div>
+            <button class="comm-mobile-filter-btn" onclick="openCommFilter('chat')">
+              <span class="iconify" data-icon="lucide:sliders-horizontal" data-width="16"></span>
+              絞り込み
+            </button>
             <select id="chat-category-select" class="comm-select">
               <option value="">すべてのカテゴリ</option>
             </select>
@@ -74,6 +78,23 @@ const INITIAL_TAB          = "{{ active_tab|default:'chat' }}";
               作成
             </button>
             {% endif %}
+          </div>
+
+          <!-- チャット絞り込みモーダル（モバイル用） -->
+          <div class="comm-filter-overlay" id="chatFilterOverlay">
+            <div class="comm-filter-modal">
+              <div class="comm-filter-modal-header">
+                <h3>絞り込み</h3>
+                <button type="button" class="comm-filter-modal-close" onclick="closeCommFilter('chat')">
+                  <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                </button>
+              </div>
+              <div class="comm-filter-modal-body" id="chatFilterBody"></div>
+              <div class="comm-filter-modal-footer">
+                <button type="button" class="comm-filter-reset-btn" onclick="resetCommFilter('chat')">リセット</button>
+                <button type="button" class="comm-filter-apply-btn" onclick="closeCommFilter('chat')">適用</button>
+              </div>
+            </div>
           </div>
 
           <!-- グループカード一覧 -->
@@ -179,6 +200,10 @@ const INITIAL_TAB          = "{{ active_tab|default:'chat' }}";
               <span class="iconify comm-search-icon" data-icon="lucide:search" data-width="16"></span>
               <input type="text" id="qa-search-input" placeholder="質問を検索..." class="comm-search-input" autocomplete="off">
             </div>
+            <button class="comm-mobile-filter-btn" onclick="openCommFilter('qa')">
+              <span class="iconify" data-icon="lucide:sliders-horizontal" data-width="16"></span>
+              絞り込み
+            </button>
             <div class="comm-status-btns">
               <button class="comm-status-btn active" data-status="" onclick="setQAStatus('')">すべて</button>
               <button class="comm-status-btn" data-status="open" onclick="setQAStatus('open')">受付中</button>
@@ -197,6 +222,23 @@ const INITIAL_TAB          = "{{ active_tab|default:'chat' }}";
               質問する
             </button>
             {% endif %}
+          </div>
+
+          <!-- Q&A絞り込みモーダル（モバイル用） -->
+          <div class="comm-filter-overlay" id="qaFilterOverlay">
+            <div class="comm-filter-modal">
+              <div class="comm-filter-modal-header">
+                <h3>絞り込み</h3>
+                <button type="button" class="comm-filter-modal-close" onclick="closeCommFilter('qa')">
+                  <span class="iconify" data-icon="lucide:x" data-width="20"></span>
+                </button>
+              </div>
+              <div class="comm-filter-modal-body" id="qaFilterBody"></div>
+              <div class="comm-filter-modal-footer">
+                <button type="button" class="comm-filter-reset-btn" onclick="resetCommFilter('qa')">リセット</button>
+                <button type="button" class="comm-filter-apply-btn" onclick="closeCommFilter('qa')">適用</button>
+              </div>
+            </div>
           </div>
 
           <!-- Q&Aカード一覧 -->

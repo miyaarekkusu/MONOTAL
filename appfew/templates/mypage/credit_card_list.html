@@ -1,4 +1,4 @@
-﻿{% extends 'base.html' %}
+{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}マイページ - カード管理 | MONOTAL{% endblock %}
@@ -10,12 +10,14 @@
 {% block content %}
 <main class="mx-auto max-w-[1200px] w-full px-4 lg:px-6 py-8">
 
-    <!-- Breadcrumbs -->
-    <nav class="mb-8 flex text-xs font-medium text-zinc-500 overflow-x-auto whitespace-nowrap">
+    <!-- Breadcrumbs (Desktop) -->
+    <nav class="mb-8 hidden lg:flex text-xs font-medium text-zinc-500">
         <ol class="flex items-center space-x-2">
             <li><a href="{% url 'index' %}" class="hover:underline hover:text-pink-600">MONOTAL</a></li>
             <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
-            <li class="text-zinc-900">マイページ</li>
+            <li><a href="{% url 'mypage_index' %}" class="hover:underline hover:text-pink-600">マイページ</a></li>
+            <li><span class="iconify" data-icon="lucide:chevron-right" data-width="12"></span></li>
+            <li class="text-zinc-900">カード管理</li>
         </ol>
     </nav>
 

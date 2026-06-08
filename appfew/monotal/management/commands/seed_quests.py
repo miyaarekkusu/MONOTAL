@@ -22,6 +22,11 @@ class Command(BaseCommand):
             Quest.objects.all().delete()
             self.stdout.write('既存クエストデータをクリアしました')
 
+        # 既にクエストが存在する場合はスキップ（冪等性確保）
+        if not options['clear'] and Quest.objects.exists():
+            self.stdout.write(self.style.SUCCESS('クエストデータは既に存在します。スキップします。'))
+            return
+
         self._create_tutorial_quests()
         self._create_category_quests()
         self.stdout.write(self.style.SUCCESS('クエストの初期データ登録が完了しました'))

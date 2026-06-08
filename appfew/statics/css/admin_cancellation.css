@@ -1,4 +1,4 @@
-﻿/* 中止申請管理画面 追加スタイル */
+/* 中止申請管理画面 追加スタイル */
 
 /* ステータスフィルタータブ（admin_insurance.cssと共通だが念のため） */
 .filter-tabs {
@@ -137,4 +137,9 @@
     .filter-tab:last-child {
         border-bottom: none;
     }
+}
+
+@media (max-width: 480px) {
+    .filter-tab { padding: 10px 12px; font-size: 13px; }
+    .product-name-cell { max-width: 140px; }
 }

@@ -1,4 +1,4 @@
-﻿/* =====================================================
+/* =====================================================
    取引画面 - 3カラムフルワイドレイアウト
    ===================================================== */
 
@@ -1106,6 +1106,7 @@
 @media (max-width: 640px) {
     .transaction-header {
         padding: 12px 16px;
+        top: 56px;
     }
 
     .left-panel,
@@ -1124,4 +1125,17 @@
     .message-item {
         max-width: 85%;
     }
+
+    .header-badges { flex-wrap: wrap; gap: 4px; }
+    .chat-panel { height: 400px; }
+    .send-btn { width: 40px; height: 40px; }
+    .action-btn { padding: 12px 14px; font-size: 13px; }
+    .modal-content { max-width: calc(100vw - 32px); }
+}
+
+@media (max-width: 360px) {
+    .header-info h1 { font-size: 13px; }
+    .status-badge, .role-badge, .plan-badge { font-size: 9px; padding: 2px 6px; }
+    .chat-panel { height: 350px; }
+    .message-item { max-width: 90%; }
 }

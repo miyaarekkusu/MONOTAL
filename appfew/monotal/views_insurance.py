@@ -131,6 +131,13 @@ def insurance_page(request):
         ).select_related('product').order_by('-claim_datetime')
         context['pending_claims'] = pending_claims
 
+        # 補償申請履歴（承認・却下）
+        claim_history = InsuranceClaim.objects.filter(
+            user=request.user,
+            insurance_claim_status_id__in=[2, 3]  # 承認・却下
+        ).select_related('product', 'insurance_claim_status').order_by('-claim_datetime')
+        context['claim_history'] = claim_history
+
     return render(request, 'mypage/insurance.html', context)
 
 

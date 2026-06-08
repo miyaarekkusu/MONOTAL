@@ -22,7 +22,7 @@ def reverse_awaiting_review_status(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('monotal', '0039_merge_0034_message_reply_to_0038_quest_expires_at'),
+        ('monotal', '0042_make_product_condition_nullable'),
     ]
 
     operations = [

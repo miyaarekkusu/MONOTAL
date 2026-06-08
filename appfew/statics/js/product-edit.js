@@ -376,7 +376,6 @@ document.addEventListener('DOMContentLoaded', function () {
             product_name: document.getElementById('productName').value.trim(),
             product_category: document.getElementById('category').value,
             product_description: document.getElementById('description').value.trim(),
-            product_condition: document.getElementById('condition').value,
             product_status: document.getElementById('productStatus').value,
             shipping_days: document.getElementById('shippingDays').value,
             shipping_burden: document.getElementById('shippingBurden').value,
@@ -398,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function () {
             submitData.append('product_name', formData.product_name);
             submitData.append('product_category', formData.product_category);
             submitData.append('product_description', formData.product_description);
-            submitData.append('product_condition', formData.product_condition);
             submitData.append('product_status', formData.product_status);
             submitData.append('shipping_days', formData.shipping_days);
             submitData.append('shipping_burden', formData.shipping_burden);
@@ -474,11 +472,6 @@ document.addEventListener('DOMContentLoaded', function () {
             errors.description = '商品の説明は必須です';
         } else if (formData.product_description.length > 1000) {
             errors.description = '商品の説明は1000文字以内で入力してください';
-        }
-
-        // 商品の状態
-        if (!formData.product_condition) {
-            errors.condition = '商品の状態を選択してください';
         }
 
         // 発送までの日数

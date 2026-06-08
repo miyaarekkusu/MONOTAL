@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>{% block title %}MONOTAL{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.iconify.design/3/3.1.0/iconify.min.js"></script>
@@ -18,7 +18,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-zinc-50 text-zinc-900 antialiased selection:bg-pink-600 selection:text-white flex flex-col min-h-screen pb-20 md:pb-0">
+<body class="bg-zinc-50 text-zinc-900 antialiased selection:bg-pink-600 selection:text-white flex flex-col min-h-screen pb-16 md:pb-0">
 
     <!-- Header -->
     <header class="sticky top-0 z-50 w-full border-b border-zinc-200 bg-white/95 backdrop-blur-md">
@@ -73,7 +73,7 @@
                             {% endif %}
                         </button>
                         <!-- Notification Dropdown -->
-                        <div id="notification-dropdown-menu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-80 bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
+                        <div id="notification-dropdown-menu" class="hidden absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] bg-white rounded-lg shadow-lg border border-zinc-200 z-50 overflow-hidden">
                             <div class="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
                                 <h3 class="font-semibold text-sm text-zinc-900">通知</h3>
                                 <button id="mark-all-read-btn" class="text-xs text-pink-600 hover:text-pink-700 font-medium">すべて既読</button>
@@ -96,8 +96,8 @@
                             {% endif %}
                         </button>
                         <!-- Dropdown Menu -->
-                        <div id="profile-dropdown-menu" class="hidden absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
-                            <a href="{% url 'mypage_browsing_history' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
+                        <div id="profile-dropdown-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-zinc-200 py-1 z-50">
+                            <a href="{% url 'mypage_index' %}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50 transition-colors">
                                 <span class="iconify text-zinc-400" data-icon="lucide:layout-dashboard" data-width="16"></span>
                                 マイページ
                             </a>
@@ -116,15 +116,15 @@
                             </a>
                         </div>
                     </div>
-                    <a href="{% url 'create_sell' %}" class="rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-pink-700 shadow-sm flex items-center gap-2">
+                    <a href="{% url 'create_sell' %}" class="hidden sm:flex rounded-md bg-pink-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-pink-700 shadow-sm items-center gap-2">
                         <span class="iconify lg:hidden" data-icon="lucide:camera" data-width="16"></span>
                         <span>出品<span class="hidden lg:inline">する</span></span>
                     </a>
-                    <a href="{% url 'community_group' %}" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 shadow-sm flex items-center gap-2">
+                    <a href="{% url 'community_group' %}" class="hidden sm:flex rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 shadow-sm items-center gap-2">
                         <span class="iconify" data-icon="lucide:messages-square" data-width="16"></span>
                         <span class="hidden lg:inline">コミュニティ</span>
                     </a>
-                    <a href="{% url 'quest_list' %}" class="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 shadow-sm flex items-center gap-2">
+                    <a href="{% url 'quest_list' %}" class="hidden sm:flex rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-all hover:bg-zinc-50 shadow-sm items-center gap-2">
                         <span class="iconify" data-icon="lucide:trophy" data-width="16"></span>
                         <span class="hidden lg:inline">クエスト</span>
                     </a>
@@ -139,6 +139,17 @@
             </div>
         </div>
 
+        <!-- Mobile Search Bar -->
+        <div class="md:hidden border-t border-zinc-100 px-4 py-2">
+            <form method="GET" action="{% url 'product_list' %}" class="relative">
+                <input type="text" name="q" value="{{ request.GET.q|default:'' }}" placeholder="商品名・カテゴリから探す" autocomplete="off"
+                    class="w-full rounded-full border border-zinc-200 bg-zinc-50 py-2 pl-4 pr-10 text-sm text-zinc-900 placeholder-zinc-400 focus:border-pink-600 focus:ring-1 focus:ring-pink-600 focus:outline-none focus:bg-white transition-all">
+                <button type="submit" class="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-pink-600 transition-all">
+                    <span class="iconify" data-icon="lucide:search" data-width="18" data-height="18"></span>
+                </button>
+            </form>
+        </div>
+
         <!-- Secondary Nav (トップページのみ表示) -->
         {% block secondary_nav %}{% endblock %}
     </header>
@@ -147,7 +158,7 @@
     {% block content %}{% endblock %}
 
     <!-- Footer -->
-    <footer class="border-t border-zinc-200 bg-white pt-16 pb-24 md:pb-12 mt-auto">
+    <footer class="border-t border-zinc-200 bg-white pt-16 pb-24 md:pb-12 mt-16 sm:mt-auto">
         <div class="mx-auto max-w-[1200px] px-6">
             <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-16">
                 <div class="col-span-2 space-y-4">
@@ -191,36 +202,33 @@
         </div>
     </footer>
 
-    <!-- Floating Action Button -->
-    <a href="{% url 'create_sell' %}" class="fixed bottom-20 right-4 z-50 flex h-14 w-14 flex-col items-center justify-center gap-0.5 rounded-full bg-pink-600 text-white shadow-xl shadow-pink-900/20 transition-transform hover:scale-105 active:scale-95 sm:hidden">
-        <span class="text-[9px] font-bold">出品</span>
-        <span class="iconify" data-icon="lucide:camera" data-width="20"></span>
-    </a>
-
     <!-- Mobile Navigation Bar -->
     <div class="fixed bottom-0 left-0 z-40 w-full border-t border-zinc-200 bg-white pb-safe sm:hidden">
         <div class="grid h-16 grid-cols-5 items-center justify-items-center">
-            <a href="{% url 'index' %}" class="flex flex-col items-center gap-1 text-pink-600">
-                <span class="iconify" data-icon="lucide:home" data-width="24"></span>
-                <span class="text-[10px] font-bold">ホーム</span>
+            <a href="{% url 'index' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:home" data-width="22"></span>
+                <span class="text-[10px] font-medium">ホーム</span>
             </a>
-            <a href="{% url 'product_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:search" data-width="24"></span>
-                <span class="text-[10px] font-medium">さがす</span>
+            <a href="{% url 'community_group' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:messages-square" data-width="22"></span>
+                <span class="text-[10px] font-medium">コミュニティ</span>
             </a>
-            <div class="w-8"></div> <!-- Spacer for Sell Button -->
-            <a href="#" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:message-square" data-width="24"></span>
-                <span class="text-[10px] font-medium">メッセージ</span>
+            <a href="{% url 'create_sell' %}" class="flex flex-col items-center gap-1 text-pink-600 hover:text-pink-700">
+                <span class="iconify" data-icon="lucide:plus-circle" data-width="26"></span>
+                <span class="text-[10px] font-bold">出品</span>
+            </a>
+            <a href="{% url 'quest_list' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:trophy" data-width="22"></span>
+                <span class="text-[10px] font-medium">クエスト</span>
             </a>
             {% if user.is_authenticated %}
-            <a href="{% url 'mypage_browsing_history' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+            <a href="{% url 'mypage_index' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
+                <span class="iconify" data-icon="lucide:user" data-width="22"></span>
                 <span class="text-[10px] font-medium">マイページ</span>
             </a>
             {% else %}
             <a href="{% url 'login' %}" class="flex flex-col items-center gap-1 text-zinc-400 hover:text-zinc-900">
-                <span class="iconify" data-icon="lucide:user" data-width="24"></span>
+                <span class="iconify" data-icon="lucide:user" data-width="22"></span>
                 <span class="text-[10px] font-medium">ログイン</span>
             </a>
             {% endif %}

@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Q, Count
 from .models import RentalRequest, RentalHistory, NotificationTargetUser, NotificationRead
 
 
@@ -19,10 +19,14 @@ def rental_context(request):
             rental_request_status_id__in=[3, 4, 5]  # 拒否・キャンセル・完了を除外
         ).count()
 
-        # 取引中（RentalHistory）の件数
-        transaction_count = RentalHistory.objects.filter(
+        # 取引中（RentalHistory）の件数（返却済みはレビュー2件未満のみカウント）
+        transaction_count = RentalHistory.objects.annotate(
+            review_count=Count('reviews')
+        ).filter(
             Q(lender_user=request.user) | Q(renter_user=request.user),
-            rental_status_id__in=[1, 2, 3, 4, 7, 8, 9, 10]  # 進行中のステータス
+        ).filter(
+            Q(rental_status_id__in=[1, 2, 3, 4, 7, 8, 9, 10]) |
+            Q(rental_status_id=5, review_count__lt=2)
         ).count()
 
         context['pending_rental_count'] = request_count + transaction_count

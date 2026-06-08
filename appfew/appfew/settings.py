@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-0%nw+wx^77gttoj0hbwr2yxlio_f5g6vo47^d4r!n&um(tnds_
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -48,6 +48,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,7 +86,10 @@ WSGI_APPLICATION = 'appfew.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': Path(os.environ.get('DB_DIR', BASE_DIR)) / 'db.sqlite3',
+        'OPTIONS': {
+            'timeout': 30,
+        },
     }
 }
 
@@ -125,10 +129,11 @@ STATIC_URL = '/static/'
 STATICFILES_DIRS = [
     BASE_DIR / 'statics',
 ]
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 # Media files (uploads)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_ROOT = Path(os.environ.get('MEDIA_DIR', BASE_DIR / 'media'))
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -157,6 +162,8 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_AUTH_EXTRA_ARGUMENTS = {
 }
 
 SOCIAL_AUTH_URL_NAMESPACE = 'social'
+SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/monotal/'  # ログイン成功時はトップへ
 SOCIAL_AUTH_PIPELINE = (
     'social_core.pipeline.social_auth.social_details',

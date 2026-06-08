@@ -394,3 +394,13 @@
         width: 100%;
     }
 }
+
+@media (max-width: 480px) {
+    .admin-container { margin: 16px auto; padding: 0 12px; }
+    .page-title { font-size: 20px; }
+    .info-card { padding: 16px; }
+    .verification-table th,
+    .verification-table td { padding: 10px 12px; font-size: 13px; }
+    .btn { padding: 12px 24px; font-size: 14px; }
+    .empty-message { padding: 40px 20px; }
+}

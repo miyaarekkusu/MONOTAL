@@ -1,4 +1,4 @@
-﻿/* ============================================
+/* ============================================
    create-sell.css - 商品出品フォーム (新デザイン)
    ============================================ */
 
@@ -732,6 +732,10 @@ input[type="number"] {
     .postal-input {
         width: 100%;
     }
+
+    .plan-input { padding: 8px 10px; font-size: 13px; }
+    .plan-input.days-input { padding-right: 28px; }
+    .plan-input.price-input { padding-left: 24px; }
 }
 
 /* ============================================

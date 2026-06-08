@@ -17,7 +17,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.utils.decorators import method_decorator
 from .models import *
 from django.core.paginator import Paginator
-from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField
+from django.db.models import Q, Count, Avg, Case, When, Value, IntegerField, Min, F
 from django.db import transaction
 #from .models import User, UserStatus, EmailVerificationToken
 
@@ -839,7 +839,6 @@ class CreateSellView(View):
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
-        conditions = ProductCondition.objects.all()
         prefectures = Prefecture.objects.all()
         shipping_days_list = ShippingDays.objects.all()
         shipping_burdens = ShippingBurden.objects.all()
@@ -863,7 +862,6 @@ class CreateSellView(View):
 
         context = {
             'categories': categories,
-            'conditions': conditions,
             'prefectures': prefectures,
             'shipping_days_list': shipping_days_list,
             'shipping_burdens': shipping_burdens,
@@ -913,7 +911,6 @@ class CreateSellView(View):
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
             product_description = request.POST.get('product_description', '').strip()
-            product_condition_id = request.POST.get('product_condition', '')
             shipping_days_id = request.POST.get('shipping_days', '')
             shipping_burden_id = request.POST.get('shipping_burden', '')
 
@@ -957,10 +954,6 @@ class CreateSellView(View):
                 errors['product_description'] = '商品の説明は必須です'
             elif len(product_description) > 1000:
                 errors['product_description'] = '商品の説明は1000文字以内で入力してください'
-
-            # 商品の状態
-            if not product_condition_id:
-                errors['product_condition'] = '商品の状態を選択してください'
 
             # 発送までの日数
             if not shipping_days_id:
@@ -1026,14 +1019,6 @@ class CreateSellView(View):
                 except ProductCategory.DoesNotExist:
                     pass
 
-            # 商品状態
-            condition_obj = None
-            if product_condition_id:
-                try:
-                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
-                except ProductCondition.DoesNotExist:
-                    pass
-
             # 発送日数
             shipping_days_obj = None
             if shipping_days_id:
@@ -1080,7 +1065,6 @@ class CreateSellView(View):
                     product_description=product_description or '',
                     shipping_days=shipping_days_obj,
                     shipping_burden=shipping_burden_obj,
-                    product_condition=condition_obj,
                     product_status=status_obj,
                     product_category=category_obj,
                     rental_days=rental_days_value,
@@ -1142,11 +1126,11 @@ class CreateSellView(View):
                 return JsonResponse({
                     'success': True,
                     'message': '商品を出品しました',
-                    'redirect_url': f'/monotal/product/{product.product_id}/'
+                    'redirect_url': f'/monotal/sell/{product.product_id}/complete/'
                 })
 
             messages.success(request, '商品を出品しました')
-            return redirect('product_detail', product_id=product.product_id)
+            return redirect('listing_complete', product_id=product.product_id)
 
         except Exception as e:
             if is_ajax:
@@ -1169,17 +1153,12 @@ class ProductListView(View):
         ).exclude(
             product_status_id__in=[PRODUCT_STATUS_PAUSED, PRODUCT_STATUS_DELETED]  # 非公開(3)、削除(4)を除外
         ).select_related(
-            'product_condition',
             'product_status',
             'product_category',
             'user'
         ).prefetch_related(
             'images'  # 商品画像も取得
-        ).order_by('-register_datetime')
-
-        # ログインユーザー自身の商品を除外
-        if request.user.is_authenticated:
-            products = products.exclude(user=request.user)
+        )
 
         # フィルター適用
         products = self.apply_filters(request, products)
@@ -1194,9 +1173,6 @@ class ProductListView(View):
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
 
-        # 商品状態一覧
-        conditions = ProductCondition.objects.all()
-
         # 選択中のカテゴリ名を取得
         selected_category_name = None
         category_id = request.GET.get('category')
@@ -1208,10 +1184,12 @@ class ProductListView(View):
             except (ValueError, ProductCategory.DoesNotExist):
                 pass
 
+        shipping_burdens = ShippingBurden.objects.all()
+
         context = {
             'products': page_obj,
             'categories': categories,
-            'conditions': conditions,
+            'shipping_burdens': shipping_burdens,
             'page_obj': page_obj,
             'filters': self.get_active_filters(request),
             'selected_category_name': selected_category_name,
@@ -1223,6 +1201,22 @@ class ProductListView(View):
         """
         GETパラメータからフィルター適用
         """
+        # 商品ステータスフィルター
+        status_id = request.GET.get('status')
+        if status_id:
+            try:
+                queryset = queryset.filter(product_status_id=int(status_id))
+            except ValueError:
+                pass
+
+        # 発送料の負担フィルター
+        burden_id = request.GET.get('burden')
+        if burden_id:
+            try:
+                queryset = queryset.filter(shipping_burden_id=int(burden_id))
+            except ValueError:
+                pass
+
         # カテゴリフィルター
         category_id = request.GET.get('category')
         if category_id:
@@ -1266,15 +1260,6 @@ class ProductListView(View):
             except ValueError:
                 pass
 
-        # 商品状態フィルター
-        conditions = request.GET.getlist('condition')
-        if conditions:
-            try:
-                condition_ids = [int(c) for c in conditions]
-                queryset = queryset.filter(product_condition_id__in=condition_ids)
-            except ValueError:
-                pass
-
         # テキスト検索（商品名、説明、カテゴリ名）
         search_query = request.GET.get('q')
         if search_query:
@@ -1284,6 +1269,21 @@ class ProductListView(View):
                 Q(product_category__category_name__icontains=search_query)
             )
 
+        # 並び替え
+        sort = request.GET.get('sort', 'newest')
+        if sort == 'price_asc':
+            queryset = queryset.annotate(
+                min_price=Min('rental_plans__rental_fee')
+            ).order_by(F('min_price').asc(nulls_last=True))
+        elif sort == 'price_desc':
+            queryset = queryset.annotate(
+                min_price=Min('rental_plans__rental_fee')
+            ).order_by(F('min_price').desc(nulls_last=True))
+        elif sort == 'newest':
+            queryset = queryset.order_by('-register_datetime')
+        else:
+            queryset = queryset.order_by('-register_datetime')
+
         return queryset
 
     def get_active_filters(self, request):
@@ -1291,6 +1291,8 @@ class ProductListView(View):
         現在適用中のフィルター値を返す
         """
         return {
+            'status': request.GET.get('status', ''),
+            'burden': request.GET.get('burden', ''),
             'category': request.GET.get('category', ''),
             'min_fee': request.GET.get('min_price') or request.GET.get('min_fee', ''),
             'max_fee': request.GET.get('max_price') or request.GET.get('max_fee', ''),
@@ -1298,8 +1300,8 @@ class ProductListView(View):
             'max_price': request.GET.get('max_price') or request.GET.get('max_fee', ''),
             'min_days': request.GET.get('min_days', ''),
             'max_days': request.GET.get('max_days', ''),
-            'conditions': request.GET.getlist('condition'),
             'q': request.GET.get('q', ''),
+            'sort': request.GET.get('sort', 'newest'),
         }
 
 
@@ -1314,7 +1316,6 @@ class ProductDetailView(View):
         try:
             # 商品を取得（削除されていないもの）
             product = Product.objects.select_related(
-                'product_condition',
                 'product_status',
                 'product_category',
                 'shipping_days',
@@ -1344,8 +1345,8 @@ class ProductDetailView(View):
             product=product
         ).order_by('rental_days')
 
-        # 閲覧履歴を保存（ログインユーザーのみ、自分の商品は除外）
-        if request.user.is_authenticated and product.user != request.user:
+        # 閲覧履歴を保存（ログインユーザーのみ）
+        if request.user.is_authenticated:
             # 既存の同一商品の閲覧履歴を削除して新規作成（最新日時に更新）
             BrowsingHistory.objects.filter(
                 user=request.user,
@@ -1694,7 +1695,7 @@ class InterestSelectionView(LoginRequiredMixin, View):
             UserHobby.objects.create(user=request.user, product_category_id=int(cid))
 
         next_url = request.GET.get('next', request.POST.get('next', ''))
-        return redirect(next_url or 'mypage_browsing_history')
+        return redirect(next_url or reverse('profile', kwargs={'username': request.user.user_name}))
 
 
 # ╔══════════════════════════════════════════════════════════════════════════════╗
@@ -2302,6 +2303,18 @@ class MyPageBookmarkListView(LoginRequiredMixin, View):
         return render(request, 'mypage/bookmark_list.html', context)
 
 
+class MyPageIndexView(LoginRequiredMixin, View):
+    """マイページ - メニュー一覧"""
+    login_url = '/monotal/login/'
+
+    def get(self, request, *args, **kwargs):
+        return render(request, 'mypage/index.html', {
+            'current_page': 'index',
+        })
+
+mypage_index = MyPageIndexView.as_view()
+
+
 class MyPageBrowsingHistoryView(LoginRequiredMixin, View):
     """
     マイページ - 閲覧履歴
@@ -2467,7 +2480,6 @@ class ProductEditView(LoginRequiredMixin, View):
         # 商品を取得
         try:
             product = Product.objects.select_related(
-                'product_condition',
                 'product_status',
                 'product_category',
                 'shipping_days',
@@ -2497,7 +2509,6 @@ class ProductEditView(LoginRequiredMixin, View):
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories')
-        conditions = ProductCondition.objects.all()
         prefectures = Prefecture.objects.all()
         shipping_days_list = ShippingDays.objects.all()
         shipping_burdens = ShippingBurden.objects.all()
@@ -2524,7 +2535,6 @@ class ProductEditView(LoginRequiredMixin, View):
             'product_images': list(product.images.all()),
             'rental_plans': list(rental_plans),
             'categories': categories,
-            'conditions': conditions,
             'prefectures': prefectures,
             'shipping_days_list': shipping_days_list,
             'shipping_burdens': shipping_burdens,
@@ -2579,7 +2589,6 @@ class ProductEditView(LoginRequiredMixin, View):
             product_name = request.POST.get('product_name', '').strip()
             product_category_id = request.POST.get('product_category', '')
             product_description = request.POST.get('product_description', '').strip()
-            product_condition_id = request.POST.get('product_condition', '')
             new_images = request.FILES.getlist('images')
             delete_image_ids_json = request.POST.get('delete_image_ids', '[]')
 
@@ -2616,16 +2625,6 @@ class ProductEditView(LoginRequiredMixin, View):
             elif len(product_description) > 1000:
                 errors['product_description'] = '商品の説明は1000文字以内で入力してください'
 
-            # 商品の状態
-            condition_obj = None
-            if not product_condition_id:
-                errors['product_condition'] = '商品の状態を選択してください'
-            else:
-                try:
-                    condition_obj = ProductCondition.objects.get(product_condition_id=product_condition_id)
-                except ProductCondition.DoesNotExist:
-                    errors['product_condition'] = '選択された商品の状態が存在しません'
-
             # 画像チェック（既存 - 削除 + 新規 >= 1）
             current_image_count = ProductImage.objects.filter(product=product).count()
             remaining_count = current_image_count - len(delete_image_ids) + len(new_images)
@@ -2648,7 +2647,6 @@ class ProductEditView(LoginRequiredMixin, View):
                 product.product_name = product_name
                 product.product_description = product_description
                 product.product_category = category_obj
-                product.product_condition = condition_obj
                 product.save()
 
                 # 削除対象の画像を削除
@@ -3972,6 +3970,28 @@ class RentalRequestView(LoginRequiredMixin, View):
             return redirect('product_detail', product_id=product_id)
 
 
+class ListingCompleteView(LoginRequiredMixin, View):
+    """
+    出品完了画面
+    """
+    login_url = '/monotal/login/'
+
+    def get(self, request, product_id, *args, **kwargs):
+        try:
+            product = Product.objects.select_related('user').prefetch_related('images').get(
+                product_id=product_id,
+                user=request.user,
+                delete_datetime__isnull=True
+            )
+        except Product.DoesNotExist:
+            return redirect('product_list')
+
+        context = {
+            'product': product,
+        }
+        return render(request, 'listing_complete.html', context)
+
+
 class RentalRequestCompleteView(LoginRequiredMixin, View):
     """
     レンタル申請完了画面
@@ -4059,16 +4079,22 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
         )
 
         # 取引中（RentalHistory）: 出品者・購入者まとめて取得
-        transactions_all = RentalHistory.objects.filter(
+        # 返却済み(5)は双方レビュー完了(2件)まで表示
+        from django.db.models import Count
+        transactions_all = RentalHistory.objects.annotate(
+            review_count=Count('reviews')
+        ).filter(
             Q(lender_user=request.user) | Q(renter_user=request.user),
-            rental_status_id__in=[
+        ).filter(
+            Q(rental_status_id__in=[
                 RENTAL_STATUS_PREPARING, RENTAL_STATUS_SHIPPING,
                 RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING,
                 RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED,
                 RENTAL_STATUS_RETURN_SHIPPING,
                 RENTAL_STATUS_CANCELLATION_REQUESTED,
                 RENTAL_STATUS_AWAITING_REVIEW,
-            ]
+            ]) |
+            Q(rental_status_id=RENTAL_STATUS_COMPLETED, review_count__lt=2)
         ).select_related(
             'product', 'lender_user', 'renter_user', 'rental_status'
         ).prefetch_related(
@@ -4748,6 +4774,7 @@ class RentalRequestCancelSellerView(LoginRequiredMixin, View):
 
 # レンタル関連
 rental_request = RentalRequestView.as_view()
+listing_complete = ListingCompleteView.as_view()
 rental_request_complete = RentalRequestCompleteView.as_view()
 mypage_rental_management = MyPageRentalManagementView.as_view()
 rental_request_approve = RentalRequestApproveView.as_view()
@@ -5180,10 +5207,11 @@ class TransactionShipView(LoginRequiredMixin, View):
 
             # 追跡番号がある場合、17trackに事前登録を試みる
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5304,10 +5332,11 @@ class TransactionReturnShipView(LoginRequiredMixin, View):
 
             # 追跡番号がある場合、17trackに事前登録を試みる
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5700,10 +5729,11 @@ class ReturnShipView(LoginRequiredMixin, View):
             carrier_code = body.get('carrier_code', '').strip()
 
             if tracking_number:
-                if not _register_tracking_17track(tracking_number, carrier_code):
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code)
+                if not ok:
                     return JsonResponse({
                         'success': False,
-                        'message': '発送業者または追跡番号が正しくありません。'
+                        'message': err_msg or '発送業者または追跡番号が正しくありません。'
                     }, status=400)
 
             with transaction.atomic():
@@ -5894,35 +5924,70 @@ class TransactionReviewView(LoginRequiredMixin, View):
 
 # 取引関連ビュー
 def _register_tracking_17track(tracking_number, carrier_code=''):
-    """17track APIに追跡番号を登録する。成功時True、失敗時False。"""
+    """
+    17track APIに追跡番号を登録し、追跡情報が取得できるか検証する。
+    戻り値: (成功: True/False, エラーメッセージ: str or None)
+    """
     import urllib.request
     import urllib.error
+    import time
 
     api_key = settings.SEVENTEEN_TRACK_API_KEY
     if not api_key or not tracking_number:
-        return True  # APIキー未設定時はスキップ（エラーにしない）
+        return True, None
 
+    carrier = int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
+    payload = json.dumps([{'number': tracking_number, 'carrier': carrier}])
+    headers = {'17token': api_key, 'Content-Type': 'application/json'}
+
+    # 1. 追跡番号を登録
     try:
-        payload = json.dumps([{
-            'number': tracking_number,
-            'carrier': int(carrier_code) if carrier_code and carrier_code.isdigit() else 0
-        }])
         req = urllib.request.Request(
             'https://api.17track.net/track/v2.2/register',
             data=payload.encode('utf-8'),
-            headers={
-                '17token': api_key,
-                'Content-Type': 'application/json'
-            }
+            headers=headers
         )
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode('utf-8'))
             rejected = data.get('data', {}).get('rejected', [])
             if rejected:
-                return False
-        return True
+                err = rejected[0].get('error', {})
+                # 既に登録済み（code=-18010012等）は OK として続行
+                if err.get('code') != -18010012:
+                    return False, '追跡番号の登録に失敗しました。番号が正しいか確認してください。'
     except Exception:
-        return True  # 通信エラー時はブロックしない
+        return True, None  # 通信エラー時はブロックしない
+
+    # 2. 登録後に追跡情報を取得して検証（最大3回リトライ）
+    for attempt in range(3):
+        time.sleep(2)
+        try:
+            req = urllib.request.Request(
+                'https://api.17track.net/track/v2.2/gettrackinfo',
+                data=payload.encode('utf-8'),
+                headers=headers
+            )
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                data = json.loads(resp.read().decode('utf-8'))
+
+            accepted = data.get('data', {}).get('accepted', [])
+            if accepted:
+                track_info = accepted[0].get('track_info', {})
+                latest_status = track_info.get('latest_status', {}).get('status', '')
+                tracking = track_info.get('tracking', {})
+                has_events = any(
+                    provider.get('events', [])
+                    for provider in tracking.get('providers', [])
+                )
+                # 情報が取れた or まだ反映されていないだけ（NotFound以外）
+                if has_events or latest_status not in ('', 'NotFound'):
+                    return True, None
+                # NotFoundでもリトライ中は続行
+        except Exception:
+            pass
+
+    # 3回リトライしても情報なし → エラー
+    return False, '発送情報が見つかりません。追跡番号または配送業者が正しいか確認してください。'
 
 
 class TransactionTrackingView(LoginRequiredMixin, View):
@@ -6017,17 +6082,35 @@ class TransactionTrackingView(LoginRequiredMixin, View):
 
             # 未登録の場合は自動登録を試みる
             if rejected:
-                error_msg = rejected[0].get('error', {}).get('message', '')
-                if 'register' in error_msg.lower():
-                    _register_tracking_17track(tracking_number, carrier_code or '')
+                ok, err_msg = _register_tracking_17track(tracking_number, carrier_code or '')
+                if not ok:
                     return JsonResponse({
-                        'success': True,
-                        'tracking_number': tracking_number,
-                        'carrier_code': carrier_code or '',
-                        'events': [],
-                        'latest_status': '',
-                        'message': '追跡番号を登録しました。しばらくしてから再度ご確認ください。'
-                    })
+                        'success': False,
+                        'message': err_msg or '追跡番号が見つかりません。'
+                    }, status=404)
+                # 登録成功後、再取得
+                try:
+                    retry_req = urllib.request.Request(
+                        'https://api.17track.net/track/v2.2/gettrackinfo',
+                        data=payload,
+                        headers={'17token': api_key, 'Content-Type': 'application/json'}
+                    )
+                    with urllib.request.urlopen(retry_req, timeout=10) as retry_resp:
+                        retry_data = json.loads(retry_resp.read().decode('utf-8'))
+                    retry_accepted = retry_data.get('data', {}).get('accepted', [])
+                    if retry_accepted:
+                        track_info = retry_accepted[0].get('track_info', {})
+                        ls = track_info.get('latest_status', {})
+                        latest_status = ls.get('status', '')
+                        for provider in track_info.get('tracking', {}).get('providers', []):
+                            for event in provider.get('events', []):
+                                events.append({
+                                    'date': event.get('time_iso', ''),
+                                    'status': event.get('description', ''),
+                                    'location': event.get('location', ''),
+                                })
+                except Exception:
+                    pass
 
             return JsonResponse({
                 'success': True,
@@ -6278,7 +6361,10 @@ def board_create(request):
 
 def board_detail(request, pk):
     """掲示板詳細・メッセージ投稿（未ログインは閲覧のみ）"""
-    board = get_object_or_404(Community, pk=pk)
+    try:
+        board = Community.objects.get(pk=pk)
+    except Community.DoesNotExist:
+        return redirect('community_group')
     chat_room = ChatRoom.objects.filter(community=board).first()
 
     if request.method == 'GET':
@@ -6397,6 +6483,8 @@ def board_detail(request, pk):
             })
 
         # 通常GET: 詳細ページをレンダリング
+        is_creator = request.user.is_authenticated and board.creator == request.user
+        is_member = is_creator or (request.user.is_authenticated and CommunityMember.objects.filter(community=board, user=request.user).exists())
         categories = ProductCategory.objects.filter(
             parent_product_category__isnull=True
         ).prefetch_related('subcategories').order_by('product_category_id')
@@ -6406,11 +6494,19 @@ def board_detail(request, pk):
             'user_products': user_products,
             'post_url': reverse('board_detail', kwargs={'pk': board.pk}),
             'categories': categories,
+            'is_member': is_member,
+            'is_creator': is_creator,
         })
 
     # POST: ログイン必須
     if not request.user.is_authenticated:
         return JsonResponse({'success': False, 'message': 'ログインが必要です'}, status=401)
+
+    # POST: メンバーのみ投稿可能（作成者もOK）
+    is_creator = board.creator == request.user
+    is_member = is_creator or CommunityMember.objects.filter(community=board, user=request.user).exists()
+    if not is_member:
+        return JsonResponse({'success': False, 'message': 'グループに参加してからメッセージを送信してください'}, status=403)
 
     # POST: FormData（image対応）
     if not chat_room:
@@ -6578,6 +6674,8 @@ def delete_message(request, pk):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'message': '不正なリクエストです'}, status=405)
     msg = get_object_or_404(Message, pk=pk)
+    if msg.message_content and msg.message_content.startswith('__system__:'):
+        return JsonResponse({'success': False, 'message': 'システムメッセージは削除できません'}, status=403)
     if msg.user != request.user:
         return JsonResponse({'success': False, 'message': '権限がありません'}, status=403)
     msg.delete()
@@ -6674,7 +6772,6 @@ def board_user_products(request):
     q = request.GET.get('q', '').strip()
     category_id = request.GET.get('category_id', '').strip()
     bookmark = request.GET.get('bookmark', '').strip()
-    condition = request.GET.get('condition', '').strip()
     min_fee = request.GET.get('min_fee', '').strip()
     max_fee = request.GET.get('max_fee', '').strip()
     qs = Product.objects.filter(
@@ -6694,11 +6791,6 @@ def board_user_products(request):
     if bookmark == '1' and request.user.is_authenticated:
         bm_ids = Bookmark.objects.filter(user=request.user).values_list('product_id', flat=True)
         qs = qs.filter(pk__in=bm_ids)
-    if condition:
-        try:
-            qs = qs.filter(product_condition_id=int(condition))
-        except (ValueError, TypeError):
-            pass
     if min_fee:
         try:
             qs = qs.filter(rental_plans__rental_fee__gte=int(min_fee)).distinct()
@@ -6923,9 +7015,6 @@ def qa_answer_post(request, pk):
     if question.status_id != 1:
         return JsonResponse({'success': False, 'message': 'この質問は受付を終了しています'}, status=400)
 
-    if question.user == request.user:
-        return JsonResponse({'success': False, 'message': '自分の質問には回答できません'}, status=403)
-
     try:
         body = _json.loads(request.body)
     except Exception:
@@ -6933,6 +7022,10 @@ def qa_answer_post(request, pk):
 
     content = body.get('content', '').strip()
     parent_answer_id = body.get('parent_answer_id')
+
+    # 自分の質問への「回答」は不可、ただし「返信」（parent_answer_idあり）は許可
+    if question.user == request.user and not parent_answer_id:
+        return JsonResponse({'success': False, 'message': '自分の質問には回答できません'}, status=403)
 
     if not content:
         return JsonResponse({'success': False, 'message': '回答内容を入力してください'}, status=400)
@@ -6942,9 +7035,11 @@ def qa_answer_post(request, pk):
     parent_answer = None
     if parent_answer_id:
         try:
-            parent_answer = QAAnswer.objects.get(pk=parent_answer_id, question=question, parent_answer__isnull=True)
+            target = QAAnswer.objects.get(pk=parent_answer_id, question=question)
         except QAAnswer.DoesNotExist:
             return JsonResponse({'success': False, 'message': '返信先の回答が見つかりません'}, status=400)
+        # 返信先が子回答（返信）の場合、その親回答にぶら下げる
+        parent_answer = target if target.parent_answer_id is None else target.parent_answer
 
     answer = QAAnswer.objects.create(
         question=question,
@@ -6952,6 +7047,19 @@ def qa_answer_post(request, pk):
         parent_answer=parent_answer,
         content=content,
     )
+
+    # 質問者に通知（自分自身への回答は除外済み）
+    try:
+        create_notification(
+            notification_type_id=4,  # コミュニティ通知
+            title='質問に回答がありました',
+            detail=f'「{question.title}」に{request.user.display_name or request.user.user_name}さんが回答しました。',
+            link_url=f'/monotal/community/qa/{question.question_id}/',
+            target_users=[question.user],
+        )
+    except Exception:
+        pass
+
     d = _answer_to_dict(answer, request.user)
     d['parent_answer_id'] = parent_answer.answer_id if parent_answer else None
     return JsonResponse({'success': True, 'answer': d})
