@@ -785,6 +785,7 @@ RENTAL_STATUS_RETURN_APPROVED = 8   # 返品承認済み
 RENTAL_STATUS_RETURN_SHIPPING = 9   # 返品返送中
 RENTAL_STATUS_CANCELLATION_REQUESTED = 10  # 中止申請中
 RENTAL_STATUS_CANCELLATION_APPROVED = 11   # 中止済み
+RENTAL_STATUS_AWAITING_REVIEW = 12         # 評価待ち（貸主受取完了後、相互評価待ち）
 
 
 class VerificationRequiredView(View):
@@ -4065,7 +4066,8 @@ class MyPageRentalManagementView(LoginRequiredMixin, View):
                 RENTAL_STATUS_RENTING, RENTAL_STATUS_RETURNING,
                 RENTAL_STATUS_RETURN_REQUESTED, RENTAL_STATUS_RETURN_APPROVED,
                 RENTAL_STATUS_RETURN_SHIPPING,
-                RENTAL_STATUS_CANCELLATION_REQUESTED
+                RENTAL_STATUS_CANCELLATION_REQUESTED,
+                RENTAL_STATUS_AWAITING_REVIEW,
             ]
         ).select_related(
             'product', 'lender_user', 'renter_user', 'rental_status'
@@ -4141,7 +4143,7 @@ class RentalRequestApproveView(LoginRequiredMixin, View):
             active_rentals = RentalHistory.objects.filter(
                 product=rental_request.product,
             ).exclude(
-                rental_status_id__in=[RENTAL_STATUS_COMPLETED, RENTAL_STATUS_CANCELLED, RENTAL_STATUS_CANCELLATION_APPROVED]
+                rental_status_id__in=[RENTAL_STATUS_COMPLETED, RENTAL_STATUS_AWAITING_REVIEW, RENTAL_STATUS_CANCELLED, RENTAL_STATUS_CANCELLATION_APPROVED]
             )
 
             if approved_requests.exists() or active_rentals.exists():
@@ -5378,8 +5380,8 @@ class TransactionReturnReceiveView(LoginRequiredMixin, View):
                         return_reason_history.return_status_id = RENTAL_STATUS_CANCELLED
                         return_reason_history.save()
                 else:
-                    # 通常フロー: 完了に遷移
-                    rental_history.rental_status_id = RENTAL_STATUS_COMPLETED
+                    # 通常フロー: 評価待ちに遷移（相互評価完了でステータス5に移行）
+                    rental_history.rental_status_id = RENTAL_STATUS_AWAITING_REVIEW
                     rental_history.receipt_completed_datetime = timezone.now()
                     rental_history.save()
 
@@ -5768,7 +5770,7 @@ class TransactionReviewView(LoginRequiredMixin, View):
                 messages.error(request, 'この取引にアクセスする権限がありません')
                 return redirect('mypage_rental_management')
 
-            if rental_history.rental_status_id != RENTAL_STATUS_COMPLETED:
+            if rental_history.rental_status_id not in [RENTAL_STATUS_AWAITING_REVIEW, RENTAL_STATUS_COMPLETED]:
                 messages.error(request, '返却済みの取引のみ評価できます')
                 return redirect('transaction', rental_history_id=rental_history_id)
 
@@ -5813,7 +5815,7 @@ class TransactionReviewView(LoginRequiredMixin, View):
             if not is_lender and not is_renter:
                 return JsonResponse({'success': False, 'message': 'アクセス権限がありません'}, status=403)
 
-            if rental_history.rental_status_id != RENTAL_STATUS_COMPLETED:
+            if rental_history.rental_status_id not in [RENTAL_STATUS_AWAITING_REVIEW, RENTAL_STATUS_COMPLETED]:
                 return JsonResponse({'success': False, 'message': '返却済みの取引のみ評価できます'}, status=400)
 
             # 二重レビュー防止
@@ -5853,6 +5855,13 @@ class TransactionReviewView(LoginRequiredMixin, View):
                     review_score=review_score,
                     review_content=review_content if review_content else None
                 )
+
+                # 相互評価が揃ったかチェック → 揃ったらステータスを完了(5)に遷移
+                if rental_history.rental_status_id == RENTAL_STATUS_AWAITING_REVIEW:
+                    both_reviewed = UserReview.objects.filter(rental_history=rental_history).count() == 2
+                    if both_reviewed:
+                        rental_history.rental_status_id = RENTAL_STATUS_COMPLETED
+                        rental_history.save()
 
                 # 相手に通知
                 self._send_notification(

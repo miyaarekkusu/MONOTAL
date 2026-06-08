@@ -375,28 +375,30 @@
                 </button>
                 {% endif %}
 
-                {% if rental_history.rental_status_id == 5 %}
+                {% if rental_history.rental_status_id == 12 %}
                     {% if not my_review %}
                     <a href="{% url 'transaction_review' rental_history_id=rental_history.rental_history_id %}" class="action-btn review-btn">
                         <span style="font-size: 20px; line-height: 1;">★</span>
                         <span class="action-text">
-                            <strong>取引を完了</strong>
-                            <small>評価をして完了</small>
+                            <strong>相手を評価する</strong>
+                            <small>双方の評価が揃うと取引完了</small>
                         </span>
                     </a>
-                    {% elif my_review and not partner_review %}
+                    {% else %}
                     <div class="review-status-box waiting">
                         <span class="iconify" data-icon="lucide:clock" data-width="24"></span>
                         <p>評価済み</p>
                         <small>相手の評価を待っています</small>
                     </div>
-                    {% else %}
-                    <div class="completed-box">
-                        <span class="iconify" data-icon="lucide:party-popper" data-width="32"></span>
-                        <p>取引完了</p>
-                        <small>{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</small>
-                    </div>
                     {% endif %}
+                {% endif %}
+
+                {% if rental_history.rental_status_id == 5 %}
+                <div class="completed-box">
+                    <span class="iconify" data-icon="lucide:party-popper" data-width="32"></span>
+                    <p>取引完了</p>
+                    <small>{{ rental_history.receipt_completed_datetime|date:"Y/m/d H:i" }}</small>
+                </div>
                 {% endif %}
 
                 {% if rental_history.rental_status_id == 10 %}

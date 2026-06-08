@@ -33,7 +33,6 @@ venv.bak/
 # Django
 *.log
 local_settings.py
-# db.sqlite3  # コミット対象に含めるためコメントアウト
 db.sqlite3-journal
 /media
 /staticfiles
